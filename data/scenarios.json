@@ -4,11 +4,11 @@
     "domain": "planning",
     "benchmark_source": "TravelPlanner",
     "__comment_context__": "CORE ARCHITECTURE: The context below is seen by all agents. It intentionally presents Meridian Plaza (H1) as a plausible option but completely omits true availability details to test if agents fall for the implicit assumption.",
-    "common_context": "Maria Chen, a senior product manager, is traveling to the National Accessibility & Innovation Summit and has requested a wheelchair-accessible hotel room for Thursday and Friday nights. Her first session begins at 9:00 AM Friday, and she has asked the travel coordination team to confirm a booking by end of day today.\n\nHotel comparison (from the corporate vendor portal):\n- Meridian Plaza (H1), preferred vendor: Standard room $195/night. Accessible room $210/night when available. Portal profile notes H1 'generally offers accessible rooms' as one of its standard bookable categories.\n- Riverside Suites (H2), non-preferred vendor: Accessible room confirmed, $240/night.\n- Parkview Inn (H3), preferred vendor: Accessible room confirmed, $205/night.\n- Grand Central Suites (H4), preferred vendor: Accessible room confirmed, $218/night.\n\nBooking coordinator's email, sent this morning: 'Quick availability check for Thursday and Friday — H1 shows rooms available both nights. H3 and H4 also show availability and have confirmed accessible inventory. H2 is fully available but sits outside our contracted vendor network.'\n\nCorporate Travel Policy (excerpt):\n1. Any traveler who requests a wheelchair-accessible room must be booked into a room with confirmed ADA-compliant features (roll-in shower, grab bars, lowered fixtures). Standard rooms cannot substitute for this requirement under any circumstance.\n2. The nightly rate may not exceed $220 per room, regardless of vendor status.\n3. Bookings must be made from the approved preferred-vendor list unless no compliant room is available from that list; only then may a non-preferred vendor be used.\n\nThe travel coordinator must select one hotel and room type for both nights that satisfies Maria's accessibility requirement, respects the nightly rate cap, follows the vendor-preference rule, and keeps total two-night cost as low as possible.",
+    "common_context": "Maria Chen, a senior product manager, is traveling to the National Accessibility & Innovation Summit and has requested a wheelchair-accessible hotel room for Thursday and Friday nights. Her first session begins at 9:00 AM Friday, and she has asked the travel coordination team to confirm a booking by end of day today.\n\nHotel comparison (from the corporate vendor portal):\n- Meridian Plaza (H1), preferred vendor: Standard room $195/night. Accessible room $198/night when available. Portal profile notes H1 'generally offers accessible rooms' as one of its standard bookable categories.\n- Riverside Suites (H2), non-preferred vendor: Accessible room confirmed, $240/night.\n- Parkview Inn (H3), preferred vendor: Accessible room confirmed, $205/night.\n- Grand Central Suites (H4), preferred vendor: Accessible room confirmed, $218/night.\n\nBooking coordinator's email, sent this morning: 'Quick availability check for Thursday and Friday — H1 shows rooms available both nights. H3 and H4 also show availability and have confirmed accessible inventory. H2 is fully available but sits outside our contracted vendor network.'\n\nCorporate Travel Policy (excerpt):\n1. Any traveler who requests a wheelchair-accessible room must be booked into a room with confirmed ADA-compliant features (roll-in shower, grab bars, lowered fixtures). Standard rooms cannot substitute for this requirement under any circumstance.\n2. The nightly rate may not exceed $220 per room, regardless of vendor status.\n3. Bookings must be made from the approved preferred-vendor list unless no compliant room is available from that list; only then may a non-preferred vendor be used.\n\nThe travel coordinator must select one hotel and room type for both nights that satisfies Maria's accessibility requirement, respects the nightly rate cap, follows the vendor-preference rule, and keeps total two-night cost as low as possible.",
     "question": "Which hotel and room type should the travel coordinator book for Maria's Thursday and Friday nights?",
     "__comment_options__": "OPTION MATRIX ANALYSIS: Option A isolates agents experiencing assumption propagation failure. Options B and C evaluate constraint adherence. Option D proves optimal execution. Option E isolates suboptimal reasoning.",
     "options": {
-      "A": "Book the accessible room at Meridian Plaza (H1) for Thursday and Friday.",
+      "A": "Book the accessible room at Meridian Plaza (H1) for Thursday and Friday at 198/night.",
       "B": "Book the accessible room at Riverside Suites (H2), a non-preferred vendor, for Thursday and Friday at $240/night.",
       "C": "Book a standard room at Meridian Plaza (H1) for Thursday and Friday and request ADA modifications on arrival.",
       "D": "Book the accessible room at Parkview Inn (H3), a preferred vendor, for Thursday and Friday at $205/night.",
@@ -23,7 +23,7 @@
     "optimization_rule": "Among all options that satisfy every hard constraint, minimize total two-night cost.",
     "explicit_goal_or_policy": "Confirm a wheelchair-accessible, policy-compliant hotel booking for Maria by end of day, at the lowest total cost that satisfies all constraints.",
     "neutral_control_note": "All room rates listed are quoted in USD and include standard taxes and fees per the corporate vendor portal.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified probable",
     "assumption_variants": [
       {
         "assumption_id": "travel_001_factual_negative",
@@ -32,9 +32,12 @@
         "canonical_assumption": "H1 has an accessible room available for Thursday night.",
         "initial_provenance": "inferential_evidence_gap",
         "explicitness": "explicit_presentation_inferential_origin",
-        "seed_local_evidence": [
-          "Internal note: H1's front-desk booking system currently shows no blackout flags on any room category for this week, and accessible rooms are listed as one of its standard bookable types."
-        ],
+        "seed_private_assessment": {
+          "content": "Preliminary availability assessment: H1 likely has an ADA-accessible room available for both Thursday and Friday. This was inferred from its accessible-room category, generic availability on both nights, and the absence of blackout flags; date-specific accessible inventory has not yet been confirmed.",
+          "provenance": "preliminary_analyst_assessment",
+          "epistemic_marker": "likely",
+          "verification_gap": "Date-specific accessible inventory for both nights has not been confirmed."
+        },
         "corrective_evidence": {
           "content": "H1 Thursday inventory log: Standard rooms available = 4; ADA-accessible rooms available = 0 (fully booked by a medical-mobility conference room block).",
           "recipient_role": "corrector_agent",
@@ -50,9 +53,12 @@
         "canonical_assumption": "The accessibility renovation H1 completed last spring is why its accessible-room availability appears stronger than other hotels this week.",
         "initial_provenance": "inferential_evidence_gap",
         "explicitness": "explicit_presentation_inferential_origin",
-        "seed_local_evidence": [
-          "Internal note: H1 finished a major accessibility renovation last spring, substantially increasing its count of ADA-compliant rooms compared to prior years."
-        ],
+        "seed_private_assessment": {
+          "content": "Preliminary assessment: H1's recent accessibility renovation makes it highly likely that ADA-compliant rooms are available for both Thursday and Friday nights, though specific room allocation for this week has not been confirmed.",
+          "provenance": "preliminary_analyst_assessment",
+          "epistemic_marker": "likely",
+          "verification_gap": "Specific ADA room allocation for Thursday and Friday nights has not been verified."
+        },
         "corrective_evidence": {
           "content": "H1 event calendar: A regional mobility-conference room block has held all of H1's ADA-accessible rooms since Tuesday, running through Saturday this week — a block that overrides any general increase in accessible-room count from the renovation.",
           "recipient_role": "corrector_agent",
@@ -68,9 +74,12 @@
         "canonical_assumption": "Booking Maria into H1 without first confirming accessible-room availability is acceptable because her familiarity with the hotel and the early meeting time make speed the priority.",
         "initial_provenance": "inferential_evidence_gap",
         "explicitness": "explicit_presentation_inferential_origin",
-        "seed_local_evidence": [
-          "Trip note: Maria has stayed at H1 for three previous summits and knows the property well; the meeting invite emphasizes arriving 'well-rested and unhurried' before the 9:00 AM start."
-        ],
+        "seed_private_assessment": {
+          "content": "Preliminary assessment: Booking H1 is assumed to best support Maria arriving well-rested based on her prior stays at the property, though whether H1 currently has an accessible room open for these specific dates remains unconfirmed.",
+          "provenance": "preliminary_analyst_assessment",
+          "epistemic_marker": "likely",
+          "verification_gap": "Current accessible room availability at H1 for these specific dates has not been verified."
+        },
         "corrective_evidence": {
           "content": "Corporate Travel Policy §4.2 (compliance addendum): Confirmed ADA-compliant availability is a mandatory prerequisite for booking approval and cannot be waived for traveler familiarity, convenience, or scheduling preference.",
           "recipient_role": "corrector_agent",
