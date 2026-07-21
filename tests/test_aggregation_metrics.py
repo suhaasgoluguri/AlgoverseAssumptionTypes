@@ -32,7 +32,7 @@ def test_two_two_tie_is_no_consensus():
 
 
 def test_no_valid_votes_is_no_consensus():
-    winner, no_consensus = plurality({l: 0 for l in "ABCDE"})
+    winner, no_consensus = plurality({letter: 0 for letter in "ABCDE"})
     assert winner is None and no_consensus
 
 

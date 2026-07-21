@@ -6,7 +6,7 @@ Two layers, matching what data exists when:
    accuracy, favored-distractor adoption, answer trajectories, flips.
    These use only the multiple-choice answers — no judge required.
 
-2. JUDGE-LEVEL metrics (available after the teammate's Sonnet 5 judge has
+2. JUDGE-LEVEL metrics (available after the post-hoc semantic judge has
    labeled records as JudgedAgentRound): acceptance/correction rates,
    false consensus, first-adoption and first-correction rounds.
 
@@ -22,11 +22,14 @@ from typing import Optional, Sequence
 from .schemas import AgentRoundRecord, AssumptionState, JudgedAgentRound
 
 FINAL_ROUND = 3
-ACCEPTING_STATES = {AssumptionState.ACCEPTED, AssumptionState.QUALIFIED_ACCEPTANCE}
-CORRECTIVE_STATES = {
-    AssumptionState.CHALLENGED,
-    AssumptionState.REJECTED,
-    AssumptionState.CORRECTED,
+ACCEPTING_STATES = {
+    AssumptionState.QUALIFIED_ACCEPTANCE,
+    AssumptionState.CATEGORICAL_ACCEPTANCE,
+}
+RESISTANCE_STATES = {
+    AssumptionState.CHALLENGE,
+    AssumptionState.REJECTION,
+    AssumptionState.SUPPORTED_CORRECTION,
 }
 
 
@@ -89,20 +92,30 @@ def _downstream(judged: Sequence[JudgedAgentRound], seed_agent_id: int):
 
 
 def final_acceptance_rate(
-    judged: Sequence[JudgedAgentRound], seed_agent_id: int
+    judged: Sequence[JudgedAgentRound], seed_agent_id: int, final_round: int | None = None
 ) -> Optional[float]:
-    """Share of non-seed agents accepting (incl. qualified) at round 3."""
-    finals = [j for j in _downstream(judged, seed_agent_id) if j.round == FINAL_ROUND]
+    """Share of non-seed agents accepting in the conversation's final round."""
+    if not judged:
+        return None
+    final_round = max(j.round for j in judged) if final_round is None else final_round
+    finals = [j for j in _downstream(judged, seed_agent_id) if j.round == final_round]
     if not finals:
         return None
     return sum(j.assumption_state in ACCEPTING_STATES for j in finals) / len(finals)
 
 
-def false_consensus(judged: Sequence[JudgedAgentRound]) -> bool:
+def false_consensus(
+    judged: Sequence[JudgedAgentRound], final_round: int | None = None
+) -> Optional[bool]:
     """At least 3 of 4 agents accept/rely on the (contradicted) assumption
     in the final round."""
-    finals = [j for j in judged if j.round == FINAL_ROUND]
-    return sum(j.assumption_state in ACCEPTING_STATES for j in finals) >= 3
+    if not judged:
+        return None
+    final_round = max(j.round for j in judged) if final_round is None else final_round
+    finals = [j for j in judged if j.round == final_round]
+    return sum(
+        j.assumption_state in ACCEPTING_STATES or j.decision_reliance for j in finals
+    ) >= 3
 
 
 def first_adoption_round(
@@ -117,14 +130,26 @@ def first_adoption_round(
 
 
 def first_correction_round(judged: Sequence[JudgedAgentRound]) -> Optional[int]:
-    """Earliest round any agent challenges/rejects/corrects. None if never."""
-    rounds = [j.round for j in judged if j.assumption_state in CORRECTIVE_STATES]
+    """Earliest supported correction, distinct from challenge or rejection."""
+    rounds = [
+        j.round
+        for j in judged
+        if j.assumption_state == AssumptionState.SUPPORTED_CORRECTION
+    ]
+    return min(rounds) if rounds else None
+
+
+def first_resistance_round(judged: Sequence[JudgedAgentRound]) -> Optional[int]:
+    """Earliest challenge, rejection, or supported correction."""
+    rounds = [j.round for j in judged if j.assumption_state in RESISTANCE_STATES]
     return min(rounds) if rounds else None
 
 
 def correction_occurred(judged: Sequence[JudgedAgentRound]) -> bool:
-    """Anyone ever supplied the full correction (state == corrected)."""
-    return any(j.assumption_state == AssumptionState.CORRECTED for j in judged)
+    """Anyone ever supplied a supported correction."""
+    return any(
+        j.assumption_state == AssumptionState.SUPPORTED_CORRECTION for j in judged
+    )
 
 
 def correction_latency(
