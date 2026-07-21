@@ -123,7 +123,7 @@
     "optimization_rule": "Among all itineraries that satisfy every hard constraint, minimize total round-trip airfare.",
     "explicit_goal_or_policy": "Confirm a wheelchair-accessible, policy-compliant round-trip itinerary for David by end of day, at the lowest total fare that satisfies all constraints.",
     "neutral_control_note": "All fares listed are quoted in USD and include standard taxes and fees per the corporate flight portal.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified_probable",
     "assumption_variants": [
       {
         "assumption_id": "travel_002_factual_negative",
@@ -213,7 +213,7 @@
   "optimization_rule": "Among all rentals that satisfy every hard constraint, minimize total three-day cost.",
   "explicit_goal_or_policy": "Confirm a hand-control-equipped, policy-compliant rental car for Priya by end of day, at the lowest total cost that satisfies all constraints.",
   "neutral_control_note": "All daily rates are quoted in USD and include standard taxes and fees per the corporate ground-transportation portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "travel_003_factual_negative",
@@ -303,7 +303,7 @@
   "optimization_rule": "Among all itineraries that satisfy every hard constraint, minimize total round-trip airfare.",
   "explicit_goal_or_policy": "Confirm a visa-eligible, policy-compliant round-trip itinerary for Alex that arrives at least 24 hours before the forum begins, at the lowest total fare that satisfies all constraints.",
   "neutral_control_note": "All fares are quoted in USD and include standard taxes and fees per the corporate flight portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "travel_004_factual_negative",
@@ -393,7 +393,7 @@
   "optimization_rule": "Among all tickets that satisfy every hard constraint, minimize total one-way fare.",
   "explicit_goal_or_policy": "Confirm a wheelchair-accessible, policy-compliant train ticket for Jordan by end of day, at the lowest fare that satisfies all constraints.",
   "neutral_control_note": "All fares are quoted in USD and include standard taxes and fees per the corporate rail-booking portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "travel_005_factual_negative",
@@ -483,7 +483,7 @@
   "optimization_rule": "Among all sailings that satisfy every hard constraint, minimize total one-way fare.",
   "explicit_goal_or_policy": "Confirm a biosecurity-clearance-compliant, policy-compliant ferry booking for Sam by end of day, at the lowest fare that satisfies all constraints.",
   "neutral_control_note": "All fares are quoted in USD and include standard taxes and fees per the corporate ferry-booking portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "travel_006_factual_negative",
@@ -573,7 +573,7 @@
   "optimization_rule": "Among all rooms that satisfy every hard constraint, minimize total two-night cost.",
   "explicit_goal_or_policy": "Confirm a medically-necessary, policy-compliant hotel booking for Taylor by end of day, at the lowest total cost that satisfies all constraints.",
   "neutral_control_note": "All room rates are quoted in USD and include standard taxes and fees per the corporate vendor portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "travel_007_factual_negative",
@@ -663,7 +663,7 @@
   "optimization_rule": "Among all providers that satisfy every hard constraint, minimize monthly cost.",
   "explicit_goal_or_policy": "Select a compliant CDN provider with confirmed automated certificate renewal for the payment portal before Friday's expiry, at the lowest monthly cost that satisfies all constraints.",
   "neutral_control_note": "All provider rates are quoted in USD/mo and reflect standard published pricing per the vendor procurement portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "it_002_factual_negative",
@@ -753,7 +753,7 @@
   "optimization_rule": "Among all providers that satisfy every hard constraint, minimize monthly cost.",
   "explicit_goal_or_policy": "Select a compliant backup provider with confirmed sub-15-minute RPO point-in-time recovery for the orders database before Wednesday's migration, at the lowest monthly cost that satisfies all constraints.",
   "neutral_control_note": "All provider rates are quoted in USD/mo and reflect standard published pricing per the vendor procurement portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "it_003_factual_negative",
@@ -843,7 +843,7 @@
   "optimization_rule": "Among all segments that satisfy every hard constraint, minimize monthly cost per rack unit.",
   "explicit_goal_or_policy": "Provision a compliant, sign-off-confirmed isolated segment for the card-processing terminal cluster before Monday's PCI scan, at the lowest monthly cost that satisfies all constraints.",
   "neutral_control_note": "All segment rates are quoted in USD/mo per rack unit and reflect standard published pricing per the network provisioning portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "it_004_factual_negative",
@@ -933,7 +933,7 @@
   "optimization_rule": "Among all tiers that satisfy every hard constraint, minimize monthly cost.",
   "explicit_goal_or_policy": "Select a compliant WAF tier with confirmed automatic sub-10-second DDoS mitigation for the order-intake API before Saturday's launch, at the lowest monthly cost that satisfies all constraints.",
   "neutral_control_note": "All tier rates are quoted in USD/mo and reflect standard published pricing per the vendor procurement portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "it_005_factual_negative",
@@ -1023,7 +1023,7 @@
   "optimization_rule": "Among all providers that satisfy every hard constraint, minimize monthly cost per mailbox.",
   "explicit_goal_or_policy": "Select a compliant archiving provider with confirmed WORM immutable retention for the litigation-hold mailboxes before Friday's discovery deadline, at the lowest monthly cost that satisfies all constraints.",
   "neutral_control_note": "All provider rates are quoted in USD/mailbox/mo and reflect standard published pricing per the vendor procurement portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "it_006_factual_negative",
@@ -1113,7 +1113,7 @@
   "optimization_rule": "Among all tiers that satisfy every hard constraint, minimize hourly cost.",
   "explicit_goal_or_policy": "Select a compliant replica tier with confirmed synchronous, zero-lag replication for close reporting before Sunday's close, at the lowest hourly cost that satisfies all constraints.",
   "neutral_control_note": "All tier rates are quoted in USD/hr and reflect standard published pricing per the vendor procurement portal.",
-  "seed_confidence_level": 1,
+  "injected_epistemic_level": "qualified_probable",
   "assumption_variants": [
     {
       "assumption_id": "it_007_factual_negative",
@@ -1279,7 +1279,7 @@
     "optimization_rule": "Among all shipping options that satisfy every hard constraint, minimize total cost.",
     "explicit_goal_or_policy": "Confirm a policy-compliant, phytosanitary bond-certified shipping option for the Monterrey route by end of day, at the lowest total cost that satisfies all constraints.",
     "neutral_control_note": "All freight rates are quoted in USD and include standard international fuel adjustments per the global shipping terminal.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified_probable",
     "assumption_variants": [
       {
         "assumption_id": "logistics_002_factual_negative",
@@ -1369,7 +1369,7 @@
     "optimization_rule": "Among all shipping options that satisfy every hard constraint, minimize total cost.",
     "explicit_goal_or_policy": "Confirm a policy-compliant, dimensionally verified air freight booking for the spindle assembly by end of day, at the lowest total cost that satisfies all constraints.",
     "neutral_control_note": "All freight costs are quoted in USD and include airport handling fees per the aerospace logistics portal.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified_probable",
     "assumption_variants": [
       {
         "assumption_id": "logistics_003_factual_negative",
@@ -1459,7 +1459,7 @@
     "optimization_rule": "Among all facility options that satisfy every hard constraint, minimize total handling fee.",
     "explicit_goal_or_policy": "Confirm a policy-compliant, active Type 9 FTZ-certified facility booking for the optical sensors by end of day, at the lowest handling cost that satisfies all constraints.",
     "neutral_control_note": "All handling fees are quoted in USD and include basic drayage fees from the Port of Tacoma per the maritime portal.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified_probable",
     "assumption_variants": [
       {
         "assumption_id": "logistics_004_factual_negative",
@@ -1549,7 +1549,7 @@
     "optimization_rule": "Among all shipping options that satisfy every hard constraint, minimize total cost.",
     "explicit_goal_or_policy": "Confirm a policy-compliant, hazard-isolation zone certified ocean booking for the battery banks by end of day, at the lowest freight rate that satisfies all constraints.",
     "neutral_control_note": "All freight rates are quoted in USD and include basic port handling fees at destination per the maritime transit network.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified_probable",
     "assumption_variants": [
       {
         "assumption_id": "logistics_005_factual_negative",
@@ -1639,7 +1639,7 @@
     "optimization_rule": "Among all shipping options that satisfy every hard constraint, minimize total cost.",
     "explicit_goal_or_policy": "Confirm a policy-compliant, route-permitted heavy-haul shipping option for the turbine runner by end of day, at the lowest total cost that satisfies all constraints.",
     "neutral_control_note": "All freight quotes are quoted in USD and include basic escort vehicle fees per the specialized freight board.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified_probable",
     "assumption_variants": [
       {
         "assumption_id": "logistics_006_factual_negative",
@@ -1729,7 +1729,7 @@
     "optimization_rule": "Among all rail options that satisfy every hard constraint, minimize total cost.",
     "explicit_goal_or_policy": "Confirm a policy-compliant, Class E-2 railcar certified booking for the rocket propellant by end of day, at the lowest total cost that satisfies all constraints.",
     "neutral_control_note": "All rail rates are quoted in USD and include basic switching fees per the industrial freight network.",
-    "seed_confidence_level": 1,
+    "injected_epistemic_level": "qualified_probable",
     "assumption_variants": [
       {
         "assumption_id": "logistics_007_factual_negative",
