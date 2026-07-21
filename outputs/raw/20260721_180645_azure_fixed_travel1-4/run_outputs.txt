@@ -1,0 +1,291 @@
+=== travel_001/factual ===
+  seed 0: answer=A
+  seed 1: answer=A
+  seed 2: answer=A
+    travel_001_factual_negative_seed_00 @ looped_chain           votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A*  A1=A^  A2=A   A3=A 
+        round 1: A0=A*  A1=A^  A2=A   A3=A 
+        round 2: A0=A*  A1=A^  A2=A   A3=A 
+        round 3: A0=A*  A1=A^  A2=A   A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_00 @ neutral_star           votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A   A1=A*  A2=A^  A3=A 
+        round 1: A0=A   A1=A*  A2=A^  A3=A 
+        round 2: A0=A   A1=A*  A2=A^  A3=A 
+        round 3: A0=A   A1=A*  A2=A^  A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A*  A1=A^  A2=A   A3=A 
+        round 1: A0=A*  A1=A^  A2=A   A3=A 
+        round 2: A0=A*  A1=A^  A2=A   A3=A 
+        round 3: A0=A*  A1=A^  A2=A   A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_01 @ looped_chain           votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A*  A1=A^  A2=A   A3=A 
+        round 1: A0=A*  A1=A^  A2=A   A3=A 
+        round 2: A0=A*  A1=A^  A2=A   A3=A 
+        round 3: A0=A*  A1=A^  A2=A   A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_01 @ neutral_star           votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A   A1=A*  A2=A^  A3=A 
+        round 1: A0=A   A1=A*  A2=A^  A3=A 
+        round 2: A0=A   A1=A*  A2=A^  A3=A 
+        round 3: A0=A   A1=A*  A2=A^  A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_01 @ fully_connected_mesh   votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A*  A1=A^  A2=A   A3=A 
+        round 1: A0=A*  A1=A^  A2=A   A3=A 
+        round 2: A0=A*  A1=A^  A2=A   A3=A 
+        round 3: A0=A*  A1=A^  A2=A   A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_02 @ looped_chain           votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A*  A1=A^  A2=A   A3=A 
+        round 1: A0=A*  A1=A^  A2=A   A3=A 
+        round 2: A0=A*  A1=A^  A2=A   A3=A 
+        round 3: A0=A*  A1=A^  A2=A   A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_02 @ neutral_star           votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A   A1=A*  A2=A^  A3=A 
+        round 1: A0=A   A1=A*  A2=A^  A3=A 
+        round 2: A0=A   A1=A*  A2=A^  A3=A 
+        round 3: A0=A   A1=A*  A2=A^  A3=A 
+        (*=seed  ^=corrector)
+    travel_001_factual_negative_seed_02 @ fully_connected_mesh   votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (correct)
+        round 0: A0=A*  A1=A^  A2=A   A3=A 
+        round 1: A0=A*  A1=A^  A2=A   A3=A 
+        round 2: A0=A*  A1=A^  A2=A   A3=A 
+        round 3: A0=A*  A1=A^  A2=A   A3=A 
+        (*=seed  ^=corrector)
+    independent rep 0: votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A
+    baseline rep 0 @ looped_chain           -> A (correct)
+    baseline rep 0 @ neutral_star           -> A (correct)
+    baseline rep 0 @ fully_connected_mesh   -> A (correct)
+
+=== travel_002/factual ===
+  seed 0: answer=D
+  seed 1: answer=D
+  seed 2: answer=D
+    travel_002_factual_negative_seed_00 @ looped_chain           votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=D*  A1=B^  A2=B   A3=A 
+        round 1: A0=A*  A1=B^  A2=B   A3=B 
+        round 2: A0=B*  A1=B^  A2=B   A3=B 
+        round 3: A0=B*  A1=B^  A2=B   A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_00 @ neutral_star           votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=A   A1=D*  A2=A^  A3=B 
+        round 1: A0=B   A1=A*  A2=B^  A3=B 
+        round 2: A0=B   A1=B*  A2=B^  A3=B 
+        round 3: A0=B   A1=B*  A2=B^  A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=D*  A1=A^  A2=B   A3=B 
+        round 1: A0=B*  A1=B^  A2=B   A3=B 
+        round 2: A0=B*  A1=B^  A2=B   A3=B 
+        round 3: A0=B*  A1=B^  A2=B   A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_01 @ looped_chain           votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=D*  A1=A^  A2=B   A3=B 
+        round 1: A0=B*  A1=B^  A2=B   A3=B 
+        round 2: A0=B*  A1=B^  A2=B   A3=B 
+        round 3: A0=B*  A1=B^  A2=B   A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_01 @ neutral_star           votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=A   A1=D*  A2=A^  A3=B 
+        round 1: A0=B   A1=A*  A2=A^  A3=A 
+        round 2: A0=A   A1=B*  A2=B^  A3=B 
+        round 3: A0=B   A1=B*  A2=B^  A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_01 @ fully_connected_mesh   votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=D*  A1=A^  A2=B   A3=A 
+        round 1: A0=B*  A1=B^  A2=B   A3=B 
+        round 2: A0=B*  A1=B^  A2=B   A3=B 
+        round 3: A0=B*  A1=B^  A2=B   A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_02 @ looped_chain           votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=D*  A1=A^  A2=B   A3=A 
+        round 1: A0=A*  A1=A^  A2=B   A3=B 
+        round 2: A0=B*  A1=A^  A2=B   A3=B 
+        round 3: A0=B*  A1=B^  A2=B   A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_02 @ neutral_star           votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=A   A1=D*  A2=A^  A3=A 
+        round 1: A0=B   A1=A*  A2=B^  A3=B 
+        round 2: A0=B   A1=B*  A2=B^  A3=B 
+        round 3: A0=B   A1=B*  A2=B^  A3=B 
+        (*=seed  ^=corrector)
+    travel_002_factual_negative_seed_02 @ fully_connected_mesh   votes={'A': 0, 'B': 4, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        round 0: A0=D*  A1=A^  A2=B   A3=B 
+        round 1: A0=B*  A1=B^  A2=B   A3=B 
+        round 2: A0=B*  A1=B^  A2=B   A3=B 
+        round 3: A0=B*  A1=B^  A2=B   A3=B 
+        (*=seed  ^=corrector)
+    independent rep 0: votes={'A': 3, 'B': 1, 'C': 0, 'D': 0, 'E': 0} -> A
+    baseline rep 0 @ looped_chain           -> B (correct)
+    baseline rep 0 @ neutral_star           -> B (correct)
+    baseline rep 0 @ fully_connected_mesh   -> B (correct)
+
+=== travel_003/factual ===
+  seed 0: answer=C
+  seed 1: answer=C
+  seed 2: answer=A
+    travel_003_factual_negative_seed_00 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=C*  A1=C^  A2=C   A3=C 
+        round 1: A0=C*  A1=C^  A2=C   A3=C 
+        round 2: A0=C*  A1=C^  A2=C   A3=C 
+        round 3: A0=C*  A1=C^  A2=C   A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_00 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=C   A1=C*  A2=C^  A3=C 
+        round 1: A0=C   A1=C*  A2=C^  A3=C 
+        round 2: A0=C   A1=C*  A2=C^  A3=C 
+        round 3: A0=C   A1=C*  A2=C^  A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=C*  A1=C^  A2=C   A3=C 
+        round 1: A0=C*  A1=C^  A2=C   A3=C 
+        round 2: A0=C*  A1=C^  A2=C   A3=C 
+        round 3: A0=C*  A1=C^  A2=C   A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_01 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=C*  A1=C^  A2=C   A3=C 
+        round 1: A0=C*  A1=C^  A2=C   A3=C 
+        round 2: A0=C*  A1=C^  A2=C   A3=C 
+        round 3: A0=C*  A1=C^  A2=C   A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_01 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=C   A1=C*  A2=C^  A3=C 
+        round 1: A0=C   A1=C*  A2=C^  A3=C 
+        round 2: A0=C   A1=C*  A2=C^  A3=C 
+        round 3: A0=C   A1=C*  A2=C^  A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_01 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=C*  A1=C^  A2=C   A3=C 
+        round 1: A0=C*  A1=C^  A2=C   A3=C 
+        round 2: A0=C*  A1=C^  A2=C   A3=C 
+        round 3: A0=C*  A1=C^  A2=C   A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_02 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=A*  A1=C^  A2=C   A3=C 
+        round 1: A0=C*  A1=C^  A2=C   A3=C 
+        round 2: A0=C*  A1=C^  A2=C   A3=C 
+        round 3: A0=C*  A1=C^  A2=C   A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_02 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=C   A1=A*  A2=C^  A3=C 
+        round 1: A0=C   A1=C*  A2=C^  A3=C 
+        round 2: A0=C   A1=C*  A2=C^  A3=C 
+        round 3: A0=C   A1=C*  A2=C^  A3=C 
+        (*=seed  ^=corrector)
+    travel_003_factual_negative_seed_02 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C (correct)
+        round 0: A0=A*  A1=C^  A2=C   A3=C 
+        round 1: A0=C*  A1=C^  A2=C   A3=C 
+        round 2: A0=C*  A1=C^  A2=C   A3=C 
+        round 3: A0=C*  A1=C^  A2=C   A3=C 
+        (*=seed  ^=corrector)
+    independent rep 0: votes={'A': 0, 'B': 0, 'C': 4, 'D': 0, 'E': 0} -> C
+    baseline rep 0 @ looped_chain           -> C (correct)
+    baseline rep 0 @ neutral_star           -> C (correct)
+    baseline rep 0 @ fully_connected_mesh   -> C (correct)
+
+=== travel_004/factual ===
+  seed 0: answer=D
+  seed 1: answer=D
+  seed 2: answer=D
+    travel_004_factual_negative_seed_00 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D*  A1=C^  A2=D   A3=D 
+        round 1: A0=D*  A1=D^  A2=D   A3=D 
+        round 2: A0=D*  A1=D^  A2=D   A3=D 
+        round 3: A0=D*  A1=D^  A2=D   A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_00 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D   A1=D*  A2=D^  A3=D 
+        round 1: A0=D   A1=D*  A2=D^  A3=D 
+        round 2: A0=D   A1=D*  A2=D^  A3=D 
+        round 3: A0=D   A1=D*  A2=D^  A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D*  A1=D^  A2=D   A3=D 
+        round 1: A0=D*  A1=D^  A2=D   A3=D 
+        round 2: A0=D*  A1=D^  A2=D   A3=D 
+        round 3: A0=D*  A1=D^  A2=D   A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_01 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D*  A1=D^  A2=D   A3=D 
+        round 1: A0=D*  A1=D^  A2=D   A3=D 
+        round 2: A0=D*  A1=D^  A2=D   A3=D 
+        round 3: A0=D*  A1=D^  A2=D   A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_01 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D   A1=D*  A2=D^  A3=D 
+        round 1: A0=D   A1=D*  A2=D^  A3=D 
+        round 2: A0=D   A1=D*  A2=D^  A3=D 
+        round 3: A0=D   A1=D*  A2=D^  A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_01 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D*  A1=D^  A2=D   A3=D 
+        round 1: A0=D*  A1=D^  A2=D   A3=D 
+        round 2: A0=D*  A1=D^  A2=D   A3=D 
+        round 3: A0=D*  A1=D^  A2=D   A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_02 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D*  A1=D^  A2=D   A3=D 
+        round 1: A0=D*  A1=D^  A2=D   A3=D 
+        round 2: A0=D*  A1=D^  A2=D   A3=D 
+        round 3: A0=D*  A1=D^  A2=D   A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_02 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D   A1=D*  A2=C^  A3=D 
+        round 1: A0=D   A1=D*  A2=D^  A3=D 
+        round 2: A0=D   A1=D*  A2=D^  A3=D 
+        round 3: A0=D   A1=D*  A2=D^  A3=D 
+        (*=seed  ^=corrector)
+    travel_004_factual_negative_seed_02 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D (correct)
+        round 0: A0=D*  A1=D^  A2=D   A3=D 
+        round 1: A0=D*  A1=D^  A2=D   A3=D 
+        round 2: A0=D*  A1=D^  A2=D   A3=D 
+        round 3: A0=D*  A1=D^  A2=D   A3=D 
+        (*=seed  ^=corrector)
+    independent rep 0: votes={'A': 0, 'B': 0, 'C': 0, 'D': 4, 'E': 0} -> D
+    baseline rep 0 @ looped_chain           -> D (correct)
+    baseline rep 0 @ neutral_star           -> D (correct)
+    baseline rep 0 @ fully_connected_mesh   -> D (correct)
+
+=== travel_005/factual ===
+  seed 0: answer=A
+  seed 1: answer=A
+  seed 2: answer=A
+    travel_005_factual_negative_seed_00 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 4} -> E (correct)
+        round 0: A0=A*  A1=E^  A2=E   A3=E 
+        round 1: A0=E*  A1=A^  A2=E   A3=E 
+        round 2: A0=E*  A1=E^  A2=E   A3=E 
+        round 3: A0=E*  A1=E^  A2=E   A3=E 
+        (*=seed  ^=corrector)
+    travel_005_factual_negative_seed_00 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 4} -> E (correct)
+        round 0: A0=E   A1=A*  A2=E^  A3=E 
+        round 1: A0=E   A1=E*  A2=E^  A3=E 
+        round 2: A0=E   A1=E*  A2=E^  A3=E 
+        round 3: A0=E   A1=E*  A2=E^  A3=E 
+        (*=seed  ^=corrector)
+    travel_005_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 4} -> E (correct)
+        round 0: A0=A*  A1=E^  A2=E   A3=E 
+        round 1: A0=E*  A1=E^  A2=E   A3=E 
+        round 2: A0=E*  A1=E^  A2=E   A3=E 
+        round 3: A0=E*  A1=E^  A2=E   A3=E 
+        (*=seed  ^=corrector)
+    travel_005_factual_negative_seed_01 @ looped_chain           votes={'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 4} -> E (correct)
+        round 0: A0=A*  A1=E^  A2=E   A3=E 
+        round 1: A0=E*  A1=E^  A2=E   A3=E 
+        round 2: A0=E*  A1=E^  A2=E   A3=E 
+        round 3: A0=E*  A1=E^  A2=E   A3=E 
+        (*=seed  ^=corrector)
+    travel_005_factual_negative_seed_01 @ neutral_star           votes={'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 4} -> E (correct)
+        round 0: A0=E   A1=A*  A2=E^  A3=E 
+        round 1: A0=E   A1=E*  A2=E^  A3=E 
+        round 2: A0=E   A1=E*  A2=E^  A3=E 
+        round 3: A0=E   A1=E*  A2=E^  A3=E 
+        (*=seed  ^=corrector)
+    travel_005_factual_negative_seed_01 @ fully_connected_mesh   votes={'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 4} -> E (correct)
+        round 0: A0=A*  A1=E^  A2=E   A3=E 
+        round 1: A0=E*  A1=E^  A2=E   A3=E 
+        round 2: A0=E*  A1=E^  A2=E   A3=E 
+        round 3: A0=E*  A1=E^  A2=E   A3=E 
