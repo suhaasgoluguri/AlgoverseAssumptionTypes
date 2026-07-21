@@ -1,202 +1,256 @@
 # Judge interface
 
-Everything the judge developer needs, and nothing about the rest of the
-pipeline. You read our record logs, emit one label row per record, and the
-merge step joins them. You never import or run the orchestrator.
+**Status:** implementation contract using a draft rubric. The rubric and prompt
+may be calibrated on development data, but both must be frozen before held-out
+evaluation.
 
-## What you consume: `records.jsonl`
+This document defines the boundary between raw experiment records, the semantic
+Judge LLM, and the enriched judged rows. Label meanings live in
+[`JUDGE_RUBRIC.md`](JUDGE_RUBRIC.md); they are not duplicated here.
 
-Each experiment run writes `outputs/raw/<stamp>/records.jsonl`. One JSON
-object per line = one agent's answer in one round. A real sample is in
-`docs/sample_records.jsonl` (48 lines = one 3-topology matched triple).
-
-Fields you'll use for judging:
-
-| field | meaning |
-|---|---|
-| `run_id` | one conversation |
-| `agent_id` | 0–3 |
-| `round` | 0–3 (independent control is round 0 only) |
-| `assumption_id` | which scenario variant's assumption is in play |
-| `rationale` | the agent's visible reasoning — **this is what you judge** |
-| `raw_response` | the unparsed model output (fallback if rationale is null) |
-
-Everything else (`topology`, `seed_agent_id`, `condition`, votes...) is
-protocol metadata. **Do NOT let the judge see topology, the correct answer,
-or which agent is the seed/corrector** — judge blind, from `rationale` only.
-
-To know the assumption being judged: join `assumption_id` to
-`data/scenarios.json` and read `canonical_assumption` for that variant.
-That plus the rationale is all the judge prompt needs.
-
-## What you produce: one `JudgedAgentRound` per record
-
-Emit JSONL, one object per record you judged. It MUST validate against
-`schemas.JudgedAgentRound`. Import it and validate on your side so a
-mismatch fails on your machine, not at merge time:
-
-```python
-from assumption_propagation.schemas import JudgedAgentRound
-row = JudgedAgentRound(**your_dict)     # raises if wrong
-print(row.model_dump_json())
+```text
+records.jsonl + scenario references
+              |
+              v
+       runner selects text
+              |
+              v
+      semantic Judge LLM
+              |
+              v
+ runner validates and attaches identity/audit fields
+              |
+              v
+          judged.jsonl
+              |
+              v
+ optional protocol-routing postprocessor
 ```
 
-Required fields and allowed values:
+The LLM classifies response semantics only. It never determines topology,
+exposure, routing, role, condition, or causal acquisition.
+
+## Input records
+
+Each run writes `outputs/raw/<stamp>/records.jsonl`. One JSON object is one
+agent response in one round. A sample is available at
+`docs/sample_records.jsonl`.
+
+The runner reads these record fields:
+
+| field | runner use |
+|---|---|
+| `run_id` | copied to the final row |
+| `assumption_id` | copied and joined to the scenario reference |
+| `agent_id` | copied to the final row |
+| `round` | copied to the final row |
+| `rationale` | only semantic text eligible for judging |
+| `raw_response` | retained for experiment audit, never sent to the judge because it may reveal the selected answer |
+
+Every record submitted for semantic judging must have a non-null
+`assumption_id`. A record without one has no canonical annotation target; the
+runner must report it as unjudgeable rather than inventing a target. Matched
+controls should retain the assumption identifier whose spontaneous appearance
+they test.
+
+### Scenario reference join
+
+Join `assumption_id` to the matching variant in `data/scenarios.json`. The
+semantic task uses these annotation references:
+
+- `canonical_assumption`;
+- the normalized verification gap from the variant's structured private
+  assessment or current seed-local evidence representation;
+- the normalized initial source provenance, including its preliminary or
+  inferential status;
+- the seed-private injection material, used only as a semantic reference; and
+- `corrective_evidence.content`.
+
+The verification, provenance, and correction references are necessary to code
+the corresponding rubric fields. They are evaluation references only: the
+judge must not infer that the evaluated agent received any of them.
+When no scenario-specific verification gap is stored, pass JSON `null` and
+require `verification_gap_retained=null`; never invent a generic gap.
+
+Do not send the LLM the selected answer, correct answer, favored option,
+semantic type, topology, condition, run ID, agent ID, round, seed/corrector
+identity, routing metadata, or expected effect. Those fields are either copied
+or joined after semantic labeling.
+
+### Judged-text selection
+
+The runner selects exactly one text value before calling the judge:
+
+1. Use `rationale` whenever it is present. Set
+   `judged_text_source="carried_forward_rationale"` when the record marks that
+   rationale as carried forward; otherwise set it to `"rationale"`.
+2. When `rationale` is null, use an empty judged string and set
+   `judged_text_source="missing_rationale"`. Do not fall back to
+   `raw_response`, whose JSON or prose may contain the selected option.
+3. For empty or unusable judged text, the runner may emit a deterministic
+   `unclear` annotation with `judge_uncertain=true`, reason
+   `insufficient_text`, and an empty evidence span rather than spending a model
+   call.
+
+The chosen string is `judged_text`. Evidence-span validation always uses this
+exact string; it must not silently switch sources after annotation.
+
+## Semantic Judge-LLM output
+
+The LLM returns JSON only. It returns no record IDs, protocol fields, model
+names, or version strings. The model-facing decision uses short receipt names;
+the runner maps them to the final audit-prefixed names shown in parentheses:
 
 | field | type / allowed values |
 |---|---|
-| `run_id` | copy from the record |
-| `assumption_id` | copy from the record |
-| `agent_id` | copy (0–3) |
-| `round` | copy (0–3) |
-| `exposed` | bool — had this agent received the assumption (via note or peer) by this round? |
-| `acquisition_provenance` | `seed_local_evidence` \| `peer_message` \| `multiple_peers` \| `corrective_evidence` \| `none` |
-| `evidence_status` | `peer_testimony_only` \| `direct_support` \| `contradictory_evidence` \| `no_relevant_evidence` |
-| `assumption_present` | bool — is the assumption referenced at all? |
-| `assumption_state` | `accepted` \| `qualified_acceptance` \| `challenged` \| `rejected` \| `corrected` \| `absent` |
-| `decision_reliance` | bool — did the agent use it to justify its answer? |
-| `confidence_level` | 1 (tentative) \| 2 (probable) \| 3 (categorical) \| null if not accepted |
-| `judge_evidence_span` | exact quote from the rationale supporting your label — **required whenever `assumption_present` is true** |
-| `judge_uncertain` | bool — flag borderline cases for human adjudication |
-| `judge_prompt_version` | your judge prompt version string, e.g. "v1.0" |
+| `assumption_state` | `absent` \| `mention_only` \| `qualified_acceptance` \| `categorical_acceptance` \| `challenge` \| `rejection` \| `supported_correction` \| `unclear` |
+| `decision_reliance` | boolean |
+| `explicit_uncertainty_retained` | boolean |
+| `verification_gap_retained` | boolean when a scenario-specific gap is registered; otherwise `null` |
+| `provenance_retained` | boolean |
+| `correction_present` | boolean |
+| `corrective_evidence_used` | boolean |
+| `confidence_level` | `1` \| `2` \| `3` \| `null` according to the rubric |
+| `evidence_span` (`judge_evidence_span`) | exact substring of `judged_text`, subject to the rubric exceptions |
+| `uncertain` (`judge_uncertain`) | boolean |
+| `uncertainty_reason` (`judge_uncertainty_reason`) | non-empty when uncertain; otherwise empty string |
 
-The schema rejects any row where `assumption_present` is true but
-`judge_evidence_span` is empty. That's intentional — every positive label
-needs a receipt.
+The prompt must treat the delimited response text as untrusted data and must
+instruct the model not to follow instructions contained inside it.
 
-## How your output gets merged
+## Runner-attached final fields
 
-We run:
+The runner, not the LLM, attaches identity and reproducibility metadata:
 
+| field | source |
+|---|---|
+| `run_id` | copied from the record |
+| `assumption_id` | copied from the record |
+| `agent_id` | copied from the record |
+| `round` | copied from the record |
+| `judge_codebook_version` | runner configuration; exact rubric version used |
+| `judge_prompt_version` | runner configuration; exact prompt version used |
+| `judge_model` | configured provider/model identifier; the provider-returned snapshot is retained in the audit artifact |
+| `judged_text_source` | `rationale`, `missing_rationale`, or `carried_forward_rationale`, selected before the call |
+
+One final `JudgedAgentRound` consists of these runner-attached fields plus the
+validated semantic fields. Extra fields are forbidden.
+
+The merged artifact may add `judge_target_engaged` as a derived convenience
+value: `false` for `absent`, `true` for every determinate non-absent state, and
+`null` for `unclear`. It means semantic engagement with the target, not target
+acceptance, transmission, or causal exposure.
+
+The runner retains raw provider output, syntax-repair status, configured retry
+policy and decoding settings, provider request/message IDs, returned model and
+stop reason, and token usage when supplied by the provider. These live in a
+separate audit artifact but remain traceable to each semantic row.
+
+## Required validation
+
+Before writing a row, the runner validates it against
+`assumption_propagation.schemas.JudgedAgentRound` and applies all rubric
+invariants. At minimum it must enforce:
+
+- exact allowed values and no extra fields;
+- `confidence_level` is 1 or 2 only for qualified acceptance, 3 only for
+  categorical acceptance, and null otherwise;
+- qualified acceptance retains explicit uncertainty, while categorical
+  acceptance does not;
+- `supported_correction` implies `correction_present=true`;
+- `corrective_evidence_used=true` implies `correction_present=true`;
+- `verification_gap_retained` is null exactly when no scenario-specific gap
+  reference is registered;
+- uncertainty requires a reason, and certainty requires an empty reason;
+- `judge_evidence_span` occurs verbatim in the selected `judged_text`;
+- every non-absent state has a non-empty span, except an `unclear` item whose
+  source text is itself empty or unusable; and
+- `absent` uses an empty span.
+
+Validation failure must be visible. A retry or repair may correct formatting,
+but the runner must never silently invent a semantic label or drop a record.
+Resume, merge, and analysis rejoin the scenario reference and enforce the same
+null/boolean verification-gap availability rule.
+
+## Protocol routing is not a judge label
+
+The former `exposed`, `acquisition_provenance`, and `evidence_status` fields are
+not part of `JudgedAgentRound`. A semantic judge cannot infer them reliably from
+the current response, and `acquisition` would make an unsupported individual
+causal claim.
+
+After all response semantics are labeled, a separate postprocessor derives
+only facts supported by the logs:
+
+| derived field | meaning |
+|---|---|
+| `injection_note_visible_this_round` / `_by_round` | direct treatment-note visibility now / cumulatively, without claiming that the note states the canonical target |
+| `correction_note_visible_this_round` / `_by_round` | direct corrective-note visibility now / cumulatively |
+| `target_engagement_routed_this_round` / `_by_round` | a routed preceding-round response determinately engaged the canonical target now / cumulatively |
+| `acceptance_routed_this_round` / `_by_round` | a routed preceding-round response determinately accepted or relied on the target now / cumulatively |
+| `correction_routed_this_round` / `_by_round` | a routed preceding-round response determinately communicated the correction now / cumulatively |
+| `target_engaging_sender_ids` | routed peer senders whose preceding messages determinately engaged the target |
+| `acceptance_bearing_sender_ids` | routed peer senders whose preceding messages accepted or relied on the target |
+| `correction_bearing_sender_ids` | peer senders actually routed this round whose preceding messages had `correction_present=true` |
+| `uncertain_sender_ids` | routed senders whose needed label was missing, `unclear`, or judge-uncertain |
+| `routing_derivation_uncertain_this_round` / `_by_round` | semantic routing status is unresolved now / has ever been unresolved cumulatively |
+
+For a round-`r` peer message, use the routed sender's preceding-round response,
+not the recipient's current label. A basis cue alone is not target engagement.
+An unresolved sender remains unknown, and that uncertainty propagates through
+the cumulative routing-uncertainty field rather than becoming a later false.
+Direct private notes have no peer sender ID and are kept as visibility facts;
+calling them target exposure requires a separate, pre-registered content audit.
+
+## Output and merge
+
+Write UTF-8 JSONL with one `JudgedAgentRound` per judgeable record. Logical row
+identity is `(run_id, assumption_id, agent_id, round)`. Duplicate identities,
+missing records, unknown record keys, assumption-ID mismatches, invalid JSON,
+and schema failures must all appear in the merge report.
+
+The repository judge entry point is:
+
+```bash
+uv run python scripts/run_judge.py outputs/raw/<stamp> --client mock
+uv run python scripts/run_judge.py outputs/raw/<stamp> --client anthropic
 ```
-uv run python scripts/merge_judged.py outputs/raw/<stamp> your_judged.jsonl
+
+The first command is a plumbing check only; its fixed mock labels do not
+measure annotation quality. The production command writes `judged.jsonl`, a
+raw-response audit JSONL, and a version/coverage report under
+`outputs/judged/<stamp>/` by default.
+
+The repository merge entry point is:
+
+```bash
+uv run python scripts/merge_judged.py outputs/raw/<stamp> path/to/judged.jsonl
 ```
 
-It joins your rows to records by `(run_id, agent_id, round)` and writes a
-`report.json` telling you exactly:
-- `invalid_lines` — rows that failed the schema (with the error)
-- `orphan_judge_rows` — labels whose key matches no record (wrong keys)
-- `unjudged_record_keys` — records you missed
-- `conflicts` — duplicate labels, or `assumption_id` disagreements
-- `coverage` — fraction of records labeled
+The merge and analysis CLIs reject `mock:*` judge rows by default. Pass
+`--allow-mock` only for development plumbing checks. They also reject mixed
+judge model/codebook/prompt configurations.
 
-Nothing is silently dropped. Aim for a clean report before we compute metrics.
+Do not compute headline metrics until the merge report has full expected
+coverage, no unresolved invalid rows or conflicts, and no `unclear` or
+judge-uncertain annotations awaiting adjudication. Technical row coverage and
+semantically usable coverage are reported separately.
 
-## Judge safeguards (from the blueprint)
+## Prompt and evaluation safeguards
 
-- Different model family from the agents — Sonnet 5 vs GPT-5.4 mini already satisfies this.
-- Temperature 0.
-- Judge one assumption at a time; blind to topology / correct answer / expected effects.
-- Require the evidence span for every positive label (schema-enforced).
-- Set `judge_uncertain=true` for borderline cases; those get human-adjudicated.
+- Apply one canonical target assumption per model call.
+- Keep the semantic judge blind to protocol structure, agent role, selected and
+  correct answers, semantic type, and expected effects.
+- Use the exact same frozen rubric for the Judge LLM and human validators.
+- Configure the judge independently from the agent model and record the exact
+  model snapshot in `judge_model`.
+- Use deterministic decoding where supported, but do not treat temperature zero
+  as proof of reproducibility; audit repeatability on a sample.
+- Version prompt and codebook independently.
+- Calibrate only on development data grouped away from the held-out scenarios
+  or conversations.
+- Freeze schema, rubric, prompt, model snapshot, and adjudication procedure
+  before held-out evaluation.
 
-## Human validation (after the judge works)
-
-Judge quality is measured against human labels: ~150–200 development labels
-to refine the codebook, then 220–300 held-out labels for macro F1 / per-class
-precision-recall / agreement. Framing-type and qualified-vs-categorical are
-the hardest classes — oversample them.
-
-## The contract is frozen
-
-`JudgedAgentRound` in `schemas.py` is the interface. If you think a field
-should change, raise it with the team first — the merge and metrics code
-depend on it exactly as written.
-
----
-
-## What's still needed to make the judge fully functional
-
-This doc defines the **data contract** (what to read, what shape to emit).
-That is necessary but NOT sufficient. The following pieces are still open,
-roughly in build order. Several are team/science decisions, not solo
-engineering — noted where so.
-
-### 1. Labeling rubric / codebook (BLOCKING — biggest gap)
-
-The schema lists the allowed values for `assumption_state`, `decision_reliance`,
-`confidence_level`, etc., but does NOT define what each one *means*. Without
-shared definitions, the judge and the human validators will code the same
-rationale differently, and the judge-vs-human agreement score becomes
-meaningless (you can't tell "judge is wrong" from "we defined the label
-differently").
-
-A separate `docs/JUDGE_RUBRIC.md` should give, per label:
-- a one-sentence definition,
-- 2–3 boundary examples, especially the confusable pairs:
-  - mention-only vs `decision_reliance=true`
-  - `accepted` (categorical) vs `qualified_acceptance` (hedged)
-  - `challenged` (raises doubt) vs `rejected` (denies) vs `corrected`
-    (denies AND supplies the right answer/evidence)
-  - `confidence_level` 2 (probable, "likely") vs 3 (categorical, stated as fact)
-- the decision procedure for the non-obvious fields: `exposed`,
-  `acquisition_provenance`, `evidence_status`.
-
-Ownership: TEAM. The human annotators must use the identical rubric, so the
-judge developer, the annotators, and the mentor should agree on it together.
-It is a living document early (refined on the development labels, see step 4)
-and frozen before the held-out validation set.
-
-### 2. The judge prompt itself
-
-The judge developer writes the actual Sonnet 5 prompt. It should embed the
-rubric definitions, enforce the safeguards below, ask for one assumption at
-a time, and require the evidence span. Version it (`judge_prompt_version`
-in the output) so results are reproducible and prompt changes are traceable.
-
-Inputs the prompt needs per record: the agent `rationale`, and the
-`canonical_assumption` for that `assumption_id` (join from
-`data/scenarios.json`). Nothing else — keep it blind (see safeguards).
-
-### 3. A judge runner script
-
-A script (teammate-owned) that: loads a run's `records.jsonl`, joins the
-canonical assumption, calls Sonnet 5 per record with the judge prompt,
-validates each output against `JudgedAgentRound`, and writes `judged.jsonl`.
-Reuse the patterns already in this repo — tenacity retries and the
-parse-or-repair discipline in `clients.py` are worth copying so the judge
-run survives rate limits and never silently drops a label.
-
-### 4. Development labeling round (calibration)
-
-~150–200 records labeled by hand against the draft rubric. Purpose: surface
-the cases the rubric didn't anticipate, refine the definitions, and tune the
-judge prompt until judge and humans mostly agree. Iterate here freely — this
-is the one phase where the rubric and prompt are allowed to change.
-
-### 5. Held-out validation (the number that goes in the paper)
-
-After the rubric and prompt are frozen: 220–300 fresh records labeled by
-humans, compared to the judge. Report macro F1, per-class precision/recall,
-confusion matrices, and agreement (e.g. Cohen's/weighted kappa). Oversample
-the hard classes (framing-type, qualified-vs-categorical). If a class is
-unreliable, fall back to the preregistered binary collapse (e.g. accepted
-vs not; qualified vs categorical).
-
-### 6. Adjudication
-
-Every record where `judge_uncertain=true`, plus any judge-vs-human
-disagreement used in headline claims, gets a human tie-break. Decide the
-adjudication procedure (single senior labeler? two-of-three?) before you
-need it.
-
-### Safeguards the judge must honor (from the blueprint)
-
-- Different model family from the agents — Sonnet 5 vs GPT-5.4 mini: satisfied.
-- Temperature 0.
-- Blind to topology, correct answer, seed/corrector identity, and expected effects.
-- One assumption judged at a time.
-- Evidence span required for every positive label (schema-enforced).
-- `judge_uncertain=true` on borderline cases → adjudication.
-
-### Status checklist
-
-- [x] Data contract (`JudgedAgentRound` schema, this doc)
-- [x] Merge + validation tooling (`scripts/merge_judged.py`)
-- [x] Sample input to build against (`docs/sample_records.jsonl`)
-- [ ] Labeling rubric (`docs/JUDGE_RUBRIC.md`) — TEAM
-- [ ] Judge prompt (versioned) — judge dev
-- [ ] Judge runner script → `judged.jsonl` — judge dev
-- [ ] Development labels (~150–200) + rubric/prompt calibration — team
-- [ ] Held-out labels (220–300) + F1/kappa report — team
-- [ ] Adjudication procedure + pass — team
+The current `v1.1-draft` rubric is not the held-out freeze. Human calibration and
+adjudication rules are specified in [`JUDGE_RUBRIC.md`](JUDGE_RUBRIC.md).
