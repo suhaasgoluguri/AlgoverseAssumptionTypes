@@ -1,5 +1,4 @@
 ﻿.env
-!outputs/README.md
 __pycache__/
 *.pyc
 .venv/
