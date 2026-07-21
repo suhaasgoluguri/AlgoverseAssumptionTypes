@@ -136,7 +136,7 @@ def build_round0_prompt(
         if condition == "injection":
             if variant is None:
                 raise ValueError("injection condition requires a variant")
-            parts.append(build_seed_note_block(variant.seed_local_evidence))
+            parts.append(build_seed_note_block(variant.seed_note_lines()))
         elif condition in ("no_injection_baseline", "independent_control"):
             # Independent control mirrors the baseline's information state;
             # the only difference from baseline is the absence of messages.

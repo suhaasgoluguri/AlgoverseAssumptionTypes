@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from dotenv import load_dotenv
-from openai import AsyncAzureOpenAI, APIConnectionError, APITimeoutError, RateLimitError
+from openai import AsyncOpenAI, APIConnectionError, APITimeoutError, RateLimitError
 from pydantic import ValidationError
 from tenacity import (
     retry,
@@ -113,9 +113,15 @@ def parse_or_repair(raw: str) -> ParsedResponse:
 class AzureChatClient:
     """Async client for the team's Azure OpenAI deployment (GPT-5.4 mini).
 
-    Credentials come from .env:
-      AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT,
-      AZURE_OPENAI_API_VERSION, AZURE_OPENAI_DEPLOYMENT
+    Credentials come from environment:
+      AZURE_OPENAI_API_KEY   — the resource key
+      AZURE_OPENAI_ENDPOINT  — the v1 base URL, ending in /openai/v1
+                               e.g. https://<resource>.services.ai.azure.com/openai/v1
+      AZURE_OPENAI_DEPLOYMENT — the deployment name (used as the model id)
+
+    Uses the OpenAI-compatible v1 endpoint (Azure AI Foundry) rather than the
+    classic azure_endpoint + api_version routing, which 404s on Foundry
+    resources.
     """
 
     def __init__(
@@ -127,10 +133,9 @@ class AzureChatClient:
         self.deployment = deployment or os.environ["AZURE_OPENAI_DEPLOYMENT"]
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self._client = AsyncAzureOpenAI(
+        self._client = AsyncOpenAI(
             api_key=os.environ["AZURE_OPENAI_API_KEY"],
-            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-            api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21"),
+            base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
         )
 
     @property

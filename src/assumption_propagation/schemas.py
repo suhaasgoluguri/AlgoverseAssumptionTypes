@@ -86,11 +86,24 @@ class CorrectiveEvidence(BaseModel):
     available_round: int = Field(ge=0, le=3)
 
 
+class SeedPrivateAssessment(BaseModel):
+    """New (Option-B) seed note format: an explicit preliminary assessment."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    content: str = Field(min_length=10)
+    provenance: str = ""
+    epistemic_marker: str = ""
+    verification_gap: str = ""
+
+
 class AssumptionVariant(BaseModel):
     """One semantic variant (factual/causal/framing) of a base scenario.
 
-    `seed_local_evidence` is the injection: seed-private note(s) that invite
-    the target inference recorded in `canonical_assumption`.
+    The seed injection is provided in one of two formats:
+    - old: `seed_local_evidence` (list of note strings), or
+    - new (Option B): `seed_private_assessment` (an explicit assessment dict).
+    Use `seed_note_lines()` to read whichever is present.
     """
 
     model_config = ConfigDict(extra="ignore")  # tolerate __comment__ keys
@@ -101,16 +114,10 @@ class AssumptionVariant(BaseModel):
         min_length=10,
         description="The target inference the seed is invited to make.",
     )
-    initial_provenance: str = Field(
-        description="e.g. 'inferential_evidence_gap'.",
-    )
-    explicitness: str = Field(
-        description="e.g. 'explicit_presentation_inferential_origin'.",
-    )
-    seed_local_evidence: list[str] = Field(
-        min_length=1,
-        description="Seed-private note(s) shown only to the seed agent (the injection).",
-    )
+    initial_provenance: str = ""
+    explicitness: str = ""
+    seed_local_evidence: Optional[list[str]] = None
+    seed_private_assessment: Optional[SeedPrivateAssessment] = None
     corrective_evidence: CorrectiveEvidence
     global_validity: GlobalValidity
     favored_option: str
@@ -121,6 +128,20 @@ class AssumptionVariant(BaseModel):
         if v not in ANSWER_LETTERS:
             raise ValueError(f"favored_option must be one of {ANSWER_LETTERS}, got {v!r}")
         return v
+
+    @model_validator(mode="after")
+    def _has_a_seed_note(self) -> "AssumptionVariant":
+        if not self.seed_local_evidence and self.seed_private_assessment is None:
+            raise ValueError(
+                f"{self.assumption_id}: needs seed_local_evidence or seed_private_assessment"
+            )
+        return self
+
+    def seed_note_lines(self) -> list[str]:
+        """The seed injection text, from whichever format is present."""
+        if self.seed_private_assessment is not None:
+            return [self.seed_private_assessment.content]
+        return self.seed_local_evidence or []
 
 
 class QualityChecklist(BaseModel):
@@ -157,7 +178,8 @@ class Scenario(BaseModel):
         description="Innocuous seed-private note for the no-injection baseline, "
         "so baseline seeds also receive *a* private note (controls for having one)."
     )
-    seed_confidence_level: int = Field(ge=1, le=3)
+    seed_confidence_level: Optional[int] = Field(default=None, ge=1, le=3)
+    injected_epistemic_level: Optional[str] = None
     assumption_variants: list[AssumptionVariant] = Field(min_length=1, max_length=3)
     quality_checklist: Optional[QualityChecklist] = None
 
