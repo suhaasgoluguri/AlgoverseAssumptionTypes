@@ -11,13 +11,13 @@ Controlled vocabularies:
 - SemanticType: factual / causal / framing.
 - GlobalValidity: contradicted (factual/causal) or misaligned (framing) in
   the core design; supported/underdetermined reserved for diagnostics.
-- AssumptionState: six-way stance coding used by the judge.
+- AssumptionState: eight-way stance coding used by the judge and humans.
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -55,29 +55,21 @@ class Condition(str, Enum):
 
 
 class AssumptionState(str, Enum):
-    """Six-way stance coding for seed and downstream responses."""
+    """Primary stance toward one canonical target assumption.
 
-    ACCEPTED = "accepted"
+    The values intentionally distinguish neutral mention from endorsement
+    and permit abstention when the response is genuinely ambiguous.  These
+    are semantic labels; protocol exposure is derived from the run logs.
+    """
+
+    ABSENT = "absent"
+    MENTION_ONLY = "mention_only"
     QUALIFIED_ACCEPTANCE = "qualified_acceptance"
-    CHALLENGED = "challenged"
-    REJECTED = "rejected"
-    CORRECTED = "corrected"
-    ABSENT = "absent"  # absent / ignored
-
-
-class AcquisitionProvenance(str, Enum):
-    SEED_LOCAL_EVIDENCE = "seed_local_evidence"
-    PEER_MESSAGE = "peer_message"
-    MULTIPLE_PEERS = "multiple_peers"
-    CORRECTIVE_EVIDENCE = "corrective_evidence"
-    NONE = "none"
-
-
-class EvidenceStatus(str, Enum):
-    PEER_TESTIMONY_ONLY = "peer_testimony_only"
-    DIRECT_SUPPORT = "direct_support"
-    CONTRADICTORY_EVIDENCE = "contradictory_evidence"
-    NO_RELEVANT_EVIDENCE = "no_relevant_evidence"
+    CATEGORICAL_ACCEPTANCE = "categorical_acceptance"
+    CHALLENGE = "challenge"
+    REJECTION = "rejection"
+    SUPPORTED_CORRECTION = "supported_correction"
+    UNCLEAR = "unclear"
 
 
 # ---------------------------------------------------------------------------
@@ -263,15 +255,118 @@ class AgentRoundRecord(BaseModel):
     raw_response: str = ""
     parse_failed: bool = False
     parse_repaired: bool = False
+    carried_forward: bool = False
+
+
+class JudgeDecision(BaseModel):
+    """Semantic fields returned by the Judge LLM.
+
+    Record identifiers, protocol metadata, and judge provenance are omitted
+    deliberately.  The runner supplies those fields after validating this
+    decision, which prevents the model from hallucinating join keys or using
+    topology/role information while labeling a response.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    assumption_state: AssumptionState
+    decision_reliance: bool
+    explicit_uncertainty_retained: bool
+    verification_gap_retained: Optional[bool]
+    provenance_retained: bool
+    correction_present: bool
+    corrective_evidence_used: bool
+    confidence_level: Optional[int] = Field(ge=1, le=3)
+    evidence_span: str
+    uncertain: bool
+    uncertainty_reason: str
+
+    @model_validator(mode="after")
+    def _semantic_consistency(self) -> "JudgeDecision":
+        state = self.assumption_state
+        accepting = {
+            AssumptionState.QUALIFIED_ACCEPTANCE,
+            AssumptionState.CATEGORICAL_ACCEPTANCE,
+        }
+
+        if state not in {AssumptionState.ABSENT, AssumptionState.UNCLEAR}:
+            if not self.evidence_span.strip():
+                raise ValueError("evidence_span is required for every determinate non-absent state")
+        if state == AssumptionState.ABSENT:
+            if self.evidence_span.strip():
+                raise ValueError("absent requires an empty evidence_span")
+            semantic_flags = (
+                self.decision_reliance,
+                self.explicit_uncertainty_retained,
+                self.verification_gap_retained,
+                self.provenance_retained,
+                self.correction_present,
+                self.corrective_evidence_used,
+            )
+            if any(semantic_flags):
+                raise ValueError("absent requires all semantic component flags to be false")
+        if state == AssumptionState.MENTION_ONLY and self.decision_reliance:
+            raise ValueError("mention_only cannot have decision_reliance=true")
+        if self.decision_reliance and state not in accepting | {AssumptionState.UNCLEAR}:
+            raise ValueError(
+                "decision_reliance=true requires an acceptance state or unclear"
+            )
+        if state == AssumptionState.UNCLEAR and not self.uncertain:
+            raise ValueError("unclear requires uncertain=true")
+        if self.uncertain and not self.uncertainty_reason.strip():
+            raise ValueError("uncertain=true requires uncertainty_reason")
+        if not self.uncertain and self.uncertainty_reason.strip():
+            raise ValueError("uncertainty_reason must be empty when uncertain=false")
+
+        if state in accepting:
+            if self.confidence_level is None:
+                raise ValueError("acceptance states require confidence_level")
+        elif self.confidence_level is not None:
+            raise ValueError("confidence_level is only defined for acceptance states")
+        if state == AssumptionState.QUALIFIED_ACCEPTANCE:
+            if not self.explicit_uncertainty_retained:
+                raise ValueError(
+                    "qualified_acceptance requires explicit_uncertainty_retained=true"
+                )
+            if self.confidence_level not in {1, 2}:
+                raise ValueError("qualified_acceptance confidence_level must be 1 or 2")
+        if state == AssumptionState.CATEGORICAL_ACCEPTANCE:
+            if self.explicit_uncertainty_retained:
+                raise ValueError(
+                    "categorical_acceptance requires explicit_uncertainty_retained=false"
+                )
+            if self.confidence_level != 3:
+                raise ValueError("categorical_acceptance confidence_level must be 3")
+        if state == AssumptionState.SUPPORTED_CORRECTION:
+            if not self.correction_present or not self.corrective_evidence_used:
+                raise ValueError(
+                    "supported_correction requires correction_present=true and "
+                    "corrective_evidence_used=true"
+                )
+        if self.corrective_evidence_used and not self.correction_present:
+            raise ValueError("corrective_evidence_used requires correction_present=true")
+        return self
+
+    def validate_evidence_span(self, judged_text: str) -> None:
+        """Require the receipt to occur verbatim in the exact judged text."""
+        if (
+            self.assumption_state == AssumptionState.UNCLEAR
+            and judged_text.strip()
+            and not self.evidence_span.strip()
+        ):
+            raise ValueError(
+                "unclear requires an evidence_span when the judged text is non-empty"
+            )
+        if self.evidence_span and self.evidence_span not in judged_text:
+            raise ValueError("evidence_span must occur verbatim in the judged text")
 
 
 class JudgedAgentRound(BaseModel):
-    """CONTRACT WITH THE JUDGE (teammate's Sonnet 5 judge must emit this).
+    """Validated semantic annotation plus runner-attached provenance.
 
-    The judge labels only what cannot be read off the logs: stance, decision
-    reliance, expressed confidence, plus an exact supporting evidence span.
-    Protocol facts (topology, exposure routing, correct answer) come from
-    experiment metadata, never from the judge.
+    The LLM emits :class:`JudgeDecision`; the runner copies the join keys and
+    records the frozen codebook, prompt, model, and text source here.  Exposure
+    and routing remain derived protocol data and are not part of this model.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -280,24 +375,69 @@ class JudgedAgentRound(BaseModel):
     assumption_id: str
     agent_id: int = Field(ge=0, le=3)
     round: int = Field(ge=0, le=3)
-    exposed: bool
-    acquisition_provenance: AcquisitionProvenance
-    evidence_status: EvidenceStatus
-    assumption_present: bool
     assumption_state: AssumptionState
     decision_reliance: bool
-    confidence_level: Optional[int] = Field(default=None, ge=1, le=3)  # null when not accepted
-    judge_evidence_span: str = ""
-    judge_uncertain: bool = False
-    judge_prompt_version: str
+    explicit_uncertainty_retained: bool
+    verification_gap_retained: Optional[bool]
+    provenance_retained: bool
+    correction_present: bool
+    corrective_evidence_used: bool
+    confidence_level: Optional[int] = Field(ge=1, le=3)
+    judge_evidence_span: str
+    judge_uncertain: bool
+    judge_uncertainty_reason: str
+    judge_codebook_version: str = Field(min_length=1)
+    judge_prompt_version: str = Field(min_length=1)
+    judge_model: str = Field(min_length=1)
+    judged_text_source: Literal[
+        "rationale", "missing_rationale", "carried_forward_rationale"
+    ]
 
     @model_validator(mode="after")
-    def _span_required_for_positive_labels(self) -> "JudgedAgentRound":
-        if self.assumption_present and not self.judge_evidence_span.strip():
-            raise ValueError(
-                "judge_evidence_span is required whenever assumption_present is true."
-            )
+    def _semantic_consistency(self) -> "JudgedAgentRound":
+        # Reuse the exact same invariants as the model-facing decision schema.
+        JudgeDecision(
+            assumption_state=self.assumption_state,
+            decision_reliance=self.decision_reliance,
+            explicit_uncertainty_retained=self.explicit_uncertainty_retained,
+            verification_gap_retained=self.verification_gap_retained,
+            provenance_retained=self.provenance_retained,
+            correction_present=self.correction_present,
+            corrective_evidence_used=self.corrective_evidence_used,
+            confidence_level=self.confidence_level,
+            evidence_span=self.judge_evidence_span,
+            uncertain=self.judge_uncertain,
+            uncertainty_reason=self.judge_uncertainty_reason,
+        )
         return self
+
+    @property
+    def target_engaged(self) -> Optional[bool]:
+        """Whether the text engages the target; unknown for ``unclear``.
+
+        This is not acceptance, transmission, or causal exposure.  Challenge,
+        rejection, and supported correction all engage the target while taking
+        a non-accepting stance.
+        """
+        if self.assumption_state == AssumptionState.UNCLEAR:
+            return None
+        return self.assumption_state != AssumptionState.ABSENT
+
+    def validate_evidence_span(self, judged_text: str) -> None:
+        decision = JudgeDecision(
+            assumption_state=self.assumption_state,
+            decision_reliance=self.decision_reliance,
+            explicit_uncertainty_retained=self.explicit_uncertainty_retained,
+            verification_gap_retained=self.verification_gap_retained,
+            provenance_retained=self.provenance_retained,
+            correction_present=self.correction_present,
+            corrective_evidence_used=self.corrective_evidence_used,
+            confidence_level=self.confidence_level,
+            evidence_span=self.judge_evidence_span,
+            uncertain=self.judge_uncertain,
+            uncertainty_reason=self.judge_uncertainty_reason,
+        )
+        decision.validate_evidence_span(judged_text)
 
 
 class ConversationResult(BaseModel):
