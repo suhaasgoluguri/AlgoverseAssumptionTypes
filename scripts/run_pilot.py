@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -100,6 +101,24 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                     else "no consensus" if summary["no_consensus"] else "WRONG")
             print(f"    {seed.seed_instance_id} @ {topology_name:22s}"
                   f" votes={summary['final_votes']} -> {verdict} ({flag})")
+            if args.verbose or args.show_rationales:
+                seed_id = result.records[0].seed_agent_id
+                corr_id = result.records[0].corrector_agent_id
+                def _tag(a):
+                    return "*" if a == seed_id else "^" if a == corr_id else " "
+                for rnd in range(result.n_rounds):
+                    cells = "  ".join(
+                        f"A{a}={result.outputs[(a, rnd)].answer or '-'}{_tag(a)}"
+                        for a in range(4)
+                    )
+                    print(f"        round {rnd}: {cells}")
+                    if args.show_rationales:
+                        for a in range(4):
+                            r = (result.outputs[(a, rnd)].rationale or "").strip().replace("\n", " ")
+                            if len(r) > 140:
+                                r = r[:137] + "..."
+                            print(f"            A{a}{_tag(a)}: {r}")
+                print("        (*=seed  ^=corrector)")
 
     # Independent no-communication control: baseline information state
     # (neutral seed note, corrector evidence), agents answer once, no
@@ -175,7 +194,14 @@ async def main() -> None:
     parser.add_argument("--skip-baselines", action="store_true")
     parser.add_argument("--independent-reps", type=int, default=1)
     parser.add_argument("--skip-independent", action="store_true")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                        help="print each agent's answer per round for injection conversations")
+    parser.add_argument("--show-rationales", action="store_true",
+                        help="also print each agent's rationale per round (implies --verbose)")
     parser.add_argument("--out", default="outputs/raw")
+    parser.add_argument("--tag", default=None,
+                        help="readable label appended to the run folder name, "
+                             "e.g. --tag travel001_fix -> <stamp>_azure_travel001_fix")
     parser.add_argument("--temperature", default="0.2",
                         help="sampling temperature for the azure client, or 'none' to "
                              "omit the parameter (deployments that reject custom "
@@ -188,6 +214,10 @@ async def main() -> None:
         sys.exit(f"No scenarios matched (data={args.data}, scenario={args.scenario})")
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S") + f"_{args.client}"
+    if args.tag:
+        safe_tag = re.sub(r"[^A-Za-z0-9._-]+", "_", args.tag).strip("_")
+        if safe_tag:
+            stamp = f"{stamp}_{safe_tag}"
     out_dir = Path(args.out) / stamp
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = {name: out_dir / f"{name}.jsonl" for name in ("seeds", "records", "results")}

@@ -93,6 +93,23 @@ def build_shared_task(scenario) -> str:
 # Private notes (seed only)
 # ---------------------------------------------------------------------------
 
+def seed_note_lines(variant) -> list[str]:
+    """Extract the seed injection text from either scenario format.
+
+    Works for pydantic AssumptionVariant and plain test namespaces:
+    - new (Option B): variant.seed_private_assessment.content
+    - old: variant.seed_local_evidence (list of strings)
+    """
+    assessment = getattr(variant, "seed_private_assessment", None)
+    if assessment is not None:
+        content = getattr(assessment, "content", None)
+        if content is None and isinstance(assessment, dict):
+            content = assessment.get("content")
+        if content:
+            return [content]
+    return getattr(variant, "seed_local_evidence", None) or []
+
+
 def build_seed_note_block(seed_local_evidence: list[str]) -> str:
     """The injection: seed-private evidence rendered as briefing material."""
     notes = "\n".join(f"- {note}" for note in seed_local_evidence)
@@ -136,7 +153,7 @@ def build_round0_prompt(
         if condition == "injection":
             if variant is None:
                 raise ValueError("injection condition requires a variant")
-            parts.append(build_seed_note_block(variant.seed_note_lines()))
+            parts.append(build_seed_note_block(seed_note_lines(variant)))
         elif condition in ("no_injection_baseline", "independent_control"):
             # Independent control mirrors the baseline's information state;
             # the only difference from baseline is the absence of messages.
