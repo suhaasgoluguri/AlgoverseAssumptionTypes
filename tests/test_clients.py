@@ -6,8 +6,6 @@ repair attempt, and no response is ever silently discarded.
 
 import json
 
-import pytest
-
 from assumption_propagation.clients import MockClient, parse_or_repair
 
 
