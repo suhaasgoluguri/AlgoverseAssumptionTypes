@@ -6,7 +6,7 @@ outside the repository.
 
 ## Layout
 
-```text
+```Shell
 outputs/
 |-- raw/<stamp>/
 |   |-- seeds.jsonl          frozen seed responses (Stage A)

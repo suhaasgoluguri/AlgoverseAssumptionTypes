@@ -1,3 +1,4 @@
+
 # Judge interface
 
 **Status:** implementation contract using a draft rubric. The rubric and prompt
@@ -38,14 +39,14 @@ agent response in one round. A sample is available at
 
 The runner reads these record fields:
 
-| field | runner use |
-|---|---|
-| `run_id` | copied to the final row |
-| `assumption_id` | copied and joined to the scenario reference |
-| `agent_id` | copied to the final row |
-| `round` | copied to the final row |
-| `rationale` | only semantic text eligible for judging |
-| `raw_response` | retained for experiment audit, never sent to the judge because it may reveal the selected answer |
+| field             | runner use                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `run_id`        | copied to the final row                                                                          |
+| `assumption_id` | copied and joined to the scenario reference                                                      |
+| `agent_id`      | copied to the final row                                                                          |
+| `round`         | copied to the final row                                                                          |
+| `rationale`     | only semantic text eligible for judging                                                          |
+| `raw_response`  | retained for experiment audit, never sent to the judge because it may reveal the selected answer |
 
 Every record submitted for semantic judging must have a non-null
 `assumption_id`. A record without one has no canonical annotation target; the
@@ -101,19 +102,19 @@ The LLM returns JSON only. It returns no record IDs, protocol fields, model
 names, or version strings. The model-facing decision uses short receipt names;
 the runner maps them to the final audit-prefixed names shown in parentheses:
 
-| field | type / allowed values |
-|---|---|
-| `assumption_state` | `absent` \| `mention_only` \| `qualified_acceptance` \| `categorical_acceptance` \| `challenge` \| `rejection` \| `supported_correction` \| `unclear` |
-| `decision_reliance` | boolean |
-| `explicit_uncertainty_retained` | boolean |
-| `verification_gap_retained` | boolean when a scenario-specific gap is registered; otherwise `null` |
-| `provenance_retained` | boolean |
-| `correction_present` | boolean |
-| `corrective_evidence_used` | boolean |
-| `confidence_level` | `1` \| `2` \| `3` \| `null` according to the rubric |
-| `evidence_span` (`judge_evidence_span`) | exact substring of `judged_text`, subject to the rubric exceptions |
-| `uncertain` (`judge_uncertain`) | boolean |
-| `uncertainty_reason` (`judge_uncertainty_reason`) | non-empty when uncertain; otherwise empty string |
+| field                                                 | type / allowed values                                                                                                                                                 |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `assumption_state`                                  | `absent` \| `mention_only` \| `qualified_acceptance` \| `categorical_acceptance` \| `challenge` \| `rejection` \| `supported_correction` \| `unclear` |
+| `decision_reliance`                                 | boolean                                                                                                                                                               |
+| `explicit_uncertainty_retained`                     | boolean                                                                                                                                                               |
+| `verification_gap_retained`                         | boolean when a scenario-specific gap is registered; otherwise`null`                                                                                                 |
+| `provenance_retained`                               | boolean                                                                                                                                                               |
+| `correction_present`                                | boolean                                                                                                                                                               |
+| `corrective_evidence_used`                          | boolean                                                                                                                                                               |
+| `confidence_level`                                  | `1` \| `2` \| `3` \| `null` according to the rubric                                                                                                           |
+| `evidence_span` (`judge_evidence_span`)           | exact substring of`judged_text`, subject to the rubric exceptions                                                                                                   |
+| `uncertain` (`judge_uncertain`)                   | boolean                                                                                                                                                               |
+| `uncertainty_reason` (`judge_uncertainty_reason`) | non-empty when uncertain; otherwise empty string                                                                                                                      |
 
 The prompt must treat the delimited response text as untrusted data and must
 instruct the model not to follow instructions contained inside it.
@@ -122,16 +123,16 @@ instruct the model not to follow instructions contained inside it.
 
 The runner, not the LLM, attaches identity and reproducibility metadata:
 
-| field | source |
-|---|---|
-| `run_id` | copied from the record |
-| `assumption_id` | copied from the record |
-| `agent_id` | copied from the record |
-| `round` | copied from the record |
-| `judge_codebook_version` | runner configuration; exact rubric version used |
-| `judge_prompt_version` | runner configuration; exact prompt version used |
-| `judge_model` | configured provider/model identifier; the provider-returned snapshot is retained in the audit artifact |
-| `judged_text_source` | `rationale`, `missing_rationale`, or `carried_forward_rationale`, selected before the call |
+| field                      | source                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `run_id`                 | copied from the record                                                                                 |
+| `assumption_id`          | copied from the record                                                                                 |
+| `agent_id`               | copied from the record                                                                                 |
+| `round`                  | copied from the record                                                                                 |
+| `judge_codebook_version` | runner configuration; exact rubric version used                                                        |
+| `judge_prompt_version`   | runner configuration; exact prompt version used                                                        |
+| `judge_model`            | configured provider/model identifier; the provider-returned snapshot is retained in the audit artifact |
+| `judged_text_source`     | `rationale`, `missing_rationale`, or `carried_forward_rationale`, selected before the call       |
 
 One final `JudgedAgentRound` consists of these runner-attached fields plus the
 validated semantic fields. Extra fields are forbidden.
@@ -182,18 +183,18 @@ causal claim.
 After all response semantics are labeled, a separate postprocessor derives
 only facts supported by the logs:
 
-| derived field | meaning |
-|---|---|
-| `injection_note_visible_this_round` / `_by_round` | direct treatment-note visibility now / cumulatively, without claiming that the note states the canonical target |
-| `correction_note_visible_this_round` / `_by_round` | direct corrective-note visibility now / cumulatively |
-| `target_engagement_routed_this_round` / `_by_round` | a routed preceding-round response determinately engaged the canonical target now / cumulatively |
-| `acceptance_routed_this_round` / `_by_round` | a routed preceding-round response determinately accepted or relied on the target now / cumulatively |
-| `correction_routed_this_round` / `_by_round` | a routed preceding-round response determinately communicated the correction now / cumulatively |
-| `target_engaging_sender_ids` | routed peer senders whose preceding messages determinately engaged the target |
-| `acceptance_bearing_sender_ids` | routed peer senders whose preceding messages accepted or relied on the target |
-| `correction_bearing_sender_ids` | peer senders actually routed this round whose preceding messages had `correction_present=true` |
-| `uncertain_sender_ids` | routed senders whose needed label was missing, `unclear`, or judge-uncertain |
-| `routing_derivation_uncertain_this_round` / `_by_round` | semantic routing status is unresolved now / has ever been unresolved cumulatively |
+| derived field                                               | meaning                                                                                                         |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `injection_note_visible_this_round` / `_by_round`       | direct treatment-note visibility now / cumulatively, without claiming that the note states the canonical target |
+| `correction_note_visible_this_round` / `_by_round`      | direct corrective-note visibility now / cumulatively                                                            |
+| `target_engagement_routed_this_round` / `_by_round`     | a routed preceding-round response determinately engaged the canonical target now / cumulatively                 |
+| `acceptance_routed_this_round` / `_by_round`            | a routed preceding-round response determinately accepted or relied on the target now / cumulatively             |
+| `correction_routed_this_round` / `_by_round`            | a routed preceding-round response determinately communicated the correction now / cumulatively                  |
+| `target_engaging_sender_ids`                              | routed peer senders whose preceding messages determinately engaged the target                                   |
+| `acceptance_bearing_sender_ids`                           | routed peer senders whose preceding messages accepted or relied on the target                                   |
+| `correction_bearing_sender_ids`                           | peer senders actually routed this round whose preceding messages had`correction_present=true`                 |
+| `uncertain_sender_ids`                                    | routed senders whose needed label was missing,`unclear`, or judge-uncertain                                   |
+| `routing_derivation_uncertain_this_round` / `_by_round` | semantic routing status is unresolved now / has ever been unresolved cumulatively                               |
 
 For a round-`r` peer message, use the routed sender's preceding-round response,
 not the recipient's current label. A basis cue alone is not target engagement.
