@@ -27,17 +27,32 @@ from assumption_propagation.analysis import (
     group_by_run,
     load_agent_records,
     load_judged_rounds,
+    merge_judged,
     summarize_conversation,
     summarize_judged_conversation,
     variant_lookup,
     write_jsonl,
 )
 from assumption_propagation.schemas import JudgedAgentRound, Scenario
+from assumption_propagation.judge import load_assumption_references
 
 
 def load_scenarios(path: Path) -> list[Scenario]:
     entries = json.loads(path.read_text(encoding="utf-8"))
-    return [Scenario.model_validate(e) for e in entries if "scenario_id" in e]
+    malformed = [
+        entry for entry in entries
+        if "scenario_id" not in entry and entry.get("legacy") is not True
+    ]
+    if malformed:
+        raise ValueError(
+            "scenario data contains undeclared malformed entries: "
+            + ", ".join(str(entry.get("id", "?")) for entry in malformed)
+        )
+    return [
+        Scenario.model_validate(entry)
+        for entry in entries
+        if entry.get("legacy") is not True
+    ]
 
 
 def load_judged_any(path: Path) -> list[JudgedAgentRound]:
@@ -48,15 +63,25 @@ def load_judged_any(path: Path) -> list[JudgedAgentRound]:
             continue
         data = json.loads(line)
         if "judge_assumption_state" in data:  # merged row: un-prefix label fields
-            data = {
+            label_data = {
                 "run_id": data["run_id"],
                 "agent_id": data["agent_id"],
                 "round": data["round"],
                 "assumption_id": data["assumption_id"],
-                **{k.removeprefix("judge_") if k not in (
-                    "judge_evidence_span", "judge_uncertain", "judge_prompt_version"
-                ) else k: v for k, v in data.items() if k.startswith("judge_")},
             }
+            for field in JudgedAgentRound.model_fields:
+                if field in label_data:
+                    continue
+                merged_name = (
+                    "judge_text_source"
+                    if field == "judged_text_source"
+                    else field
+                    if field.startswith("judge_")
+                    else f"judge_{field}"
+                )
+                if merged_name in data:
+                    label_data[field] = data[merged_name]
+            data = label_data
         rows.append(JudgedAgentRound.model_validate(data))
     return rows
 
@@ -66,6 +91,11 @@ def main() -> None:
     parser.add_argument("run_dir", type=Path)
     parser.add_argument("--data", type=Path, default=Path("data/scenarios.json"))
     parser.add_argument("--judged", type=Path, default=None)
+    parser.add_argument(
+        "--allow-mock",
+        action="store_true",
+        help="permit development-only mock labels (never use for research results)",
+    )
     args = parser.parse_args()
 
     records_path = args.run_dir / "records.jsonl"
@@ -79,16 +109,35 @@ def main() -> None:
 
     judged_by_run: dict[str, list[JudgedAgentRound]] = defaultdict(list)
     if args.judged:
+        invalid: list[tuple[int, str]] = []
         if args.judged.suffix == ".jsonl" and "merged" in args.judged.name:
-            for row in load_judged_any(args.judged):
-                judged_by_run[row.run_id].append(row)
+            rows = load_judged_any(args.judged)
         else:
             rows, invalid = load_judged_rounds(args.judged)
-            if invalid:
-                print(f"! {len(invalid)} invalid judge rows skipped "
-                      f"(run merge_judged.py for the full report)", file=sys.stderr)
-            for row in rows:
-                judged_by_run[row.run_id].append(row)
+        mock_rows = [row for row in rows if row.judge_model.startswith("mock:")]
+        if mock_rows and not args.allow_mock:
+            sys.exit(
+                f"refusing {len(mock_rows)} development-only mock judge rows; "
+                "use --allow-mock only for plumbing tests"
+            )
+        references = load_assumption_references(args.data)
+        matched, orphans, unjudged, conflicts = merge_judged(
+            records,
+            rows,
+            verification_gap_defined={
+                assumption_id: reference.verification_gap is not None
+                for assumption_id, reference in references.items()
+            },
+        )
+        if invalid or orphans or unjudged or conflicts:
+            sys.exit(
+                "judge labels do not form a complete, conflict-free join: "
+                f"invalid={len(invalid)} orphan={len(orphans)} "
+                f"unjudged={len(unjudged)} conflicts={len(conflicts)}; "
+                "run scripts/merge_judged.py for the detailed report"
+            )
+        for _, row in matched.values():
+            judged_by_run[row.run_id].append(row)
 
     summaries = []
     for run_id, conversation in group_by_run(records).items():

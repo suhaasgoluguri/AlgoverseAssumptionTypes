@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,7 +21,6 @@ from typing import Optional
 
 from .clients import ParsedResponse, parse_or_repair
 from .prompts import (
-    PROMPT_VERSION,
     build_round0_prompt,
     build_seed_generation_system_prompt,
     build_system_prompt,
@@ -207,6 +205,11 @@ async def run_conversation(
             raw_response=parsed.raw_response,
             parse_failed=parsed.parse_failed,
             parse_repaired=parsed.parse_repaired,
+            # On an update failure, the orchestrator deliberately replays the
+            # previous valid output so the conversation can continue.  Mark
+            # that imputation explicitly so expression-level analyses do not
+            # mistake it for a newly generated rationale.
+            carried_forward=(parsed.parse_failed and round_index > 0),
         )
 
     for round_index in range(n_rounds):

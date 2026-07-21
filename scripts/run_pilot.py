@@ -42,9 +42,16 @@ def load_scenarios(path: Path, only: str | None) -> list[Scenario]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     scenarios = []
     for entry in raw:
-        if "scenario_id" not in entry:
-            print(f"  ! skipping malformed entry (no scenario_id): {entry.get('id', '?')}")
+        if entry.get("legacy") is True:
+            print(
+                f"  ! skipping declared legacy scenario {entry.get('id', '?')}: "
+                f"{entry.get('legacy_reason', 'not executable')}"
+            )
             continue
+        if "scenario_id" not in entry:
+            raise ValueError(
+                f"malformed scenario entry has no scenario_id: {entry.get('id', '?')}"
+            )
         if only and entry["scenario_id"] != only:
             continue
         scenarios.append(Scenario.model_validate(entry))
