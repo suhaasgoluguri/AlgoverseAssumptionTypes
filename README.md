@@ -6,14 +6,16 @@ corrected under different four-agent communication topologies.
 
 The core comparison replays the same frozen seed response through a directed
 loop, a neutral star, and a fully connected mesh. Each conversation has round
-0 plus three synchronous update rounds. A designated seed receives the target
-injection; a distinct corrector receives decisive counterevidence; all message
-routing and model outputs are logged for post-hoc analysis.
+0 plus three synchronous update rounds. A designated seed receives a
+categorical, unsupported private assessment from round 0 onward. A distinct
+corrector receives decisive counterevidence at round 2 and retains it through
+the remaining round. All message routing, private-dossier visibility, and model
+outputs are logged for post-hoc analysis.
 
 ## Repository map
 
-- `data/scenarios.json`: executable scenario packages and matched assumption
-  variants.
+- `data/scenarios_fixed.json`: executable scenario packages and matched
+  assumption variants.
 - `src/assumption_propagation/orchestrator.py`: frozen-seed generation and
   synchronous propagation.
 - `src/assumption_propagation/topologies.py`: graph routing and role placement.
@@ -23,9 +25,9 @@ routing and model outputs are logged for post-hoc analysis.
 - `docs/JUDGE_RUBRIC.md`: shared Judge LLM/human annotation codebook.
 - `docs/JUDGE_INTERFACE.md`: exact judge input, output, and merge boundary.
 
-There are currently 19 executable scenarios with 57 matched variants. The
-older `log_001` authoring draft is explicitly marked `legacy` and is retained
-for reference rather than silently treated as executable data.
+There are currently 20 executable scenarios with 60 matched variants: one
+factual, causal, and framing treatment for every base scenario. Correct-answer
+and assumption-favored letters are balanced across A-E.
 
 ## Quick start
 
@@ -40,6 +42,21 @@ Run a no-cost mock pilot:
 ```bash
 uv run python scripts/run_pilot.py --client mock --scenario travel_001
 ```
+
+Each raw run freezes the exact scenario bytes and protocol source files in its
+run directory, records their hashes and Git/model settings in
+`run_manifest.json`, and refuses to append to an existing run directory.
+Downstream judging and analysis use the verified run snapshot by default;
+legacy runs without one require an explicit `--data` path.
+
+Analysis reports two different populations explicitly. `aggregates.jsonl`
+summarizes completed conversations, so injection rows include only seed trials
+that produced a replayable round-0 answer. `seed_trials.jsonl` retains every
+attempted seed generation, including parse/generation failures, and
+`seed_trial_itt.jsonl` is the all-attempt seed-level ITT report: it includes
+topology-specific outcome coverage, a missing-as-incorrect point estimate, and
+missing-outcome bounds. The conditional aggregates are secondary
+post-treatment summaries and must not replace that all-attempt report.
 
 Run the judge plumbing without an API call, then merge and analyze it:
 
@@ -80,7 +97,7 @@ The judge client must be selected explicitly. `mock` is a no-cost plumbing
 client whose all-absent labels are rejected by merge and analysis unless
 `--allow-mock` is deliberately supplied; never use them as research results.
 
-`JUDGE_RUBRIC.md` is currently `v1.1-draft`: calibrate it on development data,
+`JUDGE_RUBRIC.md` is currently `v1.2-draft`: calibrate it on development data,
 then freeze the rubric, prompt, schema, model snapshot, and adjudication plan
 before opening the held-out validation set.
 

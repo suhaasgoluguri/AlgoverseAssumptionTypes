@@ -38,6 +38,7 @@ from assumption_propagation.judge import (
     load_assumption_references,
     load_codebook,
 )
+from assumption_propagation.reproducibility import resolve_scenario_data
 
 
 def _key(row) -> tuple[str, int, int]:
@@ -75,7 +76,13 @@ async def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("run_dir", type=Path, help="outputs/raw/<stamp> directory")
-    parser.add_argument("--data", type=Path, default=Path("data/scenarios.json"))
+    parser.add_argument(
+        "--data",
+        type=Path,
+        default=None,
+        help="scenario JSON override; default <run_dir>/scenario_snapshot.json, "
+             "legacy runs without a snapshot require this override",
+    )
     parser.add_argument("--codebook", type=Path, default=Path("docs/JUDGE_RUBRIC.md"))
     parser.add_argument("--out", type=Path, default=None,
                         help="output directory; default outputs/judged/<run-stamp>")
@@ -100,8 +107,10 @@ async def main() -> None:
     records_path = args.run_dir / "records.jsonl"
     if not records_path.exists():
         sys.exit(f"no records.jsonl in {args.run_dir}")
-    if not args.data.exists():
-        sys.exit(f"scenario data not found: {args.data}")
+    try:
+        data_path, data_source = resolve_scenario_data(args.run_dir, args.data)
+    except (FileNotFoundError, ValueError) as exc:
+        sys.exit(str(exc))
     if not args.codebook.exists():
         sys.exit(f"judge codebook not found: {args.codebook}")
 
@@ -121,7 +130,7 @@ async def main() -> None:
         sys.exit("cannot resume safely: auxiliary judge artifacts exist without judged.jsonl")
 
     records = load_agent_records(records_path)
-    references = load_assumption_references(args.data)
+    references = load_assumption_references(data_path)
     codebook = load_codebook(args.codebook)
     all_items = build_judge_items(records, references)
     item_by_key = {_key(item): item for item in all_items}
@@ -143,7 +152,7 @@ async def main() -> None:
     codebook_sha256 = _sha256(codebook.encode("utf-8"))
     judge_configuration = {
         "records_sha256": _sha256(records_path.read_bytes()),
-        "scenario_data_sha256": _sha256(args.data.read_bytes()),
+        "scenario_data_sha256": _sha256(data_path.read_bytes()),
         "codebook_sha256": codebook_sha256,
         "judge_output_schema_sha256": _stable_json_sha256(judge_output_schema()),
         "judge_system_prompt_sha256": _sha256(JUDGE_SYSTEM_PROMPT.encode("utf-8")),
@@ -357,6 +366,8 @@ async def main() -> None:
             for result in failures
         ],
         "agent_models": agent_models,
+        "scenario_data_path": str(data_path),
+        "scenario_data_source": data_source,
         "development_only": args.client == "mock",
         **judge_configuration,
         "resume_fingerprint": resume_fingerprint,

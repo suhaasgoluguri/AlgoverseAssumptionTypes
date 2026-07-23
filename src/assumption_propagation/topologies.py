@@ -5,16 +5,24 @@ Each topology is an adjacency dict: ``{receiver_id: [sender_ids]}``.
 this agent receives in each update round. Round 0 is always independent
 (no agent receives peer messages in round 0).
 
-Role placement policy (seed holds the assumption note, corrector holds the
-corrective evidence; both are round-0 private additions):
+Role placement policy (the seed's private assessment persists from round 0;
+the corrector's decisive private record is released at round 2 and persists):
 - looped_chain (ring 0->1->2->3->0): rotationally symmetric, so position is
-  arbitrary; the design constant is the OFFSET — corrector immediately
-  downstream of the seed (gatekeeper configuration). The loop lets the
-  correction reach the seed itself at round 3.
+  arbitrary; the design constant is the offset: corrector immediately
+  downstream of the seed (gatekeeper configuration).
 - neutral_star: seed and corrector are peripheral (never the hub); the hub
   is a neutral relay, not an authority.
 - fully_connected_mesh: structurally symmetric; placement arbitrary.
 - independent: control condition; no communication at all.
+
+With four total rounds (0-3), the corrector can first communicate its newly
+released record in its round-2 response, and recipients can first see that
+response in round 3. Thus the mesh exposes every peer by round 3, the star hub
+sees it by round 3, and the ring's next downstream agent sees it by round 3.
+The seed would not mechanically receive the correction within this endpoint
+in the ring or star; later seed recovery there can only arise indirectly from
+information already available before release. This topology-dependent timing
+is part of the staged-correction design.
 """
 
 from __future__ import annotations
@@ -58,6 +66,21 @@ DEFAULT_ROLES: dict[str, tuple[int, int]] = {
 }
 
 
+def corrector_for_seed(topology_name: str, seed_agent_id: int) -> int:
+    """Return the policy-compliant default corrector for a seed placement."""
+    validate_seed(topology_name, seed_agent_id)
+    if topology_name == "looped_chain":
+        # The corrector is the unique receiver immediately downstream.
+        return next(
+            receiver
+            for receiver, senders in TOPOLOGIES[topology_name].items()
+            if seed_agent_id in senders
+        )
+    if topology_name == "neutral_star":
+        return next(agent for agent in (1, 2, 3) if agent != seed_agent_id)
+    return next(agent for agent in AGENT_IDS if agent != seed_agent_id)
+
+
 def validate_roles(topology_name: str, seed_agent_id: int, corrector_agent_id: int) -> None:
     """Seed and corrector must be distinct, valid, and policy-compliant."""
     validate_seed(topology_name, seed_agent_id)
@@ -65,6 +88,15 @@ def validate_roles(topology_name: str, seed_agent_id: int, corrector_agent_id: i
         raise ValueError(f"corrector_agent_id must be in {AGENT_IDS}, got {corrector_agent_id}")
     if corrector_agent_id == seed_agent_id:
         raise ValueError("seed and corrector must be different agents")
+    if topology_name == "looped_chain":
+        expected = corrector_for_seed(topology_name, seed_agent_id)
+        if corrector_agent_id != expected:
+            raise ValueError(
+                "looped_chain corrector must be immediately downstream of the seed: "
+                f"expected {expected}, got {corrector_agent_id}"
+            )
+    if topology_name == "neutral_star" and corrector_agent_id == 0:
+        raise ValueError("neutral_star hub agent 0 must remain neutral")
 
 
 def senders_for(topology_name: str, agent_id: int, round_index: int) -> list[int]:
@@ -108,7 +140,9 @@ def validate_topology(topology_name: str) -> None:
     assert set(adj) == set(AGENT_IDS), f"{topology_name}: must define all agents"
     for receiver, senders in adj.items():
         assert receiver not in senders, f"{topology_name}: agent {receiver} receives from itself"
-        assert len(senders) == len(set(senders)), f"{topology_name}: duplicate senders for {receiver}"
+        assert len(senders) == len(set(senders)), (
+            f"{topology_name}: duplicate senders for {receiver}"
+        )
         assert all(s in AGENT_IDS for s in senders), f"{topology_name}: unknown sender id"
 
 

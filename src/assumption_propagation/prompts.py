@@ -1,19 +1,21 @@
 """Prompt templates for the assumption-propagation experiment.
 
 Every string a model sees is built here and nowhere else. Prompts are
-experimental materials: they are versioned (PROMPT_VERSION), logged with
-every record, and frozen before the main runs.
+experimental materials: they are versioned (PROMPT_VERSION), recorded in the
+run manifest, and frozen with their source before the main runs.
 
 Design rules encoded here:
 - Neutral system prompt; notes are information to evaluate, not orders.
-- The seed-private evidence (the injection) is rendered as ordinary
-  workplace briefing material, never labeled as an experimental treatment.
+- The categorical, unsupported seed-private assessment (the injection) is
+  rendered as ordinary workplace briefing material, never as a fabricated
+  record and never labeled as an experimental treatment.
 - Corrective evidence is PRIVATE to the designated corrector agent
   (team design: seed and corrector are distinct private-information
   holders; everyone else is neutral). Both private notes use the same
-  section label so neither looks special. Round 0 only by default.
+  section label so neither looks special. Private dossiers persist once
+  available so later behavior does not depend on artificial prompt forgetting.
 - In the no-injection baseline the seed receives the scenario's
-  neutral_control_note instead of seed_local_evidence, so both conditions
+  neutral_control_note instead of the private assessment, so both conditions
   have *a* private note and differ only in its content. The corrector
   keeps its corrective note in the baseline (only the injection differs).
 - Peer messages are labeled anonymously ("Agent N") with no authority cues.
@@ -25,7 +27,7 @@ namespaces in tests).
 
 from __future__ import annotations
 
-PROMPT_VERSION = "v1.0"
+PROMPT_VERSION = "v2.0"
 
 RATIONALE_WORD_LIMIT = 90
 
@@ -90,15 +92,15 @@ def build_shared_task(scenario) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Private notes (seed only)
+# Private-dossier material
 # ---------------------------------------------------------------------------
 
 def seed_note_lines(variant) -> list[str]:
     """Extract the seed injection text from either scenario format.
 
     Works for pydantic AssumptionVariant and plain test namespaces:
-    - new (Option B): variant.seed_private_assessment.content
-    - old: variant.seed_local_evidence (list of strings)
+    - current: variant.seed_private_assessment.content
+    - legacy: variant.seed_local_evidence (list of strings)
     """
     assessment = getattr(variant, "seed_private_assessment", None)
     if assessment is not None:
@@ -111,19 +113,55 @@ def seed_note_lines(variant) -> list[str]:
 
 
 def build_seed_note_block(seed_local_evidence: list[str]) -> str:
-    """The injection: seed-private evidence rendered as briefing material."""
+    """The injection rendered as the seed's unchanged private dossier."""
     notes = "\n".join(f"- {note}" for note in seed_local_evidence)
-    return "SUPPLEMENTARY BRIEFING MATERIALS\n" + notes
+    return "PRIVATE DOSSIER (retain for subsequent rounds)\n" + notes
 
 
 def build_neutral_note_block(neutral_control_note: str) -> str:
     """Baseline stand-in: innocuous private note with identical framing."""
-    return "SUPPLEMENTARY BRIEFING MATERIALS\n- " + neutral_control_note
+    return "PRIVATE DOSSIER (retain for subsequent rounds)\n- " + neutral_control_note
 
 
 def build_corrective_note_block(content: str) -> str:
     """Corrector-private evidence; same neutral label as the seed's note."""
-    return "SUPPLEMENTARY BRIEFING MATERIALS\n- " + content
+    return "PRIVATE DOSSIER (retain for subsequent rounds)\n- " + content
+
+
+def build_private_dossier(
+    scenario,
+    *,
+    is_seed: bool,
+    is_corrector: bool,
+    condition: str,
+    variant,
+    round_index: int,
+) -> str | None:
+    """Return the role-private dossier visible in ``round_index``.
+
+    The seed's injection (or matched neutral baseline note) is persistent from
+    round 0. Corrective evidence becomes visible at its predeclared
+    ``available_round`` and remains visible thereafter. Seed and corrector are
+    distinct roles, so an agent can never receive both dossiers.
+    """
+    if is_seed and is_corrector:
+        raise ValueError("seed and corrector must be different agents")
+    if round_index < 0:
+        raise ValueError("round_index must be non-negative")
+
+    if is_seed:
+        if condition == "injection":
+            if variant is None:
+                raise ValueError("injection condition requires a variant")
+            return build_seed_note_block(seed_note_lines(variant))
+        if condition in ("no_injection_baseline", "independent_control"):
+            return build_neutral_note_block(scenario.neutral_control_note)
+
+    if is_corrector and variant is not None:
+        correction = variant.corrective_evidence
+        if round_index >= correction.available_round:
+            return build_corrective_note_block(correction.content)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -137,30 +175,26 @@ def build_round0_prompt(
     is_corrector: bool = False,
     condition: str,
     variant=None,
+    round_index: int = 0,
 ) -> str:
     """Initial independent generation for one agent.
 
-    - seed, injection       -> shared task + seed_local_evidence (the injection)
+    - seed, injection       -> shared task + categorical private assessment
     - seed, baseline        -> shared task + neutral_control_note
-    - corrector (any cond.) -> shared task + corrective evidence (private)
+    - corrector (any cond.) -> correction only when available_round == 0
     - neutral agent         -> shared task only
     """
-    if is_seed and is_corrector:
-        raise ValueError("seed and corrector must be different agents")
     parts = [build_shared_task(scenario)]
-
-    if is_seed:
-        if condition == "injection":
-            if variant is None:
-                raise ValueError("injection condition requires a variant")
-            parts.append(build_seed_note_block(seed_note_lines(variant)))
-        elif condition in ("no_injection_baseline", "independent_control"):
-            # Independent control mirrors the baseline's information state;
-            # the only difference from baseline is the absence of messages.
-            parts.append(build_neutral_note_block(scenario.neutral_control_note))
-
-    if is_corrector and variant is not None:
-        parts.append(build_corrective_note_block(variant.corrective_evidence.content))
+    dossier = build_private_dossier(
+        scenario,
+        is_seed=is_seed,
+        is_corrector=is_corrector,
+        condition=condition,
+        variant=variant,
+        round_index=round_index,
+    )
+    if dossier:
+        parts.append(dossier)
 
     parts.append("Provide your answer now in the required JSON format.")
     return "\n\n".join(parts)
@@ -182,10 +216,9 @@ def build_update_prompt(
 ) -> str:
     """Update round r>0: task + own previous output + peers' previous outputs.
 
-    Private notes (seed's and corrector's) are NOT repeated after round 0
-    by default; their content survives only through visible messages.
-    `private_note` supports the alternative every-round mode if the team
-    chooses it (pass the rendered note block).
+    ``private_note`` is the caller-rendered persistent private dossier for
+    this agent and round. It is omitted for neutral agents and before delayed
+    corrective evidence becomes available.
     """
     if round_index < 1:
         raise ValueError("update prompts are for rounds >= 1")

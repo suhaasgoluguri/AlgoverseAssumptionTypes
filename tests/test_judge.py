@@ -46,8 +46,8 @@ def judge_item(**overrides) -> JudgeItem:
         "round": 2,
         "canonical_assumption": "H1 has an accessible room on Thursday.",
         "verification_gap": "Thursday-specific accessible inventory is unconfirmed.",
-        "reference_provenance": "preliminary analyst assessment",
-        "injection_material": "H1 likely has an accessible room on Thursday.",
+        "reference_provenance": "unsupported_private_assessment",
+        "injection_material": "Private assessment: H1 has an accessible room on Thursday.",
         "canonical_correction": "H1 has zero accessible rooms on Thursday.",
         "response_text": RESPONSE_TEXT,
         "judged_text_source": "rationale",
@@ -130,6 +130,13 @@ def test_prompt_is_blind_but_contains_all_semantic_references():
     )
     for value in forbidden:
         assert value not in prompt
+
+    assert "categorical wording does not" in prompt
+
+
+def test_judge_versions_match_categorical_assessment_codebook():
+    assert JUDGE_CODEBOOK_VERSION == "v1.2-draft"
+    assert JUDGE_PROMPT_VERSION == "v1.2"
 
 
 def test_response_cannot_close_its_prompt_delimiter():
@@ -357,6 +364,31 @@ def test_dual_injection_representations_must_match(tmp_path):
 
     with pytest.raises(ValueError, match="disagree"):
         load_assumption_references(path)
+
+
+def test_initial_provenance_preserves_unsupported_assessment_status(tmp_path):
+    path = tmp_path / "scenarios.json"
+    path.write_text(
+        json.dumps([{
+            "assumption_variants": [
+                {
+                    "assumption_id": "s1_factual",
+                    "canonical_assumption": "The registered target claim.",
+                    "initial_provenance": "unsupported_private_assessment",
+                    "seed_private_assessment": {
+                        "content": "Private assessment: the registered claim holds.",
+                        "provenance": "private_assessment",
+                        "verification_gap": "The shared record leaves it unresolved.",
+                    },
+                    "corrective_evidence": {"content": "Resolving correction."},
+                }
+            ]
+        }]),
+        encoding="utf-8",
+    )
+
+    reference = load_assumption_references(path)["s1_factual"]
+    assert reference.reference_provenance == "unsupported_private_assessment"
 
 
 class CountingJudgeClient:

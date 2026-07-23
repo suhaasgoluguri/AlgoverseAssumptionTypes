@@ -26,13 +26,20 @@ from assumption_propagation.analysis import (
     write_jsonl,
 )
 from assumption_propagation.judge import load_assumption_references
+from assumption_propagation.reproducibility import resolve_scenario_data, sha256_file
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("run_dir", type=Path, help="outputs/raw/<stamp> directory")
     parser.add_argument("judged", type=Path, help="judge output JSONL (JudgedAgentRound rows)")
-    parser.add_argument("--data", type=Path, default=Path("data/scenarios.json"))
+    parser.add_argument(
+        "--data",
+        type=Path,
+        default=None,
+        help="scenario JSON override; default <run_dir>/scenario_snapshot.json, "
+             "legacy runs without a snapshot require this override",
+    )
     parser.add_argument("--out", type=Path, default=None,
                         help="output directory; default outputs/judged/<run-stamp>")
     parser.add_argument(
@@ -45,6 +52,10 @@ def main() -> None:
     records_path = args.run_dir / "records.jsonl"
     if not records_path.exists():
         sys.exit(f"no records.jsonl in {args.run_dir}")
+    try:
+        data_path, data_source = resolve_scenario_data(args.run_dir, args.data)
+    except (FileNotFoundError, ValueError) as exc:
+        sys.exit(str(exc))
 
     records = load_agent_records(records_path)
     judged, invalid = load_judged_rounds(args.judged)
@@ -54,7 +65,7 @@ def main() -> None:
             f"refusing {len(mock_rows)} development-only mock judge rows; "
             "use --allow-mock only for plumbing tests"
         )
-    references = load_assumption_references(args.data)
+    references = load_assumption_references(data_path)
     matched, orphans, unjudged, conflicts = merge_judged(
         records,
         judged,
@@ -92,6 +103,9 @@ def main() -> None:
 
     report = {
         "records_total": len(records),
+        "scenario_data_path": str(data_path),
+        "scenario_data_source": data_source,
+        "scenario_data_sha256": sha256_file(data_path),
         "judge_rows_valid": len(judged),
         "judge_rows_invalid": len(invalid),
         "matched": len(matched),

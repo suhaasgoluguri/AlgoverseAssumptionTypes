@@ -62,11 +62,17 @@ def test_ring_assumption_walks_one_hop_per_round():
     assert exposure == {0: 0, 1: 1, 2: 2, 3: 3}
 
 
-def test_ring_correction_reaches_seed_at_round_3():
-    """Corrector at A1: correction travels 1->2->3->0, closing the loop in
-    exactly 3 hops — the seed confronts the correction in the final round."""
+def test_ring_round2_correction_reaches_seed_prompt_in_round5():
+    """A correction released to A1 in round 2 takes three ring hops to A0.
+
+    A1's round-2 output reaches A2 in round 3, A3 in round 4, and the seed A0
+    in its round-5 prompt. ``exposure_round`` reports hop distance, so keep
+    the release-round offset explicit rather than calling hop 3 "round 3".
+    """
+    release_round = 2
     exposure = exposure_round("looped_chain", seed_agent_id=1)
     assert exposure[0] == 3
+    assert release_round + exposure[0] == 5
 
 
 def test_star_leaves_never_communicate_directly():

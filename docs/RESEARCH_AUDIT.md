@@ -4,6 +4,40 @@
 **Scope:** repository, scenario data, Judge LLM starter, and the supplied v3.3
 implementation blueprint.
 
+## Resolution update (2026-07-23)
+
+The audit below is retained as a historical record of the 2026-07-20 state.
+Subsequent implementation work resolved four of its protocol findings:
+
+- **Item 2 — correction schedule:** the team selected staged, persistent
+  correction. The corrector receives the decisive private record at round 2,
+  not round 0, and the dossier is re-supplied in rounds 2 and 3. The seed's
+  assessment (or matched neutral control note) persists from round 0.
+- **Item 5 — treatment normalization:** all 20 executable scenarios now have
+  matched factual, causal, and framing variants (60 total). Every variant uses
+  a structured, categorical, unsupported `seed_private_assessment` with an
+  explicit provenance and scenario-specific verification gap; it is an
+  assumption, not a fabricated record.
+- **Item 6 — answer-position balance:** correct and favored letters each occur
+  exactly four times at every A-E position across the 20 scenarios, and all 20
+  `(correct, favored)` letter pairs are distinct.
+- **Item 7 — run reproducibility:** each new run freezes the exact scenario
+  bytes and protocol source files, hashes them in `run_manifest.json`, records
+  prompt/model/decoding/Git settings, and saves the tracked Git patch when
+  available. Judge, merge, and analysis commands verify the run snapshot by
+  default and require an explicit scenario file for legacy runs.
+
+Items not named in this resolution update remain design or analysis work; the
+original discussion below should not be read as a description of current code
+for items 2, 5, 6, or 7.
+
+One reporting safeguard has also been added without resolving Item 8's
+inferential-model requirement: conversation aggregates describe completed,
+replayable conversations, while `seed_trial_itt.jsonl` separately retains the
+true all-attempt seed population (including unreplayable generations), reports
+outcome coverage, and supplies missing-outcome bounds. Paired or hierarchical
+topology contrasts are still required for the primary inferential analysis.
+
 This note separates completed judge engineering from protocol decisions that
 should be resolved by the research team before main data collection. The
 items below were not silently changed because they alter the experimental

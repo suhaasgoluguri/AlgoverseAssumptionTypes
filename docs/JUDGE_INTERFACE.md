@@ -56,15 +56,20 @@ they test.
 
 ### Scenario reference join
 
-Join `assumption_id` to the matching variant in `data/scenarios.json`. The
-semantic task uses these annotation references:
+Join `assumption_id` to the matching variant in the raw run's verified
+`scenario_snapshot.json`. An explicit `--data` path may override that snapshot;
+legacy runs without a snapshot require the exact source file to be supplied
+this way. Never silently join an old run against the mutable current
+`data/scenarios_fixed.json`. The semantic task uses these annotation
+references:
 
 - `canonical_assumption`;
-- the normalized verification gap from the variant's structured private
-  assessment or current seed-local evidence representation;
-- the normalized initial source provenance, including its preliminary or
-  inferential status;
-- the seed-private injection material, used only as a semantic reference; and
+- the verification gap from the variant's structured private assessment (or a
+  legacy seed-local representation);
+- the normalized source provenance, including the current
+  `unsupported_private_assessment` status;
+- the seed-private categorical assessment, used only as a semantic reference
+  and never as corroborating evidence; and
 - `corrective_evidence.content`.
 
 The verification, provenance, and correction references are necessary to code
@@ -253,5 +258,5 @@ semantically usable coverage are reported separately.
 - Freeze schema, rubric, prompt, model snapshot, and adjudication procedure
   before held-out evaluation.
 
-The current `v1.1-draft` rubric is not the held-out freeze. Human calibration and
+The current `v1.2-draft` rubric is not the held-out freeze. Human calibration and
 adjudication rules are specified in [`JUDGE_RUBRIC.md`](JUDGE_RUBRIC.md).

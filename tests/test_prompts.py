@@ -1,10 +1,9 @@
 """Prompt containment tests for the seed/corrector design.
 
 Guarantees encoded here:
-- The injection appears ONLY in the seed's round-0 prompt (injection cond.).
-- The corrective evidence appears ONLY in the corrector's round-0 prompt.
+- The seed's injection (or matched neutral dossier) persists in every round.
+- Corrective evidence is absent before its release round and persists afterward.
 - Neutral agents receive private material never.
-- Update prompts re-show neither private note.
 - No experimenter vocabulary is ever visible to agents.
 """
 
@@ -14,6 +13,7 @@ import pytest
 
 from assumption_propagation.prompts import (
     PROMPT_VERSION,
+    build_private_dossier,
     build_round0_prompt,
     build_seed_generation_system_prompt,
     build_system_prompt,
@@ -21,9 +21,9 @@ from assumption_propagation.prompts import (
     format_peer_message,
 )
 
-INJECTION_TEXT = "H1's booking system shows no blackout flags this week"
+INJECTION_TEXT = "H1 has an ADA-accessible room available for both nights"
 NEUTRAL_TEXT = "All rates are quoted in USD"
-CORRECTIVE_TEXT = "Thursday inventory: accessible rooms available = 0"
+CORRECTIVE_TEXT = "H1 has zero ADA-accessible rooms available for either night"
 
 
 @pytest.fixture
@@ -45,9 +45,11 @@ def scenario():
 def variant():
     return SimpleNamespace(
         assumption_id="test_001_factual",
-        seed_local_evidence=[f"Internal note: {INJECTION_TEXT}."],
+        seed_private_assessment=SimpleNamespace(
+            content=f"Private assessment: {INJECTION_TEXT}."
+        ),
         corrective_evidence=SimpleNamespace(
-            content=CORRECTIVE_TEXT, recipient_role="corrector_agent", available_round=0
+            content=CORRECTIVE_TEXT, recipient_role="corrector_agent", available_round=2
         ),
     )
 
@@ -58,9 +60,9 @@ def test_seed_prompt_has_injection_but_not_correction(scenario, variant):
     assert CORRECTIVE_TEXT not in p
 
 
-def test_corrector_prompt_has_correction_but_not_injection(scenario, variant):
+def test_corrector_round0_has_no_delayed_correction(scenario, variant):
     p = build_round0_prompt(scenario, is_corrector=True, condition="injection", variant=variant)
-    assert CORRECTIVE_TEXT in p
+    assert CORRECTIVE_TEXT not in p
     assert INJECTION_TEXT not in p
 
 
@@ -86,16 +88,21 @@ def test_baseline_seed_gets_neutral_note_not_injection(scenario, variant):
     assert NEUTRAL_TEXT in p
 
 
-def test_baseline_corrector_keeps_corrective_evidence(scenario, variant):
+def test_baseline_corrector_gets_evidence_at_release_round(scenario, variant):
     """Baseline differs from injection in exactly one thing: the seed's note."""
-    p = build_round0_prompt(
-        scenario, is_corrector=True, condition="no_injection_baseline", variant=variant
+    dossier = build_private_dossier(
+        scenario,
+        is_seed=False,
+        is_corrector=True,
+        condition="no_injection_baseline",
+        variant=variant,
+        round_index=2,
     )
-    assert CORRECTIVE_TEXT in p
+    assert dossier is not None and CORRECTIVE_TEXT in dossier
 
 
-def test_update_prompts_reshow_no_private_notes(scenario):
-    """After round 0, both private notes survive only via visible messages."""
+def test_update_prompt_without_dossier_has_no_private_notes(scenario):
+    """Neutral agents get no dossier merely because this is an update round."""
     p = build_update_prompt(
         scenario,
         own_previous_answer="A",
@@ -105,6 +112,101 @@ def test_update_prompts_reshow_no_private_notes(scenario):
     )
     assert INJECTION_TEXT not in p
     assert CORRECTIVE_TEXT not in p
+
+
+@pytest.mark.parametrize("round_index", range(4))
+def test_seed_injection_dossier_persists_every_round(scenario, variant, round_index):
+    """Exercise the production ``seed_private_assessment.content`` path."""
+    dossier = build_private_dossier(
+        scenario,
+        is_seed=True,
+        is_corrector=False,
+        condition="injection",
+        variant=variant,
+        round_index=round_index,
+    )
+    assert dossier is not None and INJECTION_TEXT in dossier
+    assert CORRECTIVE_TEXT not in dossier
+
+
+@pytest.mark.parametrize("round_index", range(4))
+def test_structured_seed_assessment_remains_private_to_seed(
+    scenario, variant, round_index
+):
+    """Structured seed content must not leak into neutral/corrector dossiers."""
+    neutral_dossier = build_private_dossier(
+        scenario,
+        is_seed=False,
+        is_corrector=False,
+        condition="injection",
+        variant=variant,
+        round_index=round_index,
+    )
+    corrector_dossier = build_private_dossier(
+        scenario,
+        is_seed=False,
+        is_corrector=True,
+        condition="injection",
+        variant=variant,
+        round_index=round_index,
+    )
+    assert neutral_dossier is None
+    assert corrector_dossier is None or INJECTION_TEXT not in corrector_dossier
+
+
+@pytest.mark.parametrize("round_index", range(4))
+def test_baseline_neutral_dossier_persists_every_round(scenario, variant, round_index):
+    dossier = build_private_dossier(
+        scenario,
+        is_seed=True,
+        is_corrector=False,
+        condition="no_injection_baseline",
+        variant=variant,
+        round_index=round_index,
+    )
+    assert dossier is not None and NEUTRAL_TEXT in dossier
+    assert INJECTION_TEXT not in dossier
+
+
+@pytest.mark.parametrize(
+    ("round_index", "is_visible"),
+    [(0, False), (1, False), (2, True), (3, True)],
+)
+def test_corrective_dossier_obeys_delayed_persistent_schedule(
+    scenario, variant, round_index, is_visible
+):
+    dossier = build_private_dossier(
+        scenario,
+        is_seed=False,
+        is_corrector=True,
+        condition="injection",
+        variant=variant,
+        round_index=round_index,
+    )
+    assert (dossier is not None) is is_visible
+    if dossier is not None:
+        assert CORRECTIVE_TEXT in dossier
+        assert INJECTION_TEXT not in dossier
+
+
+def test_update_prompt_renders_caller_supplied_persistent_dossier(scenario, variant):
+    dossier = build_private_dossier(
+        scenario,
+        is_seed=True,
+        is_corrector=False,
+        condition="injection",
+        variant=variant,
+        round_index=1,
+    )
+    p = build_update_prompt(
+        scenario,
+        own_previous_answer="A",
+        own_previous_rationale="H1 seems fine.",
+        peer_messages=[],
+        round_index=1,
+        private_note=dossier,
+    )
+    assert INJECTION_TEXT in p
 
 
 def test_update_prompt_shows_own_and_peer_outputs(scenario):
@@ -126,7 +228,13 @@ def test_no_experiment_language_visible(scenario, variant):
                  "treatment", "corrector", "seed agent")
     prompts = [
         build_round0_prompt(scenario, is_seed=True, condition="injection", variant=variant),
-        build_round0_prompt(scenario, is_corrector=True, condition="injection", variant=variant),
+        build_round0_prompt(
+            scenario,
+            is_corrector=True,
+            condition="injection",
+            variant=variant,
+            round_index=2,
+        ),
         build_round0_prompt(scenario, condition="injection", variant=variant),
         build_system_prompt(0),
         build_seed_generation_system_prompt(),
@@ -160,4 +268,4 @@ def test_all_options_and_constraints_rendered(scenario, variant):
 
 
 def test_prompt_version_defined():
-    assert PROMPT_VERSION == "v1.0"
+    assert PROMPT_VERSION == "v2.0"

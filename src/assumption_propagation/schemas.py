@@ -1,11 +1,12 @@
 """Pydantic schemas for the assumption-propagation experiment.
 
-The source of truth for the scenario format is data/scenarios.json (team
-design). The injection treatment is a seed-private evidence note
-(`seed_local_evidence`): the seed agent privately receives evidence that
-invites the target inference, and the canonical assumption records what
-that inference is. Run-time record schemas (agent rounds, judged rounds,
-conversation results) follow the implementation blueprint.
+The executable source of truth is ``data/scenarios_fixed.json``. The current
+injection treatment is a categorical, unsupported seed-private assessment
+(``seed_private_assessment``), not a fabricated record or confirmation. Its
+canonical assumption records the exact target proposition. The legacy
+``seed_local_evidence`` shape remains readable for old artifacts. Run-time
+record schemas (agent rounds, judged rounds, conversation results) follow the
+implementation blueprint.
 
 Controlled vocabularies:
 - SemanticType: factual / causal / framing.
@@ -73,11 +74,11 @@ class AssumptionState(str, Enum):
 
 
 # ---------------------------------------------------------------------------
-# Scenario package (matches data/scenarios.json)
+# Scenario package (matches data/scenarios_fixed.json)
 # ---------------------------------------------------------------------------
 
 class CorrectiveEvidence(BaseModel):
-    """Decisive correction item with predeclared placement."""
+    """Decisive correction with a predeclared staged-release round."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -87,7 +88,7 @@ class CorrectiveEvidence(BaseModel):
 
 
 class SeedPrivateAssessment(BaseModel):
-    """New (Option-B) seed note format: an explicit preliminary assessment."""
+    """Seed-private assumption stated as an assessment, not fabricated evidence."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -100,9 +101,9 @@ class SeedPrivateAssessment(BaseModel):
 class AssumptionVariant(BaseModel):
     """One semantic variant (factual/causal/framing) of a base scenario.
 
-    The seed injection is provided in one of two formats:
-    - old: `seed_local_evidence` (list of note strings), or
-    - new (Option B): `seed_private_assessment` (an explicit assessment dict).
+    The seed injection may be provided in one of two formats:
+    - current: `seed_private_assessment` (a categorical private assumption), or
+    - legacy: `seed_local_evidence` (a list of note strings).
     Use `seed_note_lines()` to read whichever is present.
     """
 
@@ -218,7 +219,7 @@ class AgentOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     answer: str
-    rationale: str = Field(max_length=1200)  # ~90 words plus slack
+    rationale: str = Field(min_length=1, max_length=1200)  # ~90 words plus slack
 
     @field_validator("answer")
     @classmethod
@@ -226,6 +227,14 @@ class AgentOutput(BaseModel):
         v = v.strip().upper()
         if v not in ANSWER_LETTERS:
             raise ValueError(f"answer must be one of {ANSWER_LETTERS}, got {v!r}")
+        return v
+
+    @field_validator("rationale")
+    @classmethod
+    def _nonblank_rationale(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("rationale must contain non-whitespace text")
         return v
 
 
@@ -242,11 +251,27 @@ class SeedInstance(BaseModel):
     answer: str
     rationale: str
     raw_response: str = ""
+    generation_failed: bool = False
+    generation_error_type: Optional[str] = None
+    generation_error_message: Optional[str] = None
+    # Nullable for backward compatibility: legacy seed logs predate the
+    # rationale audit and must not be interpreted as audited-consistent.
+    answer_rationale_inconsistent: Optional[bool] = None
+    answer_rationale_audit_version: Optional[str] = None
+    rationale_conclusion_letters: list[str] = Field(default_factory=list)
     # Labels below are filled by the judge/human pass, not at generation time.
     seed_assumption_state: Optional[AssumptionState] = None
     seed_decision_reliance: Optional[bool] = None
     seed_confidence_level: Optional[int] = Field(default=None, ge=1, le=3)
     included_in_core: bool = True  # every valid seed is retained (no filtering)
+
+    @field_validator("answer")
+    @classmethod
+    def _valid_seed_answer(cls, v: str) -> str:
+        v = v.strip().upper()
+        if v and v not in ANSWER_LETTERS:
+            raise ValueError(f"answer must be blank or one of {ANSWER_LETTERS}, got {v!r}")
+        return v
 
 
 class AgentRoundRecord(BaseModel):
@@ -257,7 +282,9 @@ class AgentRoundRecord(BaseModel):
     run_id: str
     stage: str = "propagation"
     scenario_id: str
-    assumption_id: Optional[str] = None  # set whenever a variant is in play (incl. baselines, where it identifies whose corrective evidence was present); None only if no variant
+    # Set whenever a variant is in play, including matched baselines where it
+    # identifies the target/correction package; None only for variant-free runs.
+    assumption_id: Optional[str] = None
     seed_instance_id: Optional[str] = None
     condition: Condition
     topology: Topology
@@ -268,6 +295,10 @@ class AgentRoundRecord(BaseModel):
     agent_id: int = Field(ge=0, le=3)
     round: int = Field(ge=0, le=3)
     injection_visible: bool = False
+    # Nullable because this protocol flag was added after the first runs.
+    # Missing legacy values are unknown, not evidence that no dossier was
+    # visible.
+    neutral_control_visible: Optional[bool] = None
     corrective_visible: bool = False
     received_from: list[int] = Field(default_factory=list)
     messages_received: int = 0
@@ -278,6 +309,44 @@ class AgentRoundRecord(BaseModel):
     parse_failed: bool = False
     parse_repaired: bool = False
     carried_forward: bool = False
+    generation_failed: bool = False
+    generation_error_type: Optional[str] = None
+    generation_error_message: Optional[str] = None
+    # Nullable for the same reason as on SeedInstance: only records carrying
+    # an audit result belong in the consistency denominator.
+    answer_rationale_inconsistent: Optional[bool] = None
+    answer_rationale_audit_version: Optional[str] = None
+    rationale_conclusion_letters: list[str] = Field(default_factory=list)
+
+    @field_validator("answer")
+    @classmethod
+    def _valid_optional_answer(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v = v.strip().upper()
+        if v not in ANSWER_LETTERS:
+            raise ValueError(f"answer must be one of {ANSWER_LETTERS}, got {v!r}")
+        return v
+
+    @model_validator(mode="after")
+    def _valid_failure_state(self) -> "AgentRoundRecord":
+        if not self.parse_failed and self.answer is None:
+            raise ValueError("a successfully parsed record requires an answer")
+        if not self.parse_failed and not (self.rationale or "").strip():
+            raise ValueError("a successfully parsed record requires a rationale")
+        if self.generation_failed and not self.parse_failed:
+            raise ValueError("generation_failed requires parse_failed=true")
+        if self.parse_repaired and self.parse_failed:
+            raise ValueError("parse_repaired and parse_failed cannot both be true")
+        if self.carried_forward and (not self.parse_failed or self.round == 0):
+            raise ValueError(
+                "carried_forward requires a failed update in a round after round 0"
+            )
+        if self.parse_failed and self.answer is not None and not self.carried_forward:
+            raise ValueError("a failed response may retain an answer only when carried forward")
+        if self.parse_failed and self.answer_rationale_inconsistent is not None:
+            raise ValueError("failed/carried responses are outside the rationale-audit denominator")
+        return self
 
 
 class JudgeDecision(BaseModel):

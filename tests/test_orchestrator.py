@@ -3,8 +3,9 @@ assert on the prompts agents actually received — the ground truth of what
 information flowed where.
 
 Design under test: looped chain (ring 0->1->2->3->0), seed A0 with the
-assumption note, corrector A1 with the corrective evidence, both private
-and round-0 only; frozen ID-neutral seed replay across topologies.
+assumption dossier from round 0 onward, and corrector A1 with private
+corrective evidence from round 2 onward; frozen ID-neutral seed replay
+across topologies.
 """
 
 import json
@@ -20,9 +21,9 @@ from assumption_propagation.orchestrator import (
     run_matched_triple,
 )
 
-INJECTION_TEXT = "H1's booking system shows no blackout flags this week"
+INJECTION_TEXT = "H1 has an ADA-accessible room available for both nights"
 NEUTRAL_TEXT = "All rates are quoted in USD"
-CORRECTIVE_TEXT = "Thursday inventory: accessible rooms available = 0"
+CORRECTIVE_TEXT = "H1 has zero ADA-accessible rooms available for either night"
 
 
 def mk_scenario():
@@ -42,9 +43,11 @@ def mk_scenario():
 def mk_variant():
     return SimpleNamespace(
         assumption_id="test_001_factual",
-        seed_local_evidence=[f"Internal note: {INJECTION_TEXT}."],
+        seed_private_assessment=SimpleNamespace(
+            content=f"Private assessment: {INJECTION_TEXT}."
+        ),
         corrective_evidence=SimpleNamespace(
-            content=CORRECTIVE_TEXT, recipient_role="corrector_agent", available_round=0
+            content=CORRECTIVE_TEXT, recipient_role="corrector_agent", available_round=2
         ),
     )
 
@@ -137,22 +140,77 @@ async def test_star_roles_are_peripheral():
 
 
 async def test_private_material_containment():
-    """Injection in no generated prompt; correction ONLY in A1's round-0."""
+    """Seed dossier persists; correction is delayed to R2 and then persists."""
     frozen = await make_frozen_seed()
     mock = MockClient()
     result = await run_conversation(
         mk_scenario(), client=mock, topology_name="looped_chain",
         condition="injection", variant=mk_variant(), frozen_seed=frozen,
     )
-    # Round 0 generates agents 1, 2, 3 (seed replayed): calls[0] is A1.
-    assert CORRECTIVE_TEXT in mock.calls[0][1]
+    # Frozen seed means generated-call indices are: R0 A1-A3, then R1-R3 A0-A3.
+    seed_update_calls = (3, 7, 11)
+    corrector_calls = (0, 4, 8, 12)
     for i, (_, user_prompt) in enumerate(mock.calls):
-        assert INJECTION_TEXT not in user_prompt
-        if i != 0:
-            assert CORRECTIVE_TEXT not in user_prompt
-    corrector_record = next(r for r in result.records if r.agent_id == 1 and r.round == 0)
-    assert corrector_record.corrective_visible is True
-    assert sum(r.corrective_visible for r in result.records) == 1
+        assert (INJECTION_TEXT in user_prompt) is (i in seed_update_calls)
+        assert (CORRECTIVE_TEXT in user_prompt) is (i in corrector_calls[2:])
+
+    for record in result.records:
+        assert record.injection_visible is (
+            record.agent_id == 0
+        )
+        assert record.neutral_control_visible is False
+        assert record.corrective_visible is (
+            record.agent_id == 1 and record.round >= 2
+        )
+
+
+@pytest.mark.parametrize(
+    "topology_name", ("looped_chain", "neutral_star", "fully_connected_mesh")
+)
+@pytest.mark.parametrize("condition", ("injection", "no_injection_baseline"))
+async def test_private_dossier_timing_and_containment_across_topologies(
+    topology_name, condition
+):
+    frozen = await make_frozen_seed() if condition == "injection" else None
+    mock = MockClient()
+    result = await run_conversation(
+        mk_scenario(),
+        client=mock,
+        topology_name=topology_name,
+        condition=condition,
+        variant=mk_variant(),
+        frozen_seed=frozen,
+    )
+
+    prompts = [prompt for _, prompt in mock.calls]
+    assert sum(INJECTION_TEXT in prompt for prompt in prompts) == (
+        3 if condition == "injection" else 0
+    )
+    assert sum(NEUTRAL_TEXT in prompt for prompt in prompts) == (
+        4 if condition == "no_injection_baseline" else 0
+    )
+    assert sum(CORRECTIVE_TEXT in prompt for prompt in prompts) == 2
+    assert all(
+        not (INJECTION_TEXT in prompt and CORRECTIVE_TEXT in prompt)
+        for prompt in prompts
+    )
+    assert all(
+        not (NEUTRAL_TEXT in prompt and CORRECTIVE_TEXT in prompt)
+        for prompt in prompts
+    )
+
+    first = result.records[0]
+    for record in result.records:
+        assert record.injection_visible is (
+            condition == "injection" and record.agent_id == first.seed_agent_id
+        )
+        assert record.neutral_control_visible is (
+            condition == "no_injection_baseline"
+            and record.agent_id == first.seed_agent_id
+        )
+        assert record.corrective_visible is (
+            record.agent_id == first.corrector_agent_id and record.round >= 2
+        )
 
 
 async def test_ring_routing_in_actual_prompts():
@@ -180,15 +238,48 @@ async def test_ring_routing_in_actual_prompts():
 
 async def test_baseline_seed_neutral_corrector_keeps_evidence():
     mock = MockClient()
-    await run_conversation(
+    result = await run_conversation(
         mk_scenario(), client=mock, topology_name="looped_chain",
         condition="no_injection_baseline", variant=mk_variant(),
     )
     assert len(mock.calls) == 16  # nobody replayed in baseline
-    seed_prompt = mock.calls[0][1]       # round 0 generates A0 first here
-    corrector_prompt = mock.calls[1][1]  # then A1
-    assert NEUTRAL_TEXT in seed_prompt and INJECTION_TEXT not in seed_prompt
-    assert CORRECTIVE_TEXT in corrector_prompt
+    # Baseline generates all four agents each round, in agent-id order.
+    seed_calls = (0, 4, 8, 12)
+    corrector_calls = (1, 5, 9, 13)
+    for i, (_, prompt) in enumerate(mock.calls):
+        assert (NEUTRAL_TEXT in prompt) is (i in seed_calls)
+        assert INJECTION_TEXT not in prompt
+        assert (CORRECTIVE_TEXT in prompt) is (i in corrector_calls[2:])
+
+    for record in result.records:
+        assert record.injection_visible is False
+        assert record.neutral_control_visible is (record.agent_id == 0)
+        assert record.corrective_visible is (
+            record.agent_id == 1 and record.round >= 2
+        )
+
+
+async def test_baseline_round_zero_seed_uses_frozen_seed_system_template():
+    scenario = mk_scenario()
+    variant = mk_variant()
+    seed_client = MockClient()
+    await generate_seed_instances(
+        scenario, variant, seed_client, n_instances=1
+    )
+    baseline_client = MockClient()
+    await run_conversation(
+        scenario,
+        client=baseline_client,
+        topology_name="looped_chain",
+        condition="no_injection_baseline",
+        variant=variant,
+    )
+
+    stage_a_system = seed_client.calls[0][0]
+    baseline_seed_round0_system = baseline_client.calls[0][0]
+    assert baseline_seed_round0_system == stage_a_system
+    assert "Agent 0" not in baseline_seed_round0_system
+    assert baseline_client.calls[1][0] != stage_a_system
 
 
 async def test_parse_failure_carries_previous_answer_forward():
@@ -226,8 +317,162 @@ async def test_independent_control_answers_once_with_baseline_information():
     assert all(r.received_from == [] for r in result.records)
     assert len(result.final_answers()) == 4  # final round is round 0
     seed_prompt = mock.calls[0][1]       # A0 (seed slot)
-    corrector_prompt = mock.calls[1][1]  # A1 (corrector slot)
     assert NEUTRAL_TEXT in seed_prompt and INJECTION_TEXT not in seed_prompt
-    assert CORRECTIVE_TEXT in corrector_prompt
     for _, prompt in mock.calls:
         assert INJECTION_TEXT not in prompt
+        assert CORRECTIVE_TEXT not in prompt  # delayed evidence is never released
+    for record in result.records:
+        assert record.neutral_control_visible is (record.agent_id == 0)
+        assert record.corrective_visible is False
+
+
+async def test_answer_rationale_contradiction_is_logged_without_repair():
+    frozen = await make_frozen_seed(
+        answer="A", rationale="Therefore, the correct answer is option B."
+    )
+    result = await run_conversation(
+        mk_scenario(), client=MockClient(), topology_name="looped_chain",
+        condition="injection", variant=mk_variant(), frozen_seed=frozen,
+    )
+    seed_record = next(
+        r for r in result.records if r.agent_id == 0 and r.round == 0
+    )
+    assert seed_record.answer == "A"  # audit never silently repairs the answer
+    assert seed_record.rationale_conclusion_letters == ["B"]
+    assert seed_record.answer_rationale_inconsistent is True
+
+
+async def test_frozen_seed_identity_mismatch_fails_before_model_calls():
+    frozen = await make_frozen_seed()
+    frozen.assumption_id = "different_assumption"
+    mock = MockClient()
+    with pytest.raises(ValueError, match="assumption mismatch"):
+        await run_conversation(
+            mk_scenario(),
+            client=mock,
+            topology_name="looped_chain",
+            condition="injection",
+            variant=mk_variant(),
+            frozen_seed=frozen,
+        )
+    assert mock.calls == []
+
+
+async def test_role_overrides_preserve_topology_policy():
+    frozen = await make_frozen_seed()
+    ring = await run_conversation(
+        mk_scenario(),
+        client=MockClient(),
+        topology_name="looped_chain",
+        condition="injection",
+        variant=mk_variant(),
+        frozen_seed=frozen,
+        seed_agent_id=2,
+    )
+    star = await run_conversation(
+        mk_scenario(),
+        client=MockClient(),
+        topology_name="neutral_star",
+        condition="injection",
+        variant=mk_variant(),
+        frozen_seed=frozen,
+        seed_agent_id=2,
+    )
+    assert ring.records[0].corrector_agent_id == 3
+    assert star.records[0].corrector_agent_id in {1, 3}
+
+    with pytest.raises(ValueError, match="immediately downstream"):
+        await run_conversation(
+            mk_scenario(),
+            client=MockClient(),
+            topology_name="looped_chain",
+            condition="injection",
+            variant=mk_variant(),
+            frozen_seed=frozen,
+            seed_agent_id=2,
+            corrector_agent_id=0,
+        )
+    with pytest.raises(ValueError, match="hub agent 0"):
+        await run_conversation(
+            mk_scenario(),
+            client=MockClient(),
+            topology_name="neutral_star",
+            condition="injection",
+            variant=mk_variant(),
+            frozen_seed=frozen,
+            seed_agent_id=2,
+            corrector_agent_id=0,
+        )
+
+
+async def test_invalid_condition_and_frozen_baseline_fail_before_model_calls():
+    frozen = await make_frozen_seed()
+    for condition, supplied_seed, message in (
+        ("typo", None, "unknown experimental condition"),
+        ("no_injection_baseline", frozen, "only valid for the injection"),
+    ):
+        mock = MockClient()
+        with pytest.raises(ValueError, match=message):
+            await run_conversation(
+                mk_scenario(),
+                client=mock,
+                topology_name="looped_chain",
+                condition=condition,
+                variant=mk_variant(),
+                frozen_seed=supplied_seed,
+            )
+        assert mock.calls == []
+
+
+async def test_matched_triple_rejects_duplicate_topologies_before_calls():
+    frozen = await make_frozen_seed()
+    mock = MockClient()
+    with pytest.raises(ValueError, match="must be unique"):
+        await run_matched_triple(
+            mk_scenario(),
+            mk_variant(),
+            frozen,
+            mock,
+            topologies=("looped_chain", "looped_chain"),
+        )
+    assert mock.calls == []
+
+
+async def test_generation_exception_is_logged_and_rounds_are_committed(tmp_path):
+    class FailOnceClient(MockClient):
+        async def generate(self, system_prompt, user_prompt):
+            self.calls.append((system_prompt, user_prompt))
+            if len(self.calls) == 1:
+                raise RuntimeError("provider failed after retries")
+            return valid("B", "Generated successfully.")
+
+    frozen = await make_frozen_seed()
+    log_path = tmp_path / "records.jsonl"
+    result = await run_conversation(
+        mk_scenario(),
+        client=FailOnceClient(),
+        topology_name="looped_chain",
+        condition="injection",
+        variant=mk_variant(),
+        frozen_seed=frozen,
+        log_path=log_path,
+    )
+
+    failures = [record for record in result.records if record.generation_failed]
+    assert len(failures) == 1
+    assert failures[0].generation_error_type == "RuntimeError"
+    assert len(log_path.read_text(encoding="utf-8").splitlines()) == 16
+
+
+async def test_seed_generation_exception_is_retained_not_resampled():
+    class FailingClient(MockClient):
+        async def generate(self, system_prompt, user_prompt):
+            self.calls.append((system_prompt, user_prompt))
+            raise RuntimeError("seed provider failure")
+
+    seeds = await generate_seed_instances(
+        mk_scenario(), mk_variant(), FailingClient(), n_instances=1
+    )
+    assert len(seeds) == 1
+    assert seeds[0].generation_failed is True
+    assert seeds[0].included_in_core is False
