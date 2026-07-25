@@ -1,0 +1,208 @@
+{
+  "manifest_version": "1.2",
+  "created_at_utc": "2026-07-25T15:13:03.151687+00:00",
+  "runner": "scripts/run_pilot.py",
+  "command_argv": [
+    "scripts/run_pilot.py",
+    "--client",
+    "azure",
+    "--data",
+    "data/scenarios_six_calibration.json",
+    "--variants",
+    "factual",
+    "causal",
+    "framing",
+    "--topologies",
+    "looped_chain",
+    "fully_connected_mesh",
+    "--n-seeds",
+    "2",
+    "--baseline-reps",
+    "1",
+    "--independent-reps",
+    "1",
+    "--rounds",
+    "4",
+    "--temperature",
+    "0.2",
+    "--tag",
+    "calibration_6scenarios_v1"
+  ],
+  "git": {
+    "commit": "6a84365742b4fd8a67113b78cee0749e1bc4ef18",
+    "branch": "main",
+    "dirty": true,
+    "status_porcelain": "?? data/scenarios_six_calibration.json\n?? outputs/raw/20260723_172925_azure_calibration_travel001/\n?? outputs/raw/20260723_174108_azure_calibration_travel001/\n?? outputs/raw/20260723_174547_azure_smoke_endpoint/\n?? outputs/raw/20260723_174724_azure_calibration_travel001_v2/\n?? outputs/raw/20260725_081141_azure_calibration_6scenarios_v1/\n?? reports/"
+  },
+  "git_tracked_changes": {
+    "path": "git_tracked_changes.patch",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "scenario_data": {
+    "source_path": "C:\\Users\\imwri\\OneDrive\\Desktop\\AlgoverseAssumptionTypes\\data\\scenarios_six_calibration.json",
+    "snapshot_path": "scenario_snapshot.json",
+    "sha256": "be687513023a1effb0719c749578dcce9c7550db94d8a62298406b5ac8bfdd18",
+    "selected_scenario_ids": [
+      "travel_001",
+      "travel_002",
+      "it_002",
+      "it_003",
+      "logistics_001",
+      "logistics_002"
+    ],
+    "selected_assumption_ids": [
+      "travel_001_factual_negative",
+      "travel_001_causal_negative",
+      "travel_001_framing_negative",
+      "travel_002_factual_negative",
+      "travel_002_causal_negative",
+      "travel_002_framing_negative",
+      "it_002_factual_negative",
+      "it_002_causal_negative",
+      "it_002_framing_negative",
+      "it_003_factual_negative",
+      "it_003_causal_negative",
+      "it_003_framing_negative",
+      "logistics_001_factual_negative",
+      "logistics_001_causal_negative",
+      "logistics_001_framing_negative",
+      "logistics_002_factual_negative",
+      "logistics_002_causal_negative",
+      "logistics_002_framing_negative"
+    ]
+  },
+  "prompt_version": "v2.0",
+  "protocol_sources": {
+    "pyproject.toml": {
+      "snapshot_path": "protocol_snapshot/pyproject.toml",
+      "sha256": "0fc0e23fa9a814a2d2bc8272709d4353895d03e8040f0d3fc65d8e189f76d9a5"
+    },
+    "uv.lock": {
+      "snapshot_path": "protocol_snapshot/uv.lock",
+      "sha256": "7a03bdee2e61444721dc0a3099dfeb28b26fe17b286a42b4f7f0cded1eec87f6"
+    },
+    "scripts/run_pilot.py": {
+      "snapshot_path": "protocol_snapshot/scripts/run_pilot.py",
+      "sha256": "45199473f7331d33a10c9d6be69cc23188f95b57e6e1e7cd3075d1d97932637d"
+    },
+    "src/assumption_propagation/prompts.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/prompts.py",
+      "sha256": "a8cdefaa5429cfbe3fd6dea2fdd06a40100bde21fe8bf6f17d11d02dee9dc13b"
+    },
+    "src/assumption_propagation/orchestrator.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/orchestrator.py",
+      "sha256": "03c7772845e201150fdfedfd306d8fc6bcebf4355459706f184177ec40101526"
+    },
+    "src/assumption_propagation/topologies.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/topologies.py",
+      "sha256": "704efddbe2fcec500729b9e5bbc399dfe7fa97cf4ff946a9e377872de98d4594"
+    },
+    "src/assumption_propagation/schemas.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/schemas.py",
+      "sha256": "3bc9d58a9700d3f3125c19d636cf55d74f1ffdc6d2c04fa8b5a28a47d13e62d4"
+    },
+    "src/assumption_propagation/clients.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/clients.py",
+      "sha256": "b4a3952a5e2e090e093f871ccb5dcd6494dbf1b793a7d9249a319da958ac8f7d"
+    },
+    "src/assumption_propagation/aggregation.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/aggregation.py",
+      "sha256": "30adf5f0aa91fad023ac251f0ce255ca9cf309fc9dcb3086a84a504f4a0c18ba"
+    },
+    "src/assumption_propagation/reproducibility.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/reproducibility.py",
+      "sha256": "80303e0926976f0fd3e848a613ef537b7e189151266b7e042cf73ab1becfec18"
+    }
+  },
+  "client": {
+    "kind": "azure",
+    "model_identifier": "azure:gpt-5.4-mini",
+    "deployment": "gpt-5.4-mini",
+    "temperature": 0.2,
+    "max_tokens": 400
+  },
+  "protocol": {
+    "n_rounds": 4,
+    "independent_control_n_rounds": 1,
+    "topologies": [
+      "looped_chain",
+      "fully_connected_mesh"
+    ],
+    "n_seeds": 2,
+    "baseline_reps": 1,
+    "skip_baselines": false,
+    "independent_reps": 1,
+    "skip_independent": false,
+    "correction_available_round_by_assumption": {
+      "travel_001_factual_negative": 2,
+      "travel_001_causal_negative": 2,
+      "travel_001_framing_negative": 2,
+      "travel_002_factual_negative": 2,
+      "travel_002_causal_negative": 2,
+      "travel_002_framing_negative": 2,
+      "it_002_factual_negative": 2,
+      "it_002_causal_negative": 2,
+      "it_002_framing_negative": 2,
+      "it_003_factual_negative": 2,
+      "it_003_causal_negative": 2,
+      "it_003_framing_negative": 2,
+      "logistics_001_factual_negative": 2,
+      "logistics_001_causal_negative": 2,
+      "logistics_001_framing_negative": 2,
+      "logistics_002_factual_negative": 2,
+      "logistics_002_causal_negative": 2,
+      "logistics_002_framing_negative": 2
+    },
+    "seed_private_dossier_persistent": true,
+    "neutral_control_dossier_persistent": true,
+    "corrective_dossier_persistent_from_available_round": true
+  },
+  "status": {
+    "state": "complete",
+    "completed_at_utc": "2026-07-25T15:26:07.610515+00:00",
+    "planned_seed_generations": 36,
+    "planned_conversation_attempts": {
+      "injection_max_if_all_seeds_replayable": 72,
+      "no_injection_baseline": 36,
+      "independent_control": 18,
+      "total_max_if_all_seeds_replayable": 126
+    },
+    "observed_rows": {
+      "seeds": 36,
+      "agent_round_records": 1800,
+      "conversation_results": 126
+    },
+    "observed_files": {
+      "seeds": {
+        "path": "seeds.jsonl",
+        "rows": 36,
+        "sha256": "93b3f874a917b0930689f7a7ff0941b54fb9ecf936f87b41ba6109c127075118"
+      },
+      "records": {
+        "path": "records.jsonl",
+        "rows": 1800,
+        "sha256": "95b9d089595366a63d72087440482ca98c05589fce18eff6c38acdb0aaa44c87"
+      },
+      "results": {
+        "path": "results.jsonl",
+        "rows": 126,
+        "sha256": "9806a7b8026b0a6504723b6bdd2ff6e03ac49de8e357bc6ad5f4f3515dea86b8"
+      }
+    },
+    "output_integrity_check_version": "1.0",
+    "replayable_seed_generations": 36,
+    "unreplayable_seed_generations": 0,
+    "reconciled_expected_rows": {
+      "seeds": 36,
+      "agent_round_records": 1800,
+      "conversation_results": 126
+    },
+    "observed_conversations": {
+      "injection": 72,
+      "no_injection_baseline": 36,
+      "independent_control": 18,
+      "total": 126
+    }
+  }
+}

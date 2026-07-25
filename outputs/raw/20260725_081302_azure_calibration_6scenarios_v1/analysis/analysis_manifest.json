@@ -1,0 +1,38 @@
+{
+  "analysis_manifest_version": "1.1",
+  "created_at_utc": "2026-07-25T15:27:10.738029+00:00",
+  "command_argv": [
+    "scripts\\analyze_run.py",
+    "outputs\\raw\\20260725_081302_azure_calibration_6scenarios_v1"
+  ],
+  "records": {
+    "path": "outputs\\raw\\20260725_081302_azure_calibration_6scenarios_v1\\records.jsonl",
+    "sha256": "95b9d089595366a63d72087440482ca98c05589fce18eff6c38acdb0aaa44c87",
+    "n_rows": 1800
+  },
+  "seeds": {
+    "path": "outputs\\raw\\20260725_081302_azure_calibration_6scenarios_v1\\seeds.jsonl",
+    "sha256": "93b3f874a917b0930689f7a7ff0941b54fb9ecf936f87b41ba6109c127075118",
+    "n_rows": 36
+  },
+  "scenario_data": {
+    "path": "outputs\\raw\\20260725_081302_azure_calibration_6scenarios_v1\\scenario_snapshot.json",
+    "source": "run_snapshot",
+    "sha256": "be687513023a1effb0719c749578dcce9c7550db94d8a62298406b5ac8bfdd18"
+  },
+  "judged_data": null,
+  "analysis_sources": {
+    "scripts\\analyze_run.py": "8140fa671dfebca97d549e32ab7893620dc6ac50462c656612d032bbf895bd29",
+    "src\\assumption_propagation\\analysis.py": "e61b010aeb6384489df65385bbcfb4f11e84fd8e831890f17621a43b7b4334c3",
+    "src\\assumption_propagation\\metrics.py": "6dba317f548c8cfadb40af60d37913ad44d5ce146ee31047823b633ce9ab2c48",
+    "src\\assumption_propagation\\aggregation.py": "30adf5f0aa91fad023ac251f0ce255ca9cf309fc9dcb3086a84a504f4a0c18ba",
+    "src\\assumption_propagation\\schemas.py": "3bc9d58a9700d3f3125c19d636cf55d74f1ffdc6d2c04fa8b5a28a47d13e62d4",
+    "src\\assumption_propagation\\topologies.py": "704efddbe2fcec500729b9e5bbc399dfe7fa97cf4ff946a9e377872de98d4594",
+    "src\\assumption_propagation\\judge.py": "c7ba15e2f06f2322e6043f3238eef905de81b325a98c23e77eb0d72ce37ae2e2"
+  },
+  "n_conversations": 126,
+  "n_replayable_conversation_aggregate_rows": 15,
+  "n_conditional_aggregate_rows": 15,
+  "n_seed_trials": 36,
+  "n_seed_trial_itt_rows": 36
+}

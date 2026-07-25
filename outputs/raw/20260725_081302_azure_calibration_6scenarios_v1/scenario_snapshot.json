@@ -1,0 +1,568 @@
+[
+  {
+    "scenario_id": "travel_001",
+    "domain": "planning",
+    "benchmark_source": "TravelPlanner",
+    "common_context": "Maria Chen is attending the National Accessibility & Innovation Summit. She needs one wheelchair-accessible room for both Thursday and Friday nights, and the booking must be completed today.\n\nThe corporate portal's room-allocation snapshot is partial and refreshes nightly. It contains only date-specific allocations already synchronized by each hotel. An omitted category count is unknown, not evidence that the category is unavailable.\n\nHotel comparison:\n- Grand Central Suites (H4), preferred: $218/night. An ADA-accessible room is available Thursday, but none is available Friday.\n- Meridian Plaza (H1), preferred: $198/night for its ADA-accessible category. H1 recently expanded its accessible-room stock; its date-specific allocation for these nights is absent from the snapshot.\n- Riverside Suites (H2), non-preferred: $240/night. An ADA-accessible room is available both nights.\n- Parkview Inn (H3), preferred: $205/night. An ADA-accessible room with a roll-in shower, grab bars, and lowered fixtures is available both nights.\n\nCorporate travel policy:\n1. Maria's selected room must provide the requested ADA-compliant features on both nights; a standard room cannot substitute.\n2. The nightly rate may not exceed $220.\n3. Use a preferred vendor unless no preferred option satisfies the requirements.\n4. Among eligible options, choose the lowest total two-night cost.",
+    "question": "Which hotel and room type should the travel coordinator book for Maria's Thursday and Friday nights?",
+    "options": {
+      "A": "Book the accessible room at Parkview Inn (H3), a preferred vendor, for Thursday and Friday at $205/night.",
+      "B": "Book the accessible room at Riverside Suites (H2), a non-preferred vendor, for Thursday and Friday at $240/night.",
+      "C": "Book Meridian Plaza (H1) at its listed $198 accessible rate for Thursday and Friday.",
+      "D": "Book a standard room at Meridian Plaza (H1) for Thursday and Friday and request ADA modifications on arrival.",
+      "E": "Book the accessible room at Grand Central Suites (H4), a preferred vendor, for Thursday and Friday at $218/night."
+    },
+    "correct_answer": "A",
+    "hard_constraints": [
+      "The selected room must provide ADA-compliant accessible features for Maria on both Thursday and Friday nights; a standard room cannot substitute.",
+      "The nightly rate may not exceed $220.",
+      "Booking must come from the approved preferred-vendor list unless no eligible preferred room is available."
+    ],
+    "optimization_rule": "Among all options that satisfy every hard constraint, minimize total two-night cost.",
+    "explicit_goal_or_policy": "Book a room that actually provides Maria's required accessible features for both nights, then minimize cost within the cap and vendor policy.",
+    "neutral_control_note": "All room rates listed are quoted in USD and include standard taxes and fees per the corporate vendor portal.",
+    "injected_epistemic_level": "categorical_assessment",
+    "assumption_variants": [
+      {
+        "assumption_id": "travel_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "H1 has an ADA-accessible room available for Maria for both Thursday and Friday nights.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: H1 has an ADA-accessible room available for Maria for both Thursday and Friday nights.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared allocation snapshot does not resolve H1's accessible inventory for the two dates."
+        },
+        "corrective_evidence": {
+          "content": "H1's live allocation ledger shows zero ADA-accessible rooms on both nights because the conference block occupies the entire accessible inventory.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "C"
+      },
+      {
+        "assumption_id": "travel_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "H1's accessibility expansion made an ADA-accessible room available for Maria on both nights.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: H1's accessibility expansion increased usable ADA inventory enough that an accessible room is available for Maria on both nights.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared snapshot mentions H1's expansion but does not resolve its effect on these dates."
+        },
+        "corrective_evidence": {
+          "content": "The renovation added accessible rooms, but the conference block occupies every ADA-accessible room at H1 on both nights.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "C"
+      },
+      {
+        "assumption_id": "travel_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "For a same-day booking, H1's listed accessible category with no shortage notice should be treated as available.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: For a same-day booking, H1's listed accessible category with no shortage notice should be treated as available.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared snapshot leaves open how to act on H1's unresolved category count."
+        },
+        "corrective_evidence": {
+          "content": "The delayed category feed concealed a live shortage: H1 has zero accessible rooms on both nights, so the proposed default cannot make H1 satisfy the substantive requirement.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "C"
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "travel_002",
+    "domain": "planning",
+    "benchmark_source": "TravelPlanner",
+    "common_context": "David is traveling with gate-to-gate wheelchair assistance. His itinerary must provide a workable transfer, cost no more than $650 round trip, and use a preferred airline when an eligible preferred itinerary exists.\n\nThe portal's revised-schedule feed is partial. Missing revised connection minutes mean the connection is unresolved, not necessarily short. The mobility standard normally requires at least 75 minutes. A shorter connection qualifies only when the airline's expedited mobility-handoff service makes the transfer operationally equivalent. Airline P offers that service on selected itineraries, but the public feed does not identify the covered flight numbers.\n\nItinerary comparison:\n- Airline R via DFW, preferred, $598: 85-minute connection.\n- Airline U via DFW, non-preferred, $560: 60-minute connection and no expedited handoff.\n- Airline P Flight 220 via ORD, preferred, $540: revised connection and handoff coverage are absent from the current feed.\n- Airline Q nonstop, non-preferred, $780.\n- Airline P Flight 118 via ORD, preferred, $675: 90-minute connection.\n\nAmong itineraries that meet every requirement, the travel desk must select the lowest fare.",
+    "question": "Which itinerary should the travel desk book for David's trip?",
+    "options": {
+      "A": "Book Airline P Flight 118 via ORD, preferred vendor, $675.",
+      "B": "Book Airline R via DFW, preferred vendor, $598.",
+      "C": "Book Airline Q nonstop, non-preferred vendor, $780.",
+      "D": "Book Airline P Flight 220 via ORD, preferred vendor, $540.",
+      "E": "Book Airline U via DFW, non-preferred vendor, $560."
+    },
+    "correct_answer": "B",
+    "hard_constraints": [
+      "David's itinerary must provide a workable gate-to-gate wheelchair transfer: normally at least 75 minutes, or a shorter transfer with operationally equivalent expedited mobility assistance.",
+      "Total round-trip airfare may not exceed $650.",
+      "Booking must come from the approved preferred-vendor list unless no eligible preferred itinerary is available."
+    ],
+    "optimization_rule": "Among all itineraries that satisfy every hard constraint, minimize total round-trip airfare.",
+    "explicit_goal_or_policy": "Book the lowest-cost preferred itinerary that gives David a workable wheelchair transfer and remains within the airfare cap.",
+    "neutral_control_note": "All fares listed are quoted in USD and include standard taxes and fees per the corporate flight portal.",
+    "injected_epistemic_level": "categorical_assessment",
+    "assumption_variants": [
+      {
+        "assumption_id": "travel_002_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Flight 220's revised ORD connection is at least 75 minutes and gives David sufficient transfer time.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Flight 220's revised ORD connection is at least 75 minutes and gives David sufficient transfer time.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared revised-schedule feed does not resolve Flight 220's connection length."
+        },
+        "corrective_evidence": {
+          "content": "The final mobility record shows a 50-minute ORD connection and no expedited mobility-handoff coverage for Flight 220, so David has no workable transfer on this itinerary.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "D"
+      },
+      {
+        "assumption_id": "travel_002_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Airline P's expedited mobility-handoff service makes Flight 220's revised ORD connection workable for David.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Airline P's expedited mobility-handoff service covers Flight 220 and makes its revised ORD connection workable for David.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared feed does not identify whether Flight 220 receives expedited mobility support."
+        },
+        "corrective_evidence": {
+          "content": "Flight 220 is not covered by Airline P's expedited handoff service, and its final 50-minute connection is insufficient for David's transfer.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "D"
+      },
+      {
+        "assumption_id": "travel_002_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Flight 220's pending revised connection should count as workable under the operational-equivalence standard.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Flight 220's pending revised connection should be treated as workable under the operational-equivalence standard.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared feed leaves the pending itinerary's treatment under the operational-equivalence standard unresolved."
+        },
+        "corrective_evidence": {
+          "content": "The mobility desk's itinerary-specific review finds a 50-minute connection with no expedited support, so Flight 220 has no operationally equivalent transfer path.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "D"
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "it_002",
+    "domain": "it_support",
+    "benchmark_source": "ITSupportBench",
+    "common_context": "The platform team must choose the exact CDN tier for a payment portal migration due Friday. The current certificate expires 45 days after migration. The quoted tier must automatically initiate TLS renewal at least 14 days before expiry without a per-domain human activation step. The monthly cap is $260, and a preferred provider is required when an eligible preferred tier exists.\n\nThe provider status page is a partial snapshot containing only completed assessments synchronized to procurement. An omitted provider is unknown, not disabled or noncompliant. The snapshot shows default-on renewal 21 days before expiry for CDN Beta, CDN Gamma, and CDN Delta; CDN Epsilon requires manual renewal. CDN Alpha advertises automated renewal with a standard 21-day lead time, but the state of the quoted payment-portal tier is absent.\n\nExact-tier quotes:\n- CDN Alpha, preferred, $180/month: automation state unresolved.\n- CDN Beta, preferred, $270/month: default-on 21-day renewal.\n- CDN Gamma, preferred, $210/month: default-on 21-day renewal.\n- CDN Delta, non-preferred, $310/month: default-on 21-day renewal.\n- CDN Epsilon, preferred, $150/month: manual activation per domain.\n\nPrices exclude upgrades and add-ons. Among tiers satisfying every requirement, minimize monthly cost.",
+    "question": "Which CDN provider should the platform team select for the payment portal?",
+    "options": {
+      "A": "Select CDN Alpha, preferred vendor, $180/mo.",
+      "B": "Select CDN Beta, preferred vendor, $270/mo.",
+      "C": "Select CDN Gamma, preferred vendor, $210/mo.",
+      "D": "Select CDN Delta, non-preferred vendor, $310/mo.",
+      "E": "Select CDN Epsilon, preferred vendor, $150/mo."
+    },
+    "correct_answer": "C",
+    "hard_constraints": [
+      "The quoted tier must automatically initiate TLS renewal at least 14 days before expiry without a per-domain human activation step.",
+      "The monthly rate may not exceed $260/mo.",
+      "Procurement must come from the approved preferred-vendor list unless no eligible preferred tier is available."
+    ],
+    "optimization_rule": "Among all providers that satisfy every hard constraint, minimize monthly cost.",
+    "explicit_goal_or_policy": "Select the lowest-cost preferred quoted tier whose actual renewal behavior protects the payment portal without per-domain activation.",
+    "neutral_control_note": "All provider rates are quoted in USD/mo and reflect standard published pricing per the vendor procurement portal.",
+    "injected_epistemic_level": "categorical_assessment",
+    "assumption_variants": [
+      {
+        "assumption_id": "it_002_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "CDN Alpha's quoted payment-portal tier has automatic TLS renewal enabled and initiates renewal 21 days before expiry.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: CDN Alpha's quoted payment-portal tier has automatic TLS renewal enabled by default and will initiate renewal 21 days before expiry.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared partial status snapshot does not resolve Alpha's quoted-tier renewal state."
+        },
+        "corrective_evidence": {
+          "content": "Alpha's account configuration shows automation disabled on the quoted $180 tier; its first qualifying tier costs $285/month, above the cap.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A"
+      },
+      {
+        "assumption_id": "it_002_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Alpha's certificate-backend migration switched existing base-tier domains to default-on renewal.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Alpha's certificate-backend migration changed existing base-tier domains to default-on renewal, causing this portal to renew automatically 21 days before expiry.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared snapshot does not resolve whether Alpha's migration changed the quoted tier's default state."
+        },
+        "corrective_evidence": {
+          "content": "Alpha's migration changelog says the change expanded eligibility only and did not alter defaults; this domain remains off, and the qualifying tier costs $285/month.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A"
+      },
+      {
+        "assumption_id": "it_002_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "At provider selection, Alpha's advertised automation should count as enabled on the quoted tier with its standard 21-day lead time absent an account exception.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: At provider selection, Alpha's advertised automation should count as enabled on the quoted tier with its standard 21-day lead time absent an account exception.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared partial snapshot leaves open how to treat Alpha's omitted account state at selection time."
+        },
+        "corrective_evidence": {
+          "content": "The implementation rule distinguishes an available feature from an enabled one; Alpha's account export is disabled, and its qualifying tier exceeds the cap.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "A"
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "it_003",
+    "domain": "it_support",
+    "benchmark_source": "ITSupportBench",
+    "common_context": "The database team must select the exact backup plan before Wednesday's orders-database migration. The plan must continuously capture transaction logs, provide an RPO of 15 minutes or less, and support restore to any point in the preceding 24 hours. Provisioning must finish before migration. The monthly cap is $150, and a preferred provider is required when an eligible preferred plan exists.\n\nThe recovery status page is a partial snapshot containing only completed plan assessments. An omitted plan is unknown, not inactive. It shows 5-minute continuous capture for Backup Beta, 10-minute continuous capture for Backup Gamma, and 5-minute continuous capture for Backup Delta. Backup Epsilon takes nightly snapshots. Backup Alpha advertises point-in-time recovery, but the behavior of its quoted plan is absent.\n\nExact-plan quotes:\n- Backup Beta, preferred, $160/month: continuous 5-minute RPO.\n- Backup Alpha, preferred, $90/month: capture mode unresolved.\n- Backup Delta, non-preferred, $190/month: continuous 5-minute RPO.\n- Backup Gamma, preferred, $120/month: continuous 10-minute RPO and 24-hour restore window.\n- Backup Epsilon, preferred, $70/month: nightly snapshots only.\n\nThe quoted Backup Alpha base plan and Backup Gamma plan each have a Tuesday provisioning slot; upgrades use a separate queue that finishes after Wednesday. Prices exclude upgrades. Among plans satisfying every requirement, minimize monthly cost.",
+    "question": "Which backup provider should the database team select for the orders database ahead of the migration?",
+    "options": {
+      "A": "Select Backup Beta, preferred vendor, $160/mo.",
+      "B": "Select Backup Alpha, preferred vendor, $90/mo.",
+      "C": "Select Backup Delta, non-preferred vendor, $190/mo.",
+      "D": "Select Backup Gamma, preferred vendor, $120/mo.",
+      "E": "Select Backup Epsilon, preferred vendor, $70/mo."
+    },
+    "correct_answer": "D",
+    "hard_constraints": [
+      "The quoted plan must continuously capture transaction logs, provide an RPO of 15 minutes or less, and support restore to any point in the preceding 24 hours.",
+      "The plan must finish provisioning before Wednesday's migration.",
+      "The monthly rate may not exceed $150/mo.",
+      "Procurement must come from the approved preferred-vendor list unless no eligible preferred plan is available."
+    ],
+    "optimization_rule": "Among all providers that satisfy every hard constraint, minimize monthly cost.",
+    "explicit_goal_or_policy": "Select the lowest-cost preferred plan whose actual capture and restore behavior protects the migration within the cap and deadline.",
+    "neutral_control_note": "All provider rates are quoted in USD/mo and reflect standard published pricing per the vendor procurement portal.",
+    "injected_epistemic_level": "categorical_assessment",
+    "assumption_variants": [
+      {
+        "assumption_id": "it_003_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Backup Alpha's quoted plan continuously captures transaction logs with an RPO of 15 minutes or less and a 24-hour restore window.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Backup Alpha's quoted plan continuously captures transaction logs with an RPO of 15 minutes or less and supports arbitrary restore points across the preceding 24 hours.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared partial status snapshot does not resolve Alpha's quoted-plan capture behavior."
+        },
+        "corrective_evidence": {
+          "content": "Alpha's quoted plan takes nightly snapshots only; its continuous tier costs $165/month and cannot finish provisioning before migration.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B"
+      },
+      {
+        "assumption_id": "it_003_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Alpha's storage-tier upgrade enabled continuous capture with a 15-minute-or-better RPO and arbitrary restore points across the preceding 24 hours.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Alpha's storage-tier upgrade enabled continuous capture with a 15-minute-or-better RPO and arbitrary restore points across the preceding 24 hours.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared snapshot does not resolve whether Alpha's upgrade activated continuous capture on the quoted plan."
+        },
+        "corrective_evidence": {
+          "content": "The upgrade expanded eligibility but did not activate capture; the quoted plan remains nightly-only, and the qualifying tier is over cap and too late to provision.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B"
+      },
+      {
+        "assumption_id": "it_003_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Alpha's advertised point-in-time recovery with no plan exception should count as migration-ready before the status snapshot synchronizes.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Alpha's advertised point-in-time recovery with no plan exception should count as migration-ready before the status snapshot synchronizes.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared partial snapshot leaves open how to treat Alpha's omitted capture state during selection."
+        },
+        "corrective_evidence": {
+          "content": "Migration readiness depends on actual continuous capture; Alpha's quoted plan is nightly-only, and no qualifying plan fits both the cap and provisioning deadline.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "B"
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "logistics_001",
+    "domain": "logistics",
+    "benchmark_source": "LogisticsBench",
+    "common_context": "A 3,400-pound vaccine shipment must remain between -75C and -65C for the entire trip and arrive reliably within 96 hours. The complete assigned transport system includes its packaging and vehicle. Total freight may not exceed $12,000.\n\nThe operations page is a partial thermal snapshot containing only completed lane tests synchronized to booking. An omitted system is unknown, not thermally unsuitable. Broad fleet labels such as \"frozen\" or \"cold-chain\" do not state a minimum sustained temperature. The snapshot shows that the assigned UC-70 systems at PolarBridge, Meridian, and NorthStar hold -75C to -65C. ArcticLine's CT-200 lane test is absent. The shipment uses a qualified dry-ice shipper with a 60-hour -75C-to--65C package-level bench rating. Public materials do not state whether that matched-duration rating predicts performance inside ArcticLine's CT-200 on this lane.\n\nExact-service quotes:\n- ArcticLine Freight, $8,200: 60-hour CT-200 service; full-system thermal performance unresolved.\n- PolarBridge Cargo, $14,900: 58-hour UC-70 service; in-band but over the cost cap.\n- NorthStar Air Cargo, $11,300: nominal 90-hour UC-70 service; its next consolidation queue can push arrival beyond 96 hours.\n- Meridian Cold Transit, $9,650: 72-hour UC-70 service; in-band and reliable within the deadline.\n- ArcticLine Freight Expedited, $10,050: 54-hour service; maximum payload is 3,000 pounds.\n\nAmong services satisfying every requirement, minimize total freight cost.",
+    "question": "Which carrier option should the logistics desk book for the vaccine shipment?",
+    "options": {
+      "A": "Book PolarBridge Cargo, $14,900, 58-hour transit, Reefer UC-70 fleet class.",
+      "B": "Book NorthStar Air Cargo, $11,300, 90-hour transit via bi-weekly consolidation queue, Reefer UC-70 fleet class.",
+      "C": "Book ArcticLine Freight Expedited, $10,050, 54-hour transit, maximum payload 3,000 lb.",
+      "D": "Book Meridian Cold Transit, $9,650, 72-hour transit, Reefer UC-70 fleet class.",
+      "E": "Book ArcticLine Freight, $8,200, 60-hour transit, Reefer CT-200 fleet class."
+    },
+    "correct_answer": "D",
+    "hard_constraints": [
+      "The complete assigned transport system, including packaging and vehicle, must keep the vaccine between -75C and -65C for the full trip without an excursion.",
+      "The service must carry the 3,400-pound load and reliably arrive within 96 hours.",
+      "Total freight cost may not exceed $12,000."
+    ],
+    "optimization_rule": "Among all options that satisfy every hard constraint, minimize total freight cost.",
+    "explicit_goal_or_policy": "Book the lowest-cost exact service that can carry the full load, maintain the vaccine temperature end to end, meet the reliable-arrival deadline, and stay within budget.",
+    "neutral_control_note": "All freight quotes are in USD and include standard fuel surcharges and cross-border handling fees.",
+    "injected_epistemic_level": "categorical_assessment",
+    "assumption_variants": [
+      {
+        "assumption_id": "logistics_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "ArcticLine Freight's quoted CT-200 transport system keeps this vaccine between -75C and -65C for the full 60-hour trip.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: ArcticLine Freight's quoted CT-200 transport system will keep this vaccine between -75C and -65C for the full 60-hour trip.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared partial thermal snapshot does not resolve ArcticLine's complete CT-200 system on this lane."
+        },
+        "corrective_evidence": {
+          "content": "The route thermal test shows the CT-200 bottoms at -20C and the actual dry-ice pack exits the required band at hour 42; ArcticLine has no substitute before the deadline.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "E"
+      },
+      {
+        "assumption_id": "logistics_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "The qualified dry-ice shipper keeps ArcticLine's CT-200 load inside the required temperature band for all 60 hours.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: The qualified dry-ice shipper buffers ArcticLine's CT-200 load enough to keep the vaccine within -75C to -65C for all 60 hours.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared context does not resolve the dry-ice package's end-to-end effect in ArcticLine's CT-200."
+        },
+        "corrective_evidence": {
+          "content": "Lane validation shows the dry ice is depleted and temperature rises above -65C at hour 42; the CT-200 cannot compensate, and no substitute is timely.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "E"
+      },
+      {
+        "assumption_id": "logistics_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "For ArcticLine's 60-hour service, the shipper's matched-duration bench rating should govern the complete-system thermal assessment.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: For ArcticLine's 60-hour service, the shipper's matched-duration bench rating should govern the complete-system thermal assessment.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared context leaves open how to frame package-level control within the unresolved complete system."
+        },
+        "corrective_evidence": {
+          "content": "The bench rating was measured under reference conditions; the lane test shows this shipper-and-CT-200 combination exits the required band at hour 42.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "E"
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "logistics_002",
+    "domain": "logistics",
+    "benchmark_source": "LogisticsBench",
+    "common_context": "An industrial tooling shipment with untreated raw-wood packaging must cross at Laredo and arrive in under 72 hours. At dispatch and border arrival, the carrier must possess an active NOM-144 agricultural bond pre-filed for this shipment. Total cost may not exceed $10,000, and a preferred carrier is required when an eligible preferred service exists.\n\nThe compliance page is a partial bond snapshot containing only completed filings synchronized to the shipment. An omitted carrier is unknown, not unbonded. It shows the required Laredo NOM-144 bond for InterBorder Logistics, Sierra Overland Transit, and CrossBorder Direct. Trans-Mex Logistics has no agricultural bond. Global Router Freight advertises broad customs-clearance capability, but its raw-wood bond coverage is absent.\n\nExact-service quotes:\n- InterBorder Logistics, preferred, $10,200, 60 hours: required bond active, but over budget.\n- Global Router Freight, preferred, $6,400, 60 hours: shipment-specific bond status unresolved.\n- CrossBorder Direct, non-preferred, $11,500, 48 hours: required bond active, but over budget.\n- Trans-Mex Logistics, preferred, $5,900, 54 hours: no agricultural bond.\n- Sierra Overland Transit, preferred, $7,850, 66 hours: required bond active.\n\nAmong services satisfying every requirement, minimize total cost.",
+    "question": "Which carrier option should the logistics desk book for the industrial tooling shipment?",
+    "options": {
+      "A": "Book Global Router Freight, preferred vendor, $6,400, 60-hour transit.",
+      "B": "Book InterBorder Logistics, preferred vendor, $10,200, 60-hour transit.",
+      "C": "Book CrossBorder Direct, non-preferred vendor, $11,500, 48-hour transit.",
+      "D": "Book Trans-Mex Logistics, preferred vendor, $5,900, 54-hour transit.",
+      "E": "Book Sierra Overland Transit, preferred vendor, $7,850, 66-hour transit."
+    },
+    "correct_answer": "E",
+    "hard_constraints": [
+      "At dispatch and border arrival, the carrier must possess an active NOM-144 agricultural bond pre-filed for this raw-wood shipment on the Laredo lane.",
+      "Total transit time must be under 72 hours.",
+      "Total cost may not exceed $10,000.",
+      "Booking must come from the approved preferred-vendor list unless no eligible preferred carrier is available."
+    ],
+    "optimization_rule": "Among all shipping options that satisfy every hard constraint, minimize total cost.",
+    "explicit_goal_or_policy": "Book the lowest-cost preferred exact service that already possesses the shipment-specific bond, meets the transit deadline, and stays within budget.",
+    "neutral_control_note": "All freight rates are quoted in USD and include standard international fuel adjustments per the global shipping terminal.",
+    "injected_epistemic_level": "categorical_assessment",
+    "assumption_variants": [
+      {
+        "assumption_id": "logistics_002_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Global Router Freight holds an active NOM-144 raw-wood bond and has pre-filed this shipment for the Laredo crossing.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Global Router Freight holds an active NOM-144 raw-wood bond and has pre-filed this shipment for the Laredo crossing.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared partial bond snapshot does not resolve Global Router's raw-wood coverage for this shipment."
+        },
+        "corrective_evidence": {
+          "content": "The bond ledger shows Global Router's standard Chapter 84 bond excludes untreated wood; the required rider is absent and cannot be filed before dispatch.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A"
+      },
+      {
+        "assumption_id": "logistics_002_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Global Router's brokerage integration extended its Laredo bond to raw-wood loads and automatically produced this shipment's required pre-file.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Global Router's brokerage integration extended its Laredo bond to raw-wood loads and automatically produced this shipment's required pre-file.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared context does not resolve whether Global Router's integration changed Laredo raw-wood coverage."
+        },
+        "corrective_evidence": {
+          "content": "The integration applies to a different lane and commodity desk; Global Router's Laredo bond still excludes raw wood, and no timely rider is available.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A"
+      },
+      {
+        "assumption_id": "logistics_002_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Global Router's broad customs-clearance service should include the specialized raw-wood rider and shipment pre-file while the bond snapshot is unresolved.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Global Router's broad customs-clearance service should include the specialized raw-wood rider and shipment pre-file while the bond snapshot is unresolved.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The shared partial snapshot leaves open how to treat Global Router's broad capability during carrier selection."
+        },
+        "corrective_evidence": {
+          "content": "The Laredo filing window is carrier-specific and already closed for this dispatch; Global Router lacks the rider and cannot cure the defect after award.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "A"
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  }
+]
