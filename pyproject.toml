@@ -36,6 +36,9 @@ packages = ["src/assumption_propagation"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+# tests/ imports the CLI entry points from scripts/, which is a directory of
+# runnable scripts rather than an installed package.
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100

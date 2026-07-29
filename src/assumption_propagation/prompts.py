@@ -112,20 +112,48 @@ def seed_note_lines(variant) -> list[str]:
     return getattr(variant, "seed_local_evidence", None) or []
 
 
+DOSSIER_HEADER = "PRIVATE DOSSIER (retain for subsequent rounds)"
+
+
+def render_dossier(lines: list[str]) -> str:
+    """Render dossier bullets under the single neutral header.
+
+    One header for every kind of private material — hidden-profile brief,
+    injection, neutral control note, corrective evidence — so that no agent
+    can infer its experimental role from the shape of its own prompt.
+    """
+    return DOSSIER_HEADER + "\n" + "\n".join(f"- {line}" for line in lines)
+
+
 def build_seed_note_block(seed_local_evidence: list[str]) -> str:
     """The injection rendered as the seed's unchanged private dossier."""
-    notes = "\n".join(f"- {note}" for note in seed_local_evidence)
-    return "PRIVATE DOSSIER (retain for subsequent rounds)\n" + notes
+    return render_dossier(list(seed_local_evidence))
 
 
 def build_neutral_note_block(neutral_control_note: str) -> str:
     """Baseline stand-in: innocuous private note with identical framing."""
-    return "PRIVATE DOSSIER (retain for subsequent rounds)\n- " + neutral_control_note
+    return render_dossier([neutral_control_note])
 
 
 def build_corrective_note_block(content: str) -> str:
     """Corrector-private evidence; same neutral label as the seed's note."""
-    return "PRIVATE DOSSIER (retain for subsequent rounds)\n- " + content
+    return render_dossier([content])
+
+
+def hidden_profile_brief(
+    scenario,
+    *,
+    is_seed: bool,
+    is_corrector: bool,
+    neutral_ordinal: int | None = None,
+) -> str | None:
+    """This agent's private hidden-profile fact, or None outside Track B."""
+    profile = getattr(scenario, "hidden_profile", None)
+    if profile is None:
+        return None
+    return profile.brief_for(
+        is_seed=is_seed, is_corrector=is_corrector, neutral_ordinal=neutral_ordinal
+    )
 
 
 def build_private_dossier(
@@ -136,32 +164,72 @@ def build_private_dossier(
     condition: str,
     variant,
     round_index: int,
+    neutral_ordinal: int | None = None,
+    withhold_corrective: bool = False,
 ) -> str | None:
     """Return the role-private dossier visible in ``round_index``.
+
+    Contents, in order:
+    1. the agent's hidden-profile brief (Track B only, every agent, always);
+    2. the seed's injection, or its matched neutral baseline note;
+    3. the corrector's corrective evidence, once ``available_round`` is reached.
 
     The seed's injection (or matched neutral baseline note) is persistent from
     round 0. Corrective evidence becomes visible at its predeclared
     ``available_round`` and remains visible thereafter. Seed and corrector are
-    distinct roles, so an agent can never receive both dossiers.
+    distinct roles, so an agent can never receive both role dossiers.
+
+    In Track A (no hidden profile) neutral agents have no dossier at all and
+    this returns None, exactly as before.
     """
     if is_seed and is_corrector:
         raise ValueError("seed and corrector must be different agents")
     if round_index < 0:
         raise ValueError("round_index must be non-negative")
 
+    lines: list[str] = []
+
+    brief = hidden_profile_brief(
+        scenario,
+        is_seed=is_seed,
+        is_corrector=is_corrector,
+        neutral_ordinal=neutral_ordinal,
+    )
+    if brief:
+        lines.append(brief)
+
     if is_seed:
-        if condition == "injection":
+        if condition in ("injection", "injection_no_correction"):
+            # The ablation arm delivers an identical injection; only the
+            # corrector's dossier differs, so the seed's prompt is unchanged.
             if variant is None:
                 raise ValueError("injection condition requires a variant")
-            return build_seed_note_block(seed_note_lines(variant))
-        if condition in ("no_injection_baseline", "independent_control"):
-            return build_neutral_note_block(scenario.neutral_control_note)
+            # A reframing injection is additive: the seed still reports its
+            # honest finding, and the assessment reweights it. Without this the
+            # framing arm would silently delete that fact from the group.
+            if getattr(variant, "reframes_baseline_finding", False):
+                # injection_precedes_finding reverses the order so that position
+                # can be separated from content and label.
+                if getattr(variant, "injection_precedes_finding", False):
+                    lines.extend(seed_note_lines(variant))
+                    lines.append(scenario.neutral_control_note)
+                else:
+                    lines.append(scenario.neutral_control_note)
+                    lines.extend(seed_note_lines(variant))
+            else:
+                lines.extend(seed_note_lines(variant))
+        elif condition in ("no_injection_baseline", "independent_control"):
+            lines.append(scenario.neutral_control_note)
 
-    if is_corrector and variant is not None:
+    # withhold_corrective is the Track A ablation: the corrector keeps its
+    # role and its hidden-profile brief, but never receives the decisive
+    # disproof, so the group must resolve the injected claim unaided.
+    if is_corrector and variant is not None and not withhold_corrective:
         correction = variant.corrective_evidence
         if round_index >= correction.available_round:
-            return build_corrective_note_block(correction.content)
-    return None
+            lines.append(correction.content)
+
+    return render_dossier(lines) if lines else None
 
 
 # ---------------------------------------------------------------------------
@@ -176,13 +244,15 @@ def build_round0_prompt(
     condition: str,
     variant=None,
     round_index: int = 0,
+    neutral_ordinal: int | None = None,
+    withhold_corrective: bool = False,
 ) -> str:
     """Initial independent generation for one agent.
 
     - seed, injection       -> shared task + categorical private assessment
     - seed, baseline        -> shared task + neutral_control_note
     - corrector (any cond.) -> correction only when available_round == 0
-    - neutral agent         -> shared task only
+    - neutral agent         -> shared task only (Track A) or its brief (Track B)
     """
     parts = [build_shared_task(scenario)]
     dossier = build_private_dossier(
@@ -192,6 +262,8 @@ def build_round0_prompt(
         condition=condition,
         variant=variant,
         round_index=round_index,
+        neutral_ordinal=neutral_ordinal,
+        withhold_corrective=withhold_corrective,
     )
     if dossier:
         parts.append(dossier)

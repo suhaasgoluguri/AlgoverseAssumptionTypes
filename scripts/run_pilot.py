@@ -49,7 +49,12 @@ from assumption_propagation.reproducibility import (
     snapshot_protocol_sources,
     snapshot_tracked_git_diff,
 )
-from assumption_propagation.schemas import AgentRoundRecord, Scenario, SeedInstance
+from assumption_propagation.schemas import (
+    INJECTION_CONDITIONS,
+    AgentRoundRecord,
+    Scenario,
+    SeedInstance,
+)
 
 TOPOLOGIES = ("looped_chain", "neutral_star", "fully_connected_mesh")
 PROTOCOL_SOURCE_PATHS = tuple(
@@ -134,6 +139,7 @@ def _validate_run_outputs(
     n_rounds: int,
     baseline_reps: int,
     skip_baselines: bool,
+    skip_injection: bool = False,
     independent_reps: int,
     skip_independent: bool,
 ) -> dict[str, object]:
@@ -179,6 +185,8 @@ def _validate_run_outputs(
             "duplicate generated seed rows: "
             f"ids={duplicate_seed_ids}, coordinates={duplicate_seed_coordinates}"
         )
+    if skip_injection:
+        expected_seed_coordinates = set()
     if set(actual_seed_coordinates) != expected_seed_coordinates:
         raise ValueError(
             "generated seed grid differs from the plan: "
@@ -210,7 +218,9 @@ def _validate_run_outputs(
     if duplicate_result_runs:
         raise ValueError(f"duplicate result run_ids: {duplicate_result_runs}")
 
-    injection_coordinates: list[tuple[str, str]] = []
+    # Keyed by condition: the injection and ablation arms each form their own
+    # complete (seed x topology) grid when both are collected in one run.
+    injection_coordinates: dict[str, list[tuple[str, str]]] = defaultdict(list)
     baseline_coordinates: Counter = Counter()
     independent_coordinates: Counter = Counter()
     result_by_run: dict[str, dict] = {}
@@ -224,7 +234,7 @@ def _validate_run_outputs(
         condition = row.get("condition")
         topology = row.get("topology")
         seed_id = row.get("seed_instance_id")
-        if condition == "injection":
+        if condition in INJECTION_CONDITIONS:
             if seed_id not in replayable_seed_ids or topology not in topologies:
                 raise ValueError(
                     f"injection result {run_id!r} has an invalid seed/topology"
@@ -238,7 +248,7 @@ def _validate_run_outputs(
                     f"injection result {run_id!r} does not match frozen seed "
                     f"{seed_id!r}'s scenario/assumption"
                 )
-            injection_coordinates.append((seed_id, topology))
+            injection_coordinates[condition].append((seed_id, topology))
         elif condition == "no_injection_baseline":
             if seed_id is not None or topology not in topologies:
                 raise ValueError(f"baseline result {run_id!r} has invalid metadata")
@@ -257,11 +267,15 @@ def _validate_run_outputs(
         for seed_id in replayable_seed_ids
         for topology in topologies
     }
-    if (
-        len(injection_coordinates) != len(set(injection_coordinates))
-        or set(injection_coordinates) != expected_injection_coordinates
-    ):
-        raise ValueError("injection result grid differs from the replayable-seed plan")
+    if not injection_coordinates and not skip_injection:
+        raise ValueError("no injection results found")
+    if injection_coordinates and skip_injection:
+        raise ValueError("injection results present despite --skip-injection")
+    for arm, coords in sorted(injection_coordinates.items()):
+        if len(coords) != len(set(coords)) or set(coords) != expected_injection_coordinates:
+            raise ValueError(
+                f"{arm} result grid differs from the replayable-seed plan"
+            )
     expected_baseline_coordinates = Counter()
     if not skip_baselines:
         for assumption_id in selected_assumption_ids:
@@ -310,7 +324,7 @@ def _validate_run_outputs(
                     f"conversation {run_id!r} disagrees with its result metadata"
                 )
 
-    injection_count = len(expected_injection_coordinates)
+    injection_count = len(expected_injection_coordinates) * len(injection_coordinates)
     baseline_count = sum(expected_baseline_coordinates.values())
     independent_count = sum(expected_independent_coordinates.values())
     return {
@@ -341,63 +355,84 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
     print(f"\n=== {label} ===")
 
     # Stage A: frozen seeds (every instance retained).
-    seeds = await generate_seed_instances(
-        scenario, variant, client, n_instances=args.n_seeds, log_path=paths["seeds"]
-    )
-    for seed in seeds:
-        state = "PARSE-FAILED" if not seed.answer else f"answer={seed.answer}"
-        print(f"  seed {seed.seed_trial_index}: {state}")
+    #
+    # The pooling-gap contrast is oracle-vs-baseline and carries no injection,
+    # so seed generation is skipped entirely rather than generated and unused.
+    if args.skip_injection:
+        seeds = []
+        print("  (skipping seed generation and the injection arm)")
+    else:
+        seeds = await generate_seed_instances(
+            scenario, variant, client, n_instances=args.n_seeds, log_path=paths["seeds"]
+        )
+        for seed in seeds:
+            state = "PARSE-FAILED" if not seed.answer else f"answer={seed.answer}"
+            print(f"  seed {seed.seed_trial_index}: {state}")
 
     # Stage B: matched replay of every replayable seed.
+    #
+    # When the ablation arm is requested, BOTH arms run against the SAME frozen
+    # seed inside this run. Round-0 behaviour varies enough between runs that a
+    # between-run ablation contrast is not identifiable; replaying one seed into
+    # both arms makes the comparison paired and within-run.
+    arms = [("injection", False)]
+    if args.ablation_arm:
+        arms.append(("injection_no_correction", True))
+    elif args.withhold_corrective:
+        arms = [("injection_no_correction", True)]
+
     for seed in seeds:
         if not seed.answer:
             continue  # nothing to replay; the failure is already logged
-        triple = await run_matched_triple(
-            scenario, variant, seed, client,
-            topologies=tuple(args.topologies), n_rounds=args.rounds,
-            log_path=paths["records"],
-        )
-        for topology_name, result in triple.items():
-            summary = summarize_final_round(
-                result.final_answers(),
-                correct_answer=scenario.correct_answer,
-                favored_option=variant.favored_option,
+        for arm_condition, arm_withhold in arms:
+            triple = await run_matched_triple(
+                scenario, variant, seed, client,
+                topologies=tuple(args.topologies), n_rounds=args.rounds,
+                condition=arm_condition,
+                withhold_corrective=arm_withhold,
+                log_path=paths["records"],
             )
-            row = {
-                "run_id": result.run_id,
-                "scenario_id": scenario.scenario_id,
-                "assumption_id": variant.assumption_id,
-                "seed_instance_id": seed.seed_instance_id,
-                "condition": "injection",
-                "topology": topology_name,
-                **summary,
-            }
-            with paths["results"].open("a", encoding="utf-8") as f:
-                f.write(json.dumps(row) + "\n")
-            verdict = summary["plurality_answer"] or "TIE"
-            flag = ("correct" if summary["final_answer_correct"]
-                    else "no consensus" if summary["no_consensus"] else "WRONG")
-            print(f"    {seed.seed_instance_id} @ {topology_name:22s}"
-                  f" votes={summary['final_votes']} -> {verdict} ({flag})")
-            if args.verbose or args.show_rationales:
-                seed_id = result.records[0].seed_agent_id
-                corr_id = result.records[0].corrector_agent_id
-                def _tag(a):
-                    return "*" if a == seed_id else "^" if a == corr_id else " "
-                for rnd in range(result.n_rounds):
-                    cells = "  ".join(
-                        f"A{a}={result.outputs[(a, rnd)].answer or '-'}{_tag(a)}"
-                        for a in range(4)
-                    )
-                    print(f"        round {rnd}: {cells}")
-                    if args.show_rationales:
-                        for a in range(4):
-                            r = (result.outputs[(a, rnd)].rationale or "")
-                            r = r.strip().replace("\n", " ")
-                            if len(r) > 140:
-                                r = r[:137] + "..."
-                            print(f"            A{a}{_tag(a)}: {r}")
-                print("        (*=seed  ^=corrector)")
+            for topology_name, result in triple.items():
+                summary = summarize_final_round(
+                    result.final_answers(),
+                    correct_answer=scenario.correct_answer,
+                    favored_option=variant.favored_option,
+                )
+                row = {
+                    "run_id": result.run_id,
+                    "scenario_id": scenario.scenario_id,
+                    "assumption_id": variant.assumption_id,
+                    "seed_instance_id": seed.seed_instance_id,
+                    "condition": arm_condition,
+                    "topology": topology_name,
+                    **summary,
+                }
+                with paths["results"].open("a", encoding="utf-8") as f:
+                    f.write(json.dumps(row) + "\n")
+                verdict = summary["plurality_answer"] or "TIE"
+                flag = ("correct" if summary["final_answer_correct"]
+                        else "no consensus" if summary["no_consensus"] else "WRONG")
+                print(f"    {seed.seed_instance_id} @ {topology_name:22s}"
+                      f" votes={summary['final_votes']} -> {verdict} ({flag})")
+                if args.verbose or args.show_rationales:
+                    seed_id = result.records[0].seed_agent_id
+                    corr_id = result.records[0].corrector_agent_id
+                    def _tag(a):
+                        return "*" if a == seed_id else "^" if a == corr_id else " "
+                    for rnd in range(result.n_rounds):
+                        cells = "  ".join(
+                            f"A{a}={result.outputs[(a, rnd)].answer or '-'}{_tag(a)}"
+                            for a in range(4)
+                        )
+                        print(f"        round {rnd}: {cells}")
+                        if args.show_rationales:
+                            for a in range(4):
+                                r = (result.outputs[(a, rnd)].rationale or "")
+                                r = r.strip().replace("\n", " ")
+                                if len(r) > 140:
+                                    r = r[:137] + "..."
+                                print(f"            A{a}{_tag(a)}: {r}")
+                    print("        (*=seed  ^=corrector)")
 
     # Independent no-communication control: the baseline round-0 information
     # state, with the neutral seed note and only correction scheduled for round
@@ -407,7 +442,8 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
             result = await run_conversation(
                 scenario, client=client, topology_name="independent",
                 condition="independent_control", variant=variant,
-                n_rounds=1, log_path=paths["records"],
+                n_rounds=1, withhold_corrective=args.withhold_corrective,
+                log_path=paths["records"],
             )
             summary = summarize_final_round(
                 result.final_answers(),
@@ -436,6 +472,7 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                     scenario, client=client, topology_name=topology_name,
                     condition="no_injection_baseline", variant=variant,
                     n_rounds=args.rounds,
+                    withhold_corrective=args.withhold_corrective,
                     log_path=paths["records"],
                 )
                 summary = summarize_final_round(
@@ -480,6 +517,27 @@ async def main() -> None:
     parser.add_argument("--n-seeds", type=int, default=3)
     parser.add_argument("--baseline-reps", type=int, default=1)
     parser.add_argument("--skip-baselines", action="store_true")
+    parser.add_argument(
+        "--skip-injection",
+        action="store_true",
+        help="collect no seeds and no injection arm. The pooling-gap contrast "
+             "(oracle ceiling vs distributed group) needs only baselines, so this "
+             "runs the primary outcome at a fraction of the cost.",
+    )
+    parser.add_argument(
+        "--ablation-arm",
+        action="store_true",
+        help="run BOTH the injection and injection_no_correction arms against the "
+             "same frozen seeds inside this run, giving a paired within-run "
+             "ablation contrast. Preferred over --withhold-corrective.",
+    )
+    parser.add_argument(
+        "--withhold-corrective",
+        action="store_true",
+        help="Track A ablation: the corrector keeps its role but never receives the "
+             "decisive corrective evidence, so the group must resolve the injected "
+             "claim unaided. Recorded in the run manifest.",
+    )
     parser.add_argument("--independent-reps", type=int, default=1)
     parser.add_argument("--skip-independent", action="store_true")
     parser.add_argument("--verbose", "-v", action="store_true",
@@ -598,11 +656,14 @@ async def main() -> None:
         },
         "protocol": {
             "n_rounds": args.rounds,
+            "withhold_corrective": args.withhold_corrective,
+            "ablation_arm": args.ablation_arm,
             "independent_control_n_rounds": 1,
             "topologies": list(args.topologies),
             "n_seeds": args.n_seeds,
             "baseline_reps": args.baseline_reps,
             "skip_baselines": args.skip_baselines,
+            "skip_injection": args.skip_injection,
             "independent_reps": args.independent_reps,
             "skip_independent": args.skip_independent,
             "correction_available_round_by_assumption": {
@@ -651,6 +712,7 @@ async def main() -> None:
             n_rounds=args.rounds,
             baseline_reps=args.baseline_reps,
             skip_baselines=args.skip_baselines,
+            skip_injection=args.skip_injection,
             independent_reps=args.independent_reps,
             skip_independent=args.skip_independent,
         )

@@ -1,0 +1,752 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index fc56e9a..d5a9d9e 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -36,6 +36,9 @@ packages = ["src/assumption_propagation"]
+ [tool.pytest.ini_options]
+ testpaths = ["tests"]
+ asyncio_mode = "auto"
++# tests/ imports the CLI entry points from scripts/, which is a directory of
++# runnable scripts rather than an installed package.
++pythonpath = ["."]
+ 
+ [tool.ruff]
+ line-length = 100
+diff --git a/scripts/run_pilot.py b/scripts/run_pilot.py
+index a2bcb5b..bf57206 100644
+--- a/scripts/run_pilot.py
++++ b/scripts/run_pilot.py
+@@ -49,7 +49,12 @@ from assumption_propagation.reproducibility import (
+     snapshot_protocol_sources,
+     snapshot_tracked_git_diff,
+ )
+-from assumption_propagation.schemas import AgentRoundRecord, Scenario, SeedInstance
++from assumption_propagation.schemas import (
++    INJECTION_CONDITIONS,
++    AgentRoundRecord,
++    Scenario,
++    SeedInstance,
++)
+ 
+ TOPOLOGIES = ("looped_chain", "neutral_star", "fully_connected_mesh")
+ PROTOCOL_SOURCE_PATHS = tuple(
+@@ -134,6 +139,7 @@ def _validate_run_outputs(
+     n_rounds: int,
+     baseline_reps: int,
+     skip_baselines: bool,
++    skip_injection: bool = False,
+     independent_reps: int,
+     skip_independent: bool,
+ ) -> dict[str, object]:
+@@ -179,6 +185,8 @@ def _validate_run_outputs(
+             "duplicate generated seed rows: "
+             f"ids={duplicate_seed_ids}, coordinates={duplicate_seed_coordinates}"
+         )
++    if skip_injection:
++        expected_seed_coordinates = set()
+     if set(actual_seed_coordinates) != expected_seed_coordinates:
+         raise ValueError(
+             "generated seed grid differs from the plan: "
+@@ -210,7 +218,9 @@ def _validate_run_outputs(
+     if duplicate_result_runs:
+         raise ValueError(f"duplicate result run_ids: {duplicate_result_runs}")
+ 
+-    injection_coordinates: list[tuple[str, str]] = []
++    # Keyed by condition: the injection and ablation arms each form their own
++    # complete (seed x topology) grid when both are collected in one run.
++    injection_coordinates: dict[str, list[tuple[str, str]]] = defaultdict(list)
+     baseline_coordinates: Counter = Counter()
+     independent_coordinates: Counter = Counter()
+     result_by_run: dict[str, dict] = {}
+@@ -224,7 +234,7 @@ def _validate_run_outputs(
+         condition = row.get("condition")
+         topology = row.get("topology")
+         seed_id = row.get("seed_instance_id")
+-        if condition == "injection":
++        if condition in INJECTION_CONDITIONS:
+             if seed_id not in replayable_seed_ids or topology not in topologies:
+                 raise ValueError(
+                     f"injection result {run_id!r} has an invalid seed/topology"
+@@ -238,7 +248,7 @@ def _validate_run_outputs(
+                     f"injection result {run_id!r} does not match frozen seed "
+                     f"{seed_id!r}'s scenario/assumption"
+                 )
+-            injection_coordinates.append((seed_id, topology))
++            injection_coordinates[condition].append((seed_id, topology))
+         elif condition == "no_injection_baseline":
+             if seed_id is not None or topology not in topologies:
+                 raise ValueError(f"baseline result {run_id!r} has invalid metadata")
+@@ -257,11 +267,15 @@ def _validate_run_outputs(
+         for seed_id in replayable_seed_ids
+         for topology in topologies
+     }
+-    if (
+-        len(injection_coordinates) != len(set(injection_coordinates))
+-        or set(injection_coordinates) != expected_injection_coordinates
+-    ):
+-        raise ValueError("injection result grid differs from the replayable-seed plan")
++    if not injection_coordinates and not skip_injection:
++        raise ValueError("no injection results found")
++    if injection_coordinates and skip_injection:
++        raise ValueError("injection results present despite --skip-injection")
++    for arm, coords in sorted(injection_coordinates.items()):
++        if len(coords) != len(set(coords)) or set(coords) != expected_injection_coordinates:
++            raise ValueError(
++                f"{arm} result grid differs from the replayable-seed plan"
++            )
+     expected_baseline_coordinates = Counter()
+     if not skip_baselines:
+         for assumption_id in selected_assumption_ids:
+@@ -310,7 +324,7 @@ def _validate_run_outputs(
+                     f"conversation {run_id!r} disagrees with its result metadata"
+                 )
+ 
+-    injection_count = len(expected_injection_coordinates)
++    injection_count = len(expected_injection_coordinates) * len(injection_coordinates)
+     baseline_count = sum(expected_baseline_coordinates.values())
+     independent_count = sum(expected_independent_coordinates.values())
+     return {
+@@ -341,63 +355,84 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
+     print(f"\n=== {label} ===")
+ 
+     # Stage A: frozen seeds (every instance retained).
+-    seeds = await generate_seed_instances(
+-        scenario, variant, client, n_instances=args.n_seeds, log_path=paths["seeds"]
+-    )
+-    for seed in seeds:
+-        state = "PARSE-FAILED" if not seed.answer else f"answer={seed.answer}"
+-        print(f"  seed {seed.seed_trial_index}: {state}")
++    #
++    # The pooling-gap contrast is oracle-vs-baseline and carries no injection,
++    # so seed generation is skipped entirely rather than generated and unused.
++    if args.skip_injection:
++        seeds = []
++        print("  (skipping seed generation and the injection arm)")
++    else:
++        seeds = await generate_seed_instances(
++            scenario, variant, client, n_instances=args.n_seeds, log_path=paths["seeds"]
++        )
++        for seed in seeds:
++            state = "PARSE-FAILED" if not seed.answer else f"answer={seed.answer}"
++            print(f"  seed {seed.seed_trial_index}: {state}")
+ 
+     # Stage B: matched replay of every replayable seed.
++    #
++    # When the ablation arm is requested, BOTH arms run against the SAME frozen
++    # seed inside this run. Round-0 behaviour varies enough between runs that a
++    # between-run ablation contrast is not identifiable; replaying one seed into
++    # both arms makes the comparison paired and within-run.
++    arms = [("injection", False)]
++    if args.ablation_arm:
++        arms.append(("injection_no_correction", True))
++    elif args.withhold_corrective:
++        arms = [("injection_no_correction", True)]
++
+     for seed in seeds:
+         if not seed.answer:
+             continue  # nothing to replay; the failure is already logged
+-        triple = await run_matched_triple(
+-            scenario, variant, seed, client,
+-            topologies=tuple(args.topologies), n_rounds=args.rounds,
+-            log_path=paths["records"],
+-        )
+-        for topology_name, result in triple.items():
+-            summary = summarize_final_round(
+-                result.final_answers(),
+-                correct_answer=scenario.correct_answer,
+-                favored_option=variant.favored_option,
++        for arm_condition, arm_withhold in arms:
++            triple = await run_matched_triple(
++                scenario, variant, seed, client,
++                topologies=tuple(args.topologies), n_rounds=args.rounds,
++                condition=arm_condition,
++                withhold_corrective=arm_withhold,
++                log_path=paths["records"],
+             )
+-            row = {
+-                "run_id": result.run_id,
+-                "scenario_id": scenario.scenario_id,
+-                "assumption_id": variant.assumption_id,
+-                "seed_instance_id": seed.seed_instance_id,
+-                "condition": "injection",
+-                "topology": topology_name,
+-                **summary,
+-            }
+-            with paths["results"].open("a", encoding="utf-8") as f:
+-                f.write(json.dumps(row) + "\n")
+-            verdict = summary["plurality_answer"] or "TIE"
+-            flag = ("correct" if summary["final_answer_correct"]
+-                    else "no consensus" if summary["no_consensus"] else "WRONG")
+-            print(f"    {seed.seed_instance_id} @ {topology_name:22s}"
+-                  f" votes={summary['final_votes']} -> {verdict} ({flag})")
+-            if args.verbose or args.show_rationales:
+-                seed_id = result.records[0].seed_agent_id
+-                corr_id = result.records[0].corrector_agent_id
+-                def _tag(a):
+-                    return "*" if a == seed_id else "^" if a == corr_id else " "
+-                for rnd in range(result.n_rounds):
+-                    cells = "  ".join(
+-                        f"A{a}={result.outputs[(a, rnd)].answer or '-'}{_tag(a)}"
+-                        for a in range(4)
+-                    )
+-                    print(f"        round {rnd}: {cells}")
+-                    if args.show_rationales:
+-                        for a in range(4):
+-                            r = (result.outputs[(a, rnd)].rationale or "")
+-                            r = r.strip().replace("\n", " ")
+-                            if len(r) > 140:
+-                                r = r[:137] + "..."
+-                            print(f"            A{a}{_tag(a)}: {r}")
+-                print("        (*=seed  ^=corrector)")
++            for topology_name, result in triple.items():
++                summary = summarize_final_round(
++                    result.final_answers(),
++                    correct_answer=scenario.correct_answer,
++                    favored_option=variant.favored_option,
++                )
++                row = {
++                    "run_id": result.run_id,
++                    "scenario_id": scenario.scenario_id,
++                    "assumption_id": variant.assumption_id,
++                    "seed_instance_id": seed.seed_instance_id,
++                    "condition": arm_condition,
++                    "topology": topology_name,
++                    **summary,
++                }
++                with paths["results"].open("a", encoding="utf-8") as f:
++                    f.write(json.dumps(row) + "\n")
++                verdict = summary["plurality_answer"] or "TIE"
++                flag = ("correct" if summary["final_answer_correct"]
++                        else "no consensus" if summary["no_consensus"] else "WRONG")
++                print(f"    {seed.seed_instance_id} @ {topology_name:22s}"
++                      f" votes={summary['final_votes']} -> {verdict} ({flag})")
++                if args.verbose or args.show_rationales:
++                    seed_id = result.records[0].seed_agent_id
++                    corr_id = result.records[0].corrector_agent_id
++                    def _tag(a):
++                        return "*" if a == seed_id else "^" if a == corr_id else " "
++                    for rnd in range(result.n_rounds):
++                        cells = "  ".join(
++                            f"A{a}={result.outputs[(a, rnd)].answer or '-'}{_tag(a)}"
++                            for a in range(4)
++                        )
++                        print(f"        round {rnd}: {cells}")
++                        if args.show_rationales:
++                            for a in range(4):
++                                r = (result.outputs[(a, rnd)].rationale or "")
++                                r = r.strip().replace("\n", " ")
++                                if len(r) > 140:
++                                    r = r[:137] + "..."
++                                print(f"            A{a}{_tag(a)}: {r}")
++                    print("        (*=seed  ^=corrector)")
+ 
+     # Independent no-communication control: the baseline round-0 information
+     # state, with the neutral seed note and only correction scheduled for round
+@@ -407,7 +442,8 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
+             result = await run_conversation(
+                 scenario, client=client, topology_name="independent",
+                 condition="independent_control", variant=variant,
+-                n_rounds=1, log_path=paths["records"],
++                n_rounds=1, withhold_corrective=args.withhold_corrective,
++                log_path=paths["records"],
+             )
+             summary = summarize_final_round(
+                 result.final_answers(),
+@@ -436,6 +472,7 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
+                     scenario, client=client, topology_name=topology_name,
+                     condition="no_injection_baseline", variant=variant,
+                     n_rounds=args.rounds,
++                    withhold_corrective=args.withhold_corrective,
+                     log_path=paths["records"],
+                 )
+                 summary = summarize_final_round(
+@@ -480,6 +517,27 @@ async def main() -> None:
+     parser.add_argument("--n-seeds", type=int, default=3)
+     parser.add_argument("--baseline-reps", type=int, default=1)
+     parser.add_argument("--skip-baselines", action="store_true")
++    parser.add_argument(
++        "--skip-injection",
++        action="store_true",
++        help="collect no seeds and no injection arm. The pooling-gap contrast "
++             "(oracle ceiling vs distributed group) needs only baselines, so this "
++             "runs the primary outcome at a fraction of the cost.",
++    )
++    parser.add_argument(
++        "--ablation-arm",
++        action="store_true",
++        help="run BOTH the injection and injection_no_correction arms against the "
++             "same frozen seeds inside this run, giving a paired within-run "
++             "ablation contrast. Preferred over --withhold-corrective.",
++    )
++    parser.add_argument(
++        "--withhold-corrective",
++        action="store_true",
++        help="Track A ablation: the corrector keeps its role but never receives the "
++             "decisive corrective evidence, so the group must resolve the injected "
++             "claim unaided. Recorded in the run manifest.",
++    )
+     parser.add_argument("--independent-reps", type=int, default=1)
+     parser.add_argument("--skip-independent", action="store_true")
+     parser.add_argument("--verbose", "-v", action="store_true",
+@@ -598,11 +656,14 @@ async def main() -> None:
+         },
+         "protocol": {
+             "n_rounds": args.rounds,
++            "withhold_corrective": args.withhold_corrective,
++            "ablation_arm": args.ablation_arm,
+             "independent_control_n_rounds": 1,
+             "topologies": list(args.topologies),
+             "n_seeds": args.n_seeds,
+             "baseline_reps": args.baseline_reps,
+             "skip_baselines": args.skip_baselines,
++            "skip_injection": args.skip_injection,
+             "independent_reps": args.independent_reps,
+             "skip_independent": args.skip_independent,
+             "correction_available_round_by_assumption": {
+@@ -651,6 +712,7 @@ async def main() -> None:
+             n_rounds=args.rounds,
+             baseline_reps=args.baseline_reps,
+             skip_baselines=args.skip_baselines,
++            skip_injection=args.skip_injection,
+             independent_reps=args.independent_reps,
+             skip_independent=args.skip_independent,
+         )
+diff --git a/src/assumption_propagation/orchestrator.py b/src/assumption_propagation/orchestrator.py
+index 61a7ffb..b6fe6c6 100644
+--- a/src/assumption_propagation/orchestrator.py
++++ b/src/assumption_propagation/orchestrator.py
+@@ -33,7 +33,14 @@ from .prompts import (
+     build_update_prompt,
+     format_peer_message,
+ )
+-from .schemas import AgentOutput, AgentRoundRecord, Condition, SeedInstance, Topology
++from .schemas import (
++    INJECTION_CONDITIONS,
++    AgentOutput,
++    AgentRoundRecord,
++    Condition,
++    SeedInstance,
++    Topology,
++)
+ from .topologies import (
+     AGENT_IDS,
+     DEFAULT_ROLES,
+@@ -182,6 +189,7 @@ async def run_conversation(
+     seed_agent_id: Optional[int] = None,
+     corrector_agent_id: Optional[int] = None,
+     n_rounds: int = N_ROUNDS,
++    withhold_corrective: bool = False,
+     log_path: Optional[str | Path] = None,
+ ) -> ConversationOutputs:
+     """Run one 4-agent, 4-round conversation.
+@@ -208,11 +216,17 @@ async def run_conversation(
+     if corrector_agent_id is None:
+         corrector_agent_id = corrector_for_seed(topology_name, seed_agent_id)
+     validate_roles(topology_name, seed_agent_id, corrector_agent_id)
+-    if condition == "injection" and frozen_seed is None:
++    # injection_no_correction is the ablation arm: identical delivery, the
++    # corrector simply never receives the disproof. It is validated exactly
++    # like the injection arm so the two remain matched.
++    is_injection = condition in INJECTION_CONDITIONS
++    if condition == "injection_no_correction":
++        withhold_corrective = True
++    if is_injection and frozen_seed is None:
+         raise ValueError("injection conversations require a frozen_seed to replay")
+-    if condition != "injection" and frozen_seed is not None:
+-        raise ValueError("frozen_seed is only valid for the injection condition")
+-    if condition == "injection":
++    if not is_injection and frozen_seed is not None:
++        raise ValueError("frozen_seed is only valid for the injection conditions")
++    if is_injection:
+         if variant is None:
+             raise ValueError("injection conversations require an assumption variant")
+         if frozen_seed.scenario_id != scenario.scenario_id:
+@@ -228,6 +242,15 @@ async def run_conversation(
+         if not frozen_seed.answer or not frozen_seed.included_in_core:
+             raise ValueError("frozen seed must contain a valid replayable answer")
+ 
++    # Track B hidden-profile briefs are role-keyed, and the two neutral slots
++    # are distinguished by ascending agent id. That ordering is stable across
++    # topologies (ring neutrals 2,3; star neutrals 0,3), so "the first neutral"
++    # names the same experimental position everywhere.
++    neutral_ids = [a for a in AGENT_IDS if a not in (seed_agent_id, corrector_agent_id)]
++
++    def neutral_ordinal_of(agent_id: int) -> Optional[int]:
++        return neutral_ids.index(agent_id) if agent_id in neutral_ids else None
++
+     run_id = new_run_id()
+     outputs: dict[tuple[int, int], ParsedResponse] = {}
+     records: list[AgentRoundRecord] = []
+@@ -299,7 +322,7 @@ async def run_conversation(
+ 
+         for agent_id in AGENT_IDS:
+             injection_visible = (
+-                condition == "injection" and agent_id == seed_agent_id
++                is_injection and agent_id == seed_agent_id
+             )
+             neutral_control_visible = (
+                 condition in ("no_injection_baseline", "independent_control")
+@@ -307,12 +330,13 @@ async def run_conversation(
+             )
+             corrective_visible = (
+                 variant is not None
++                and not withhold_corrective
+                 and agent_id == corrector_agent_id
+                 and round_index >= variant.corrective_evidence.available_round
+             )
+ 
+             # --- Frozen seed replay (injection, round 0 only) ---
+-            if round_index == 0 and condition == "injection" and agent_id == seed_agent_id:
++            if round_index == 0 and is_injection and agent_id == seed_agent_id:
+                 parsed = ParsedResponse(
+                     raw_response=frozen_seed.raw_response,
+                     output=AgentOutput(
+@@ -343,6 +367,8 @@ async def run_conversation(
+                     condition=condition,
+                     variant=variant,
+                     round_index=round_index,
++                    neutral_ordinal=neutral_ordinal_of(agent_id),
++                    withhold_corrective=withhold_corrective,
+                 )
+             else:
+                 own_prev = outputs[(agent_id, round_index - 1)]
+@@ -361,6 +387,8 @@ async def run_conversation(
+                     condition=condition,
+                     variant=variant,
+                     round_index=round_index,
++                    neutral_ordinal=neutral_ordinal_of(agent_id),
++                    withhold_corrective=withhold_corrective,
+                 )
+                 prompt = build_update_prompt(
+                     scenario,
+@@ -455,6 +483,8 @@ async def run_matched_triple(
+     *,
+     topologies: tuple[str, ...] = ("looped_chain", "neutral_star", "fully_connected_mesh"),
+     n_rounds: int = N_ROUNDS,
++    condition: str = "injection",
++    withhold_corrective: bool = False,
+     log_path: Optional[str | Path] = None,
+ ) -> dict[str, ConversationOutputs]:
+     """Replay ONE frozen seed across all three topologies (the matched triple).
+@@ -471,10 +501,11 @@ async def run_matched_triple(
+             scenario,
+             client=client,
+             topology_name=topology_name,
+-            condition="injection",
++            condition=condition,
+             variant=variant,
+             frozen_seed=frozen_seed,
+             n_rounds=n_rounds,
++            withhold_corrective=withhold_corrective,
+             log_path=log_path,
+         )
+     return results
+diff --git a/src/assumption_propagation/prompts.py b/src/assumption_propagation/prompts.py
+index 1baca8e..2081f9a 100644
+--- a/src/assumption_propagation/prompts.py
++++ b/src/assumption_propagation/prompts.py
+@@ -112,20 +112,48 @@ def seed_note_lines(variant) -> list[str]:
+     return getattr(variant, "seed_local_evidence", None) or []
+ 
+ 
++DOSSIER_HEADER = "PRIVATE DOSSIER (retain for subsequent rounds)"
++
++
++def render_dossier(lines: list[str]) -> str:
++    """Render dossier bullets under the single neutral header.
++
++    One header for every kind of private material — hidden-profile brief,
++    injection, neutral control note, corrective evidence — so that no agent
++    can infer its experimental role from the shape of its own prompt.
++    """
++    return DOSSIER_HEADER + "\n" + "\n".join(f"- {line}" for line in lines)
++
++
+ def build_seed_note_block(seed_local_evidence: list[str]) -> str:
+     """The injection rendered as the seed's unchanged private dossier."""
+-    notes = "\n".join(f"- {note}" for note in seed_local_evidence)
+-    return "PRIVATE DOSSIER (retain for subsequent rounds)\n" + notes
++    return render_dossier(list(seed_local_evidence))
+ 
+ 
+ def build_neutral_note_block(neutral_control_note: str) -> str:
+     """Baseline stand-in: innocuous private note with identical framing."""
+-    return "PRIVATE DOSSIER (retain for subsequent rounds)\n- " + neutral_control_note
++    return render_dossier([neutral_control_note])
+ 
+ 
+ def build_corrective_note_block(content: str) -> str:
+     """Corrector-private evidence; same neutral label as the seed's note."""
+-    return "PRIVATE DOSSIER (retain for subsequent rounds)\n- " + content
++    return render_dossier([content])
++
++
++def hidden_profile_brief(
++    scenario,
++    *,
++    is_seed: bool,
++    is_corrector: bool,
++    neutral_ordinal: int | None = None,
++) -> str | None:
++    """This agent's private hidden-profile fact, or None outside Track B."""
++    profile = getattr(scenario, "hidden_profile", None)
++    if profile is None:
++        return None
++    return profile.brief_for(
++        is_seed=is_seed, is_corrector=is_corrector, neutral_ordinal=neutral_ordinal
++    )
+ 
+ 
+ def build_private_dossier(
+@@ -136,32 +164,72 @@ def build_private_dossier(
+     condition: str,
+     variant,
+     round_index: int,
++    neutral_ordinal: int | None = None,
++    withhold_corrective: bool = False,
+ ) -> str | None:
+     """Return the role-private dossier visible in ``round_index``.
+ 
++    Contents, in order:
++    1. the agent's hidden-profile brief (Track B only, every agent, always);
++    2. the seed's injection, or its matched neutral baseline note;
++    3. the corrector's corrective evidence, once ``available_round`` is reached.
++
+     The seed's injection (or matched neutral baseline note) is persistent from
+     round 0. Corrective evidence becomes visible at its predeclared
+     ``available_round`` and remains visible thereafter. Seed and corrector are
+-    distinct roles, so an agent can never receive both dossiers.
++    distinct roles, so an agent can never receive both role dossiers.
++
++    In Track A (no hidden profile) neutral agents have no dossier at all and
++    this returns None, exactly as before.
+     """
+     if is_seed and is_corrector:
+         raise ValueError("seed and corrector must be different agents")
+     if round_index < 0:
+         raise ValueError("round_index must be non-negative")
+ 
++    lines: list[str] = []
++
++    brief = hidden_profile_brief(
++        scenario,
++        is_seed=is_seed,
++        is_corrector=is_corrector,
++        neutral_ordinal=neutral_ordinal,
++    )
++    if brief:
++        lines.append(brief)
++
+     if is_seed:
+-        if condition == "injection":
++        if condition in ("injection", "injection_no_correction"):
++            # The ablation arm delivers an identical injection; only the
++            # corrector's dossier differs, so the seed's prompt is unchanged.
+             if variant is None:
+                 raise ValueError("injection condition requires a variant")
+-            return build_seed_note_block(seed_note_lines(variant))
+-        if condition in ("no_injection_baseline", "independent_control"):
+-            return build_neutral_note_block(scenario.neutral_control_note)
+-
+-    if is_corrector and variant is not None:
++            # A reframing injection is additive: the seed still reports its
++            # honest finding, and the assessment reweights it. Without this the
++            # framing arm would silently delete that fact from the group.
++            if getattr(variant, "reframes_baseline_finding", False):
++                # injection_precedes_finding reverses the order so that position
++                # can be separated from content and label.
++                if getattr(variant, "injection_precedes_finding", False):
++                    lines.extend(seed_note_lines(variant))
++                    lines.append(scenario.neutral_control_note)
++                else:
++                    lines.append(scenario.neutral_control_note)
++                    lines.extend(seed_note_lines(variant))
++            else:
++                lines.extend(seed_note_lines(variant))
++        elif condition in ("no_injection_baseline", "independent_control"):
++            lines.append(scenario.neutral_control_note)
++
++    # withhold_corrective is the Track A ablation: the corrector keeps its
++    # role and its hidden-profile brief, but never receives the decisive
++    # disproof, so the group must resolve the injected claim unaided.
++    if is_corrector and variant is not None and not withhold_corrective:
+         correction = variant.corrective_evidence
+         if round_index >= correction.available_round:
+-            return build_corrective_note_block(correction.content)
+-    return None
++            lines.append(correction.content)
++
++    return render_dossier(lines) if lines else None
+ 
+ 
+ # ---------------------------------------------------------------------------
+@@ -176,13 +244,15 @@ def build_round0_prompt(
+     condition: str,
+     variant=None,
+     round_index: int = 0,
++    neutral_ordinal: int | None = None,
++    withhold_corrective: bool = False,
+ ) -> str:
+     """Initial independent generation for one agent.
+ 
+     - seed, injection       -> shared task + categorical private assessment
+     - seed, baseline        -> shared task + neutral_control_note
+     - corrector (any cond.) -> correction only when available_round == 0
+-    - neutral agent         -> shared task only
++    - neutral agent         -> shared task only (Track A) or its brief (Track B)
+     """
+     parts = [build_shared_task(scenario)]
+     dossier = build_private_dossier(
+@@ -192,6 +262,8 @@ def build_round0_prompt(
+         condition=condition,
+         variant=variant,
+         round_index=round_index,
++        neutral_ordinal=neutral_ordinal,
++        withhold_corrective=withhold_corrective,
+     )
+     if dossier:
+         parts.append(dossier)
+diff --git a/src/assumption_propagation/schemas.py b/src/assumption_propagation/schemas.py
+index 83fa44e..2f13d12 100644
+--- a/src/assumption_propagation/schemas.py
++++ b/src/assumption_propagation/schemas.py
+@@ -51,10 +51,21 @@ class Topology(str, Enum):
+ 
+ class Condition(str, Enum):
+     INJECTION = "injection"
++    # Same injection, same frozen seed, but the corrector never receives the
++    # decisive disproof. This is a CONDITION rather than a run-level switch so
++    # that both arms are collected inside one run against the same seed
++    # instances: round-0 behaviour varies enough between runs that a
++    # between-run ablation contrast cannot be distinguished from run-to-run
++    # variation.
++    INJECTION_NO_CORRECTION = "injection_no_correction"
+     NO_INJECTION_BASELINE = "no_injection_baseline"
+     INDEPENDENT_CONTROL = "independent_control"
+ 
+ 
++# Conditions that deliver the injection and therefore require a frozen seed.
++INJECTION_CONDITIONS = ("injection", "injection_no_correction")
++
++
+ class AssumptionState(str, Enum):
+     """Primary stance toward one canonical target assumption.
+ 
+@@ -119,6 +130,19 @@ class AssumptionVariant(BaseModel):
+     explicitness: str = ""
+     seed_local_evidence: Optional[list[str]] = None
+     seed_private_assessment: Optional[SeedPrivateAssessment] = None
++    # Framing assumptions do not deny a fact; they reweight its significance.
++    # A factual or causal injection REPLACES the seed's honest finding, which
++    # is a clean substitution. A framing injection that replaced it would
++    # instead delete the fact from the group's information, confounding
++    # semantic type with information loss. When this is set the seed retains
++    # its honest finding AND receives the reframing, so the injection is
++    # strictly additive and the group's available information is unchanged.
++    reframes_baseline_finding: bool = False
++    # Diagnostic control. When the seed holds both its honest finding and a
++    # contradicting injected claim, the honest finding is normally stated
++    # first. Position may carry weight independently of content or label, so
++    # this reverses the order to measure it.
++    injection_precedes_finding: bool = False
+     corrective_evidence: CorrectiveEvidence
+     global_validity: GlobalValidity
+     favored_option: str
+@@ -145,6 +169,80 @@ class AssumptionVariant(BaseModel):
+         return self.seed_local_evidence or []
+ 
+ 
++class HiddenProfile(BaseModel):
++    """Track B: decision-relevant facts split across the four agents.
++
++    In the Track A design every agent can solve the task from
++    ``common_context`` alone, so no agent ever has an epistemic reason to
++    defer to a peer's unverifiable claim — which is why an injected
++    assumption stops at the seed. A hidden profile removes that shortcut:
++    each agent privately holds one fact, and only pooling them identifies
++    the compliant option. Deference becomes rational, so a false claim in
++    the pool is load-bearing rather than ignorable.
++
++    Briefs are keyed by ROLE, never by agent id. Seed and corrector sit at
++    different agent indices per topology (A0/A1 in ring and mesh, A1/A2 in
++    the star), so agent-keyed briefs would hand the seed different private
++    information in each topology and break frozen-seed replay.
++
++    ``neutral_briefs`` is ordered: the nth entry goes to the nth neutral by
++    ascending agent id, which is position-stable across topologies.
++    """
++
++    model_config = ConfigDict(extra="ignore")
++
++    seed_brief: str = Field(min_length=10)
++    corrector_brief: str = Field(min_length=10)
++    neutral_briefs: list[str] = Field(min_length=2, max_length=2)
++    shared_context_sufficient: bool = Field(
++        description="Must be False: the hidden-profile property is that the shared "
++        "context alone cannot identify the correct option. Authoring gate."
++    )
++
++    @field_validator("neutral_briefs")
++    @classmethod
++    def _neutral_briefs_nonempty(cls, v: list[str]) -> list[str]:
++        for index, brief in enumerate(v):
++            if len(brief.strip()) < 10:
++                raise ValueError(f"neutral_briefs[{index}] is empty or too short")
++        return v
++
++    @model_validator(mode="after")
++    def _must_be_a_hidden_profile(self) -> "HiddenProfile":
++        if self.shared_context_sufficient:
++            raise ValueError(
++                "shared_context_sufficient must be False; a scenario solvable from the "
++                "shared context alone is not a hidden profile and gives agents no "
++                "reason to rely on peer claims"
++            )
++        return self
++
++    def brief_for(
++        self,
++        *,
++        is_seed: bool,
++        is_corrector: bool,
++        neutral_ordinal: Optional[int] = None,
++    ) -> str:
++        """The private brief for one role. Neutrals are ordered by agent id."""
++        if is_seed and is_corrector:
++            raise ValueError("seed and corrector must be different agents")
++        if is_seed:
++            return self.seed_brief
++        if is_corrector:
++            return self.corrector_brief
++        if neutral_ordinal is None:
++            raise ValueError(
++                "neutral agents in a hidden-profile scenario require a neutral_ordinal"
++            )
++        if not 0 <= neutral_ordinal < len(self.neutral_briefs):
++            raise ValueError(
++                f"neutral_ordinal {neutral_ordinal} outside "
++                f"0..{len(self.neutral_briefs) - 1}"
++            )
++        return self.neutral_briefs[neutral_ordinal]
++
++
+ class QualityChecklist(BaseModel):
+     """Authoring-time quality gates recorded per scenario."""
+ 
+@@ -181,9 +279,16 @@ class Scenario(BaseModel):
+     )
+     seed_confidence_level: Optional[int] = Field(default=None, ge=1, le=3)
+     injected_epistemic_level: Optional[str] = None
++    # Track B only. Absent => Track A: every agent solves from common_context.
++    hidden_profile: Optional[HiddenProfile] = None
+     assumption_variants: list[AssumptionVariant] = Field(min_length=1, max_length=3)
+     quality_checklist: Optional[QualityChecklist] = None
+ 
++    @property
++    def track(self) -> str:
++        """'hidden_profile' (Track B) or 'shared_context' (Track A)."""
++        return "hidden_profile" if self.hidden_profile is not None else "shared_context"
++
+     @field_validator("options")
+     @classmethod
+     def _five_options(cls, v: dict[str, str]) -> dict[str, str]:

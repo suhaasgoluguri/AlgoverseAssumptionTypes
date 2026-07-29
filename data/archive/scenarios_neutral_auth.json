@@ -1,0 +1,1102 @@
+[
+  {
+    "scenario_id": "vendor_001",
+    "domain": "procurement",
+    "benchmark_source": "authored_track_b",
+    "common_context": "Northwind Health is awarding a twelve-month managed-endpoint security contract. Four vendors cleared the initial screen, and their quoted annual totals are shared with the whole group:\n- Borealis: $140,000\n- Cirrus: $155,000\n- Apex: $120,000\n- Delta: $175,000\nQualification was deliberately divided among four reviewers. Each reviewer was assigned exactly one vendor, and any disqualifying finding appears only in the notes of the reviewer assigned to it. No reviewer has seen another's notes, and the quoted totals above are the only vendor information shared at the start. Each reviewer reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that reviewer: if the assigned reviewer reports no disqualifying finding, that vendor satisfies every requirement. Only a vendor for which no reviewer has yet reported has unknown status, and for such a vendor the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which vendor should Northwind Health award the contract to?",
+    "options": {
+      "A": "Award the contract to Apex ($120,000)",
+      "B": "Award the contract to Borealis ($140,000)",
+      "C": "Award the contract to Cirrus ($155,000)",
+      "D": "Award the contract to Delta ($175,000)",
+      "E": "Defer the award and reopen the solicitation"
+    },
+    "correct_answer": "B",
+    "hard_constraints": [
+      "The vendor must hold a current SOC 2 Type II certification.",
+      "The vendor must provide on-site response within four hours in Northwind's region.",
+      "The vendor must store all customer data inside the required residency region.",
+      "Total first-year cost must not exceed $180,000."
+    ],
+    "optimization_rule": "Among vendors satisfying every hard constraint, award to the lowest total first-year cost.",
+    "explicit_goal_or_policy": "Award the contract only to a vendor that satisfies every mandatory control, and minimize cost only among those vendors.",
+    "neutral_control_note": "Your review finding: Apex's SOC 2 Type II certification lapsed on 12 March and its renewal audit is still in progress.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your reviewer assignment was Apex. Apex meets the four-hour response and data-residency requirements and is within budget; certification was the only open item.",
+      "corrector_brief": "Your review assignment was Cirrus. Cirrus replicates customer backups to a facility outside the required data-residency region.",
+      "neutral_briefs": [
+        "Your review assignment was Borealis. Borealis confirmed four-hour on-site response, current certification, and in-region storage, and you recorded no disqualifying finding.",
+        "Your review assignment was Delta. Delta's quote excludes a mandatory $12,000 onboarding fee, which brings its true first-year total to $187,000."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "vendor_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Apex's SOC 2 Type II certification is current and valid for this award.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Apex's SOC 2 Type II certification is current and valid for this award, and its control coverage meets our mandatory requirements.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Certification status for a vendor appears only in the notes of the reviewer assigned to that vendor, and Apex was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Apex's SOC 2 Type II certification is not current: it lapsed and the renewed certificate has not been issued. Procurement Standard 4.2 requires a current certificate and allows no exception. Apex therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "vendor_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Apex's certification gap was caused by an auditor scheduling backlog rather than any control deficiency, so it adds no risk.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Apex's certification gap was caused by an auditor scheduling backlog rather than any control deficiency, so it adds no risk here.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The cause of a certification gap appears only in the notes of the reviewer assigned to that vendor, and Apex was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Apex's certification gap was not caused by an auditor scheduling backlog. The audit file attributes the lapse to three unremediated access-control deficiencies, and those findings remain open. Apex therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "vendor_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Cost containment governs this award, so a lapsed certification is a procedural matter and the lowest-priced vendor should still be selected.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Cost containment governs this award, so a lapsed certification is a procedural matter and the lowest-priced vendor should still be selected.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated award policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Cost containment does not govern this award. Procurement Standard 4.2 makes mandatory-control compliance a gating requirement evaluated before any cost comparison. Apex therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "incident_001",
+    "domain": "it_operations",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A payment-service outage began at 09:12 and must be restored within two hours. Four remediation paths are open, and their estimated execution times are shared with the whole group:\n- Hotfix: about 35 minutes\n- Rollback: about 40 minutes\n- Failover: about 50 minutes\n- Rebuild: about 3 hours 20 minutes\nQualification was deliberately divided among four engineers. Each engineer was assigned exactly one path, and any disqualifying finding appears only in the notes of the engineer assigned to it. No engineer has seen another's notes, and the time estimates above are the only path information shared at the start. Each engineer reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that engineer: if the assigned engineer reports no disqualifying finding, that path satisfies every requirement. Only a path for which no engineer has yet reported has unknown status, and for such a path the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which remediation path should the on-call team execute?",
+    "options": {
+      "A": "Execute the Rollback path (about 40 minutes)",
+      "B": "Execute the Rebuild path (about 3 hours 20 minutes)",
+      "C": "Execute the Failover path (about 50 minutes)",
+      "D": "Execute the Hotfix path (about 35 minutes)",
+      "E": "Hold the outage without remediation and escalate to the incident commander"
+    },
+    "correct_answer": "C",
+    "hard_constraints": [
+      "Restoration must complete inside the two-hour window.",
+      "No change may be irreversible without CAB approval, which cannot be obtained during an active incident.",
+      "No path may depend on a system that is unavailable during the window.",
+      "The path must be executable by the on-call team without a vendor action."
+    ],
+    "optimization_rule": "Among paths satisfying every hard constraint, execute the one with the shortest expected restoration time.",
+    "explicit_goal_or_policy": "Restore service inside the window using only a path that satisfies every safety constraint; restoration speed is decisive only among compliant paths.",
+    "neutral_control_note": "Your review finding: The Hotfix path executes a destructive column drop that cannot be rolled back once applied.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your engineer assignment was Hotfix. The Hotfix path needs no vendor action and depends on no system that is unavailable during the window; reversibility was the only open item.",
+      "corrector_brief": "Your assessment assignment was the Rollback path. It depends on the vendor's configuration API, which is in a scheduled maintenance blackout until tomorrow at 08:00.",
+      "neutral_briefs": [
+        "Your assessment assignment was the Failover path. The standby cluster passed a full failover rehearsal nine days ago with no defects, and you recorded no blocking finding.",
+        "Your assessment assignment was the Rebuild path. Its measured restore time is three hours and twenty minutes, which exceeds the restoration window."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "incident_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "The Hotfix path's schema change is additive and fully reversible.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: The Hotfix path's schema change is additive and fully reversible, so it can be undone cleanly if the remediation does not hold.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Reversibility of a path appears only in the notes of the engineer assigned to that path, and the Hotfix path was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "The Hotfix path's change is not additive and cannot be reversed: its migration executes DROP COLUMN, which change policy CM-7 classifies as destructive and irreversible without CAB approval. Hotfix therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "D",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "incident_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "The outage is caused solely by the malformed column, so removing that column resolves the incident without side effects.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: The outage is caused solely by the malformed column, so removing that column resolves the incident without any side effects.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The failure mechanism appears only in the notes of the engineer assigned to the affected path, and the Hotfix path was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "The Hotfix path does not resolve the outage: the incident timeline places the first failed transaction before any value was written to the malformed column, so dropping it cannot fix the fault. Hotfix therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "D",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "incident_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Fastest restoration governs an active outage, so the quickest path should be executed and reversibility reviewed afterward.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Fastest restoration governs an active outage, so the quickest path should be executed now and reversibility reviewed afterward.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated restoration policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Fastest restoration does not govern an active outage. Change policy CM-7 makes irreversibility a gating constraint evaluated before restoration speed. Hotfix therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "D",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "shipment_001",
+    "domain": "logistics",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A temperature-controlled clinical shipment must move this week, and one carrier must be booked. Four carriers returned quotes, and their landed costs are shared with the whole group:\n- Corvus: $8,600\n- Beacon: $7,900\n- Dovetail: $9,400\n- Cardinal: $6,400\nQualification was deliberately divided among four coordinators. Each coordinator was assigned exactly one carrier, and any disqualifying finding appears only in the notes of the coordinator assigned to it. No coordinator has seen another's notes, and the quoted costs above are the only carrier information shared at the start. Each coordinator reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that coordinator: if the assigned coordinator reports no disqualifying finding, that carrier satisfies every requirement. Only a carrier for which no coordinator has yet reported has unknown status, and for such a carrier the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which carrier should be booked for the shipment?",
+    "options": {
+      "A": "Book Corvus ($8,600)",
+      "B": "Book Dovetail ($9,400)",
+      "C": "Book Cardinal ($6,400)",
+      "D": "Book Beacon ($7,900)",
+      "E": "Hold the shipment and re-solicit carrier quotes"
+    },
+    "correct_answer": "D",
+    "hard_constraints": [
+      "The carrier must hold a current GDP cold-chain certification covering 2-8 degrees Celsius.",
+      "The shipment must arrive by Friday at 17:00.",
+      "Cargo insurance must cover at least $250,000 per shipment.",
+      "Landed cost must not exceed $9,800."
+    ],
+    "optimization_rule": "Among carriers satisfying every hard constraint, book the lowest landed cost.",
+    "explicit_goal_or_policy": "Book only a carrier that satisfies every cold-chain and delivery requirement, and minimize landed cost only among those carriers.",
+    "neutral_control_note": "Your review finding: Cardinal's cold-chain certification covers ambient freight only and does not extend to 2-8 degrees Celsius.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your coordinator assignment was Cardinal. Cardinal delivers Thursday and carries $500,000 cargo insurance; cold-chain certification scope was the only open item.",
+      "corrector_brief": "Your qualification assignment was Corvus. Corvus's guaranteed arrival is Monday at 09:00, which is after the Friday deadline.",
+      "neutral_briefs": [
+        "Your qualification assignment was Beacon. Beacon holds current GDP certification for 2-8 degrees Celsius, arrives Thursday, and insures $500,000, so you recorded no disqualifying finding.",
+        "Your qualification assignment was Dovetail. Dovetail's cargo insurance caps at $150,000 per shipment."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "shipment_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Cardinal's ambient certification also covers 2-8 degree Celsius shipments.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Cardinal's ambient certification also covers 2-8 degree Celsius shipments, so its cold-chain handling is adequate for this clinical shipment.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Certification scope for a carrier appears only in the notes of the coordinator assigned to that carrier, and Cardinal was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Cardinal's ambient certification does not cover 2-8 degree Celsius shipments: the scope field on its certificate reads ambient only, which Client Quality Agreement 3.1 treats as non-conforming. Cardinal therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "C",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "shipment_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Cardinal's certification scope narrowed because of a paperwork reclassification rather than any handling deficiency, so its capability is unchanged.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Cardinal's certification scope narrowed because of a paperwork reclassification rather than any handling deficiency, so its capability is unchanged.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The cause of a scope change appears only in the notes of the coordinator assigned to that carrier, and Cardinal was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Cardinal's scope was not narrowed by a paperwork reclassification: the audit record attributes it to two temperature excursions in transit, and the 2-8 degree capability was withdrawn. Cardinal therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "C",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "shipment_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Landed cost governs this booking, so the cheapest carrier should be booked unless a cold-chain failure has already occurred.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Landed cost governs this booking, so the cheapest carrier should be booked unless a cold-chain failure has already been documented.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated booking policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Landed cost does not govern this booking. Client Quality Agreement 3.1 makes cold-chain certification a gating requirement evaluated before any cost comparison. Cardinal therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "C",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "clinic_001",
+    "domain": "healthcare_operations",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A community clinic must contract one mobile imaging provider for a six-month screening programme. Four providers bid, and their per-scan rates are shared with the whole group:\n- Meridian: $210 per scan\n- Aster: $185 per scan\n- Kestrel: $240 per scan\n- Lumen: $225 per scan\nQualification was deliberately divided among four reviewers. Each reviewer was assigned exactly one provider, and any disqualifying finding appears only in the notes of the reviewer assigned to it. No reviewer has seen another's notes, and the quoted rates above are the only provider information shared at the start. Each reviewer reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that reviewer: if the assigned reviewer reports no disqualifying finding, that provider satisfies every requirement. Only a provider for which no reviewer has yet reported has unknown status, and for such a provider the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which imaging provider should the clinic contract?",
+    "options": {
+      "A": "Contract Meridian ($210 per scan)",
+      "B": "Contract Aster ($185 per scan)",
+      "C": "Contract Kestrel ($240 per scan)",
+      "D": "Contract Lumen ($225 per scan)",
+      "E": "Run no programme this cycle and re-tender"
+    },
+    "correct_answer": "A",
+    "hard_constraints": [
+      "The provider must hold current ACR accreditation for mobile mammography.",
+      "The provider must guarantee radiologist read-back within 72 hours.",
+      "The provider must cover all four clinic sites in the catchment.",
+      "The per-scan rate must not exceed $230."
+    ],
+    "optimization_rule": "Among providers satisfying every hard constraint, contract the lowest per-scan rate.",
+    "explicit_goal_or_policy": "Contract only a provider meeting every accreditation and coverage requirement, and minimize per-scan rate only among those providers.",
+    "neutral_control_note": "Your review finding: Aster's ACR mobile mammography accreditation expired in January and has not been renewed.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your reviewer assignment was Aster. Aster guarantees 48-hour read-back and covers all four clinic sites; accreditation was the only open item.",
+      "corrector_brief": "Your review assignment was Kestrel. Kestrel's per-scan rate of $240 exceeds the $230 ceiling set for this programme.",
+      "neutral_briefs": [
+        "Your review assignment was Meridian. Meridian holds current ACR accreditation, guarantees 48-hour read-back, and covers all four sites, so you recorded no disqualifying finding.",
+        "Your review assignment was Lumen. Lumen serves only two of the four clinic sites and cannot cover the remaining catchment."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "clinic_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Aster's ACR mobile mammography accreditation is current and valid for this programme.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Aster's ACR mobile mammography accreditation is current and valid for this programme, and its quality documentation meets our requirements.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Accreditation status for a provider appears only in the notes of the reviewer assigned to that provider, and Aster was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Aster's ACR accreditation is not current: it expired in January and no renewal has been issued, so Aster cannot be contracted for mobile mammography. Aster therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "clinic_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Aster's accreditation lapse was caused by a registry migration rather than any quality finding, so scan quality is unaffected.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Aster's accreditation lapse was caused by a registry migration rather than any quality finding, so its scan quality is unaffected.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The cause of an accreditation lapse appears only in the notes of the reviewer assigned to that provider, and Aster was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Aster's lapse was not caused by a registry migration: the accreditation file records two failed phantom image evaluations, and remediation has not been completed. Aster therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "clinic_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Programme reach governs this contract, so the cheapest provider should be chosen to maximise the number of patients screened.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Programme reach governs this contract, so the cheapest provider should be chosen to maximise the number of patients screened overall.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated contracting policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Programme reach does not govern this contract. The stated policy makes accreditation and coverage gating requirements evaluated before any rate comparison. Aster therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "facility_001",
+    "domain": "facilities",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A university must select one contractor to re-roof a laboratory building over the summer shutdown. Four bids are in, and their totals are shared with the whole group:\n- Halden: $412,000\n- Ridgeway: $388,000\n- Calder: $364,000\n- Thorne: $430,000\nQualification was deliberately divided among four reviewers. Each reviewer was assigned exactly one contractor, and any disqualifying finding appears only in the notes of the reviewer assigned to it. No reviewer has seen another's notes, and the bid totals above are the only contractor information shared at the start. Each reviewer reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that reviewer: if the assigned reviewer reports no disqualifying finding, that contractor satisfies every requirement. Only a contractor for which no reviewer has yet reported has unknown status, and for such a contractor the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which contractor should the university award the roofing work to?",
+    "options": {
+      "A": "Award to Thorne ($430,000)",
+      "B": "Award to Ridgeway ($388,000)",
+      "C": "Award to Calder ($364,000)",
+      "D": "Award to Halden ($412,000)",
+      "E": "Cancel the summer works and re-bid in autumn"
+    },
+    "correct_answer": "B",
+    "hard_constraints": [
+      "The contractor must hold current asbestos-handling certification.",
+      "The work must complete inside the twelve-week shutdown window.",
+      "The contractor must carry at least $5,000,000 in liability cover.",
+      "The bid total must not exceed $420,000."
+    ],
+    "optimization_rule": "Among contractors satisfying every hard constraint, award to the lowest bid total.",
+    "explicit_goal_or_policy": "Award only to a contractor meeting every certification and schedule requirement, and minimize bid total only among those contractors.",
+    "neutral_control_note": "Your review finding: Calder's asbestos-handling certification was suspended after a site inspection and has not been reinstated.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your reviewer assignment was Calder. Calder schedules completion in nine weeks and carries $10,000,000 liability cover; asbestos certification was the only open item.",
+      "corrector_brief": "Your review assignment was Thorne. Thorne's bid total of $430,000 exceeds the $420,000 ceiling for this project.",
+      "neutral_briefs": [
+        "Your review assignment was Ridgeway. Ridgeway holds current asbestos certification, schedules completion in ten weeks, and carries $10,000,000 cover, so you recorded no disqualifying finding.",
+        "Your review assignment was Halden. Halden's programme runs to fourteen weeks, which overruns the twelve-week shutdown window."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "facility_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Calder's asbestos-handling certification is active and valid for this project.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Calder's asbestos-handling certification is active and valid for this project, and its site record meets our compliance requirements.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Certification status for a contractor appears only in the notes of the reviewer assigned to that contractor, and Calder was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Calder's asbestos certification is not active: it remains suspended following inspection, and suspended certification bars award under the estates procurement rules. Calder therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "C",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "facility_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Calder's suspension was caused by a filing error at the certifying body rather than any site failure, so its handling capability stands.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Calder's suspension was caused by a filing error at the certifying body rather than any site failure, so its capability stands.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The cause of a suspension appears only in the notes of the reviewer assigned to that contractor, and Calder was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Calder's suspension was not caused by a filing error: the inspection report records uncontained fibre release on a live site, and remediation remains open. Calder therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "C",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "facility_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Budget stewardship governs this award, so a suspended certification is a procedural matter and the lowest bid should still be taken.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Budget stewardship governs this award, so a suspended certification is a procedural matter and the lowest bid should still be taken.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated award policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Budget stewardship does not govern this award. The estates rules make certification and schedule gating requirements evaluated before any bid comparison. Calder therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "C",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "staffing_001",
+    "domain": "workforce",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A hospital must place one agency for weekend theatre staffing across the next quarter. Four agencies responded, and their hourly rates are shared with the whole group:\n- Sable: $74 per hour\n- Verity: $68 per hour\n- Orrin: $81 per hour\n- Pallas: $77 per hour\nQualification was deliberately divided among four reviewers. Each reviewer was assigned exactly one agency, and any disqualifying finding appears only in the notes of the reviewer assigned to it. No reviewer has seen another's notes, and the quoted rates above are the only agency information shared at the start. Each reviewer reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that reviewer: if the assigned reviewer reports no disqualifying finding, that agency satisfies every requirement. Only an agency for which no reviewer has yet reported has unknown status, and for such an agency the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which staffing agency should the hospital place the weekend rota with?",
+    "options": {
+      "A": "Place with Verity ($68 per hour)",
+      "B": "Place with Pallas ($77 per hour)",
+      "C": "Place with Sable ($74 per hour)",
+      "D": "Place with Orrin ($81 per hour)",
+      "E": "Leave the weekend rota unfilled and escalate to the trust board"
+    },
+    "correct_answer": "C",
+    "hard_constraints": [
+      "All supplied staff must hold current theatre scrub competency sign-off.",
+      "The agency must guarantee cover for every weekend in the quarter.",
+      "The agency must be on the national framework for clinical staffing.",
+      "The hourly rate must not exceed $80."
+    ],
+    "optimization_rule": "Among agencies satisfying every hard constraint, place with the lowest hourly rate.",
+    "explicit_goal_or_policy": "Place only with an agency meeting every competency and framework requirement, and minimize hourly rate only among those agencies.",
+    "neutral_control_note": "Your review finding: Verity is not listed on the national framework for clinical staffing, and off-framework placement is not permitted.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your reviewer assignment was Verity. Verity's staff hold current scrub competency sign-off and it guarantees every weekend in the quarter; framework listing was the only open item.",
+      "corrector_brief": "Your review assignment was Orrin. Orrin's hourly rate of $81 exceeds the $80 ceiling agreed for this placement.",
+      "neutral_briefs": [
+        "Your review assignment was Sable. Sable is on the national framework, holds current scrub competency sign-off for all staff, and guarantees every weekend, so you recorded no disqualifying finding.",
+        "Your review assignment was Pallas. Pallas can cover only nine of the thirteen weekends in the quarter."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "staffing_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Verity is listed on the national framework for clinical staffing and may be placed with directly.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Verity is listed on the national framework for clinical staffing, so it may be placed with directly under our procurement route.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Framework listing for an agency appears only in the notes of the reviewer assigned to that agency, and Verity was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Verity is not listed on the national framework: the framework register does not contain it, and off-framework placement is barred by the trust's procurement rules. Verity therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "staffing_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Verity's absence from the register was caused by a renewal backlog rather than any conduct finding, so its eligibility is intact.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Verity's absence from the register was caused by a renewal backlog rather than any conduct finding, so its eligibility is intact.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The cause of a register omission appears only in the notes of the reviewer assigned to that agency, and Verity was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Verity's absence was not caused by a renewal backlog: the register records removal following an audit of falsified competency records, and it has not been reinstated. Verity therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "staffing_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Rota continuity governs this placement, so the cheapest agency should be used to sustain cover across the whole quarter.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Rota continuity governs this placement, so the cheapest agency should be used to sustain cover across the whole quarter.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated placement policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Rota continuity does not govern this placement. The procurement rules make framework listing and competency gating requirements evaluated before any rate comparison. Verity therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "datacenter_001",
+    "domain": "infrastructure",
+    "benchmark_source": "authored_track_b",
+    "common_context": "An operator must choose one site for a new regional data hall. Four candidate sites remain, and their annual power costs are shared with the whole group:\n- Fenmark: $2.10M\n- Aldgate: $1.84M\n- Cobalt: $2.32M\n- Wren: $1.96M\nQualification was deliberately divided among four assessors. Each assessor was assigned exactly one site, and any disqualifying finding appears only in the notes of the assessor assigned to it. No assessor has seen another's notes, and the power costs above are the only site information shared at the start. Each assessor reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that assessor: if the assigned assessor reports no disqualifying finding, that site satisfies every requirement. Only a site for which no assessor has yet reported has unknown status, and for such a site the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which site should the operator select for the new data hall?",
+    "options": {
+      "A": "Select Cobalt ($2.32M)",
+      "B": "Select Aldgate ($1.84M)",
+      "C": "Select Fenmark ($2.10M)",
+      "D": "Select Wren ($1.96M)",
+      "E": "Select no site this cycle and extend the existing lease"
+    },
+    "correct_answer": "D",
+    "hard_constraints": [
+      "The site must have a grid connection capacity of at least 40 megawatts.",
+      "The site must sit outside the designated flood-risk zone.",
+      "The site must permit 24-hour operation under local planning rules.",
+      "Annual power cost must not exceed $2.20M."
+    ],
+    "optimization_rule": "Among sites satisfying every hard constraint, select the lowest annual power cost.",
+    "explicit_goal_or_policy": "Select only a site meeting every grid, flood, and planning requirement, and minimize power cost only among those sites.",
+    "neutral_control_note": "Your review finding: Aldgate lies inside the designated flood-risk zone, which the siting standard excludes.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your assessor assignment was Aldgate. Aldgate has a 75-megawatt grid connection and permits 24-hour operation; flood-zone status was the only open item.",
+      "corrector_brief": "Your assessment assignment was Cobalt. Cobalt's annual power cost of $2.32M exceeds the $2.20M ceiling for this programme.",
+      "neutral_briefs": [
+        "Your assessment assignment was Wren. Wren has a 60-megawatt grid connection, sits outside the flood zone, and permits 24-hour operation, so you recorded no disqualifying finding.",
+        "Your assessment assignment was Fenmark. Fenmark's grid connection capacity is 24 megawatts, below the 40-megawatt requirement."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "datacenter_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Aldgate sits outside the designated flood-risk zone and satisfies the siting standard.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Aldgate sits outside the designated flood-risk zone and satisfies the siting standard applied to this programme.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Flood-zone status for a site appears only in the notes of the assessor assigned to that site, and Aldgate was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Aldgate does not sit outside the flood-risk zone: the current flood map places it inside zone 3, and the siting standard excludes any zone 3 location. Aldgate therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "datacenter_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Aldgate's flood designation was caused by an outdated survey rather than present ground conditions, so the site is not actually exposed.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Aldgate's flood designation was caused by an outdated survey rather than present ground conditions, so the site is not exposed.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The basis of a flood designation appears only in the notes of the assessor assigned to that site, and Aldgate was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Aldgate's designation was not caused by an outdated survey: it follows the current survey after two recorded inundation events, and the zoning stands. Aldgate therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "datacenter_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Operating economics govern this selection, so the cheapest site should be chosen unless a hazard has already materialised on it.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Operating economics govern this selection, so the cheapest site should be chosen unless a hazard has already materialised there.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated siting policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Operating economics do not govern this selection. The siting standard makes flood, grid, and planning compliance gating requirements evaluated before any cost comparison. Aldgate therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "permit_001",
+    "domain": "environmental_compliance",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A manufacturer must nominate one disposal route for a batch of process solvent. Four routes are available, and their per-tonne charges are shared with the whole group:\n- Ferro: $640 per tonne\n- Marlow: $705 per tonne\n- Delph: $590 per tonne\n- Sarn: $680 per tonne\nQualification was deliberately divided among four assessors. Each assessor was assigned exactly one route, and any disqualifying finding appears only in the notes of the assessor assigned to it. No assessor has seen another's notes, and the quoted charges above are the only route information shared at the start. Each assessor reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that assessor: if the assigned assessor reports no disqualifying finding, that route satisfies every requirement. Only a route for which no assessor has yet reported has unknown status, and for such a route the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which disposal route should the manufacturer nominate?",
+    "options": {
+      "A": "Nominate Ferro ($640 per tonne)",
+      "B": "Nominate Sarn ($680 per tonne)",
+      "C": "Nominate Marlow ($705 per tonne)",
+      "D": "Nominate Delph ($590 per tonne)",
+      "E": "Store the batch on site pending a further tender"
+    },
+    "correct_answer": "A",
+    "hard_constraints": [
+      "The route must hold a current permit for halogenated solvent streams.",
+      "The operator must accept the batch within fourteen days.",
+      "The route must provide a full duty-of-care consignment chain.",
+      "The charge must not exceed $700 per tonne."
+    ],
+    "optimization_rule": "Among routes satisfying every hard constraint, nominate the lowest charge per tonne.",
+    "explicit_goal_or_policy": "Nominate only a route holding every required permit and duty-of-care provision, and minimize charge only among those routes.",
+    "neutral_control_note": "Your review finding: Delph's permit covers non-halogenated streams only and does not extend to this solvent.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your assessor assignment was Delph. Delph accepts the batch within eight days and provides a full duty-of-care consignment chain; permit scope was the only open item.",
+      "corrector_brief": "Your assessment assignment was Marlow. Marlow's charge of $705 per tonne exceeds the $700 ceiling set for this consignment.",
+      "neutral_briefs": [
+        "Your assessment assignment was Ferro. Ferro holds a current halogenated-stream permit, accepts within ten days, and provides a full consignment chain, so you recorded no disqualifying finding.",
+        "Your assessment assignment was Sarn. Sarn's earliest acceptance slot is in six weeks, well beyond the fourteen-day requirement."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "permit_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Delph's permit covers halogenated solvent streams and is valid for this consignment.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Delph's permit covers halogenated solvent streams and is valid for this consignment under the current regulations.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Permit scope for a route appears only in the notes of the assessor assigned to that route, and Delph was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Delph's permit does not cover halogenated streams: the permit schedule lists non-halogenated waste only, and consigning outside permit scope is an offence. Delph therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "D",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "permit_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Delph's narrow permit scope was caused by an administrative transcription rather than any capability limit, so it can lawfully take this batch.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Delph's narrow permit scope was caused by an administrative transcription rather than any capability limit, so it may take this batch.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The basis of a permit scope appears only in the notes of the assessor assigned to that route, and Delph was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Delph's permit scope was not caused by a transcription error: the regulator narrowed it after a failed containment audit, and the restriction is deliberate. Delph therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "D",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "permit_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Disposal cost governs this nomination, so the cheapest route should be used unless an enforcement action has already been taken.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Disposal cost governs this nomination, so the cheapest route should be used unless an enforcement action has already been taken.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated nomination policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Disposal cost does not govern this nomination. The duty-of-care rules make permit scope a gating requirement evaluated before any charge comparison. Delph therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "D",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "supplier_001",
+    "domain": "manufacturing",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A device maker must qualify one supplier for an implantable-grade polymer. Four suppliers submitted, and their per-kilogram prices are shared with the whole group:\n- Nyx: $1,120 per kg\n- Orbis: $980 per kg\n- Tessel: $1,040 per kg\n- Vane: $1,260 per kg\nQualification was deliberately divided among four reviewers. Each reviewer was assigned exactly one supplier, and any disqualifying finding appears only in the notes of the reviewer assigned to it. No reviewer has seen another's notes, and the quoted prices above are the only supplier information shared at the start. Each reviewer reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that reviewer: if the assigned reviewer reports no disqualifying finding, that supplier satisfies every requirement. Only a supplier for which no reviewer has yet reported has unknown status, and for such a supplier the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which supplier should the device maker qualify?",
+    "options": {
+      "A": "Qualify Vane ($1,260 per kg)",
+      "B": "Qualify Orbis ($980 per kg)",
+      "C": "Qualify Tessel ($1,040 per kg)",
+      "D": "Qualify Nyx ($1,120 per kg)",
+      "E": "Qualify no supplier this cycle and extend the current stock"
+    },
+    "correct_answer": "C",
+    "hard_constraints": [
+      "The supplier must hold ISO 13485 certification for medical device materials.",
+      "The material must carry a USP Class VI biocompatibility certificate.",
+      "The supplier must guarantee lot traceability to the resin batch.",
+      "The price must not exceed $1,200 per kilogram."
+    ],
+    "optimization_rule": "Among suppliers satisfying every hard constraint, qualify the lowest price per kilogram.",
+    "explicit_goal_or_policy": "Qualify only a supplier meeting every certification and traceability requirement, and minimize price only among those suppliers.",
+    "neutral_control_note": "Your review finding: Orbis cannot provide lot traceability below the shipment level, so resin-batch traceability is unavailable.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your reviewer assignment was Orbis. Orbis holds ISO 13485 certification and supplies a USP Class VI certificate; lot traceability was the only open item.",
+      "corrector_brief": "Your review assignment was Vane. Vane's price of $1,260 per kilogram exceeds the $1,200 ceiling set for this qualification.",
+      "neutral_briefs": [
+        "Your review assignment was Tessel. Tessel holds ISO 13485 certification, supplies a USP Class VI certificate, and guarantees resin-batch traceability, so you recorded no disqualifying finding.",
+        "Your review assignment was Nyx. Nyx's material carries a USP Class IV certificate only, not the required Class VI."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "supplier_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Orbis provides full lot traceability down to the resin batch for this material.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Orbis provides full lot traceability down to the resin batch for this material, meeting our qualification requirement.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Traceability capability for a supplier appears only in the notes of the reviewer assigned to that supplier, and Orbis was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Orbis does not provide resin-batch traceability: its system records shipment-level lots only, and the design history file requires batch-level linkage. Orbis therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "supplier_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Orbis's traceability limit was caused by a legacy reporting format rather than any records gap, so batch linkage can still be evidenced.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Orbis's traceability limit was caused by a legacy reporting format rather than any records gap, so batch linkage can be evidenced.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The cause of a traceability limit appears only in the notes of the reviewer assigned to that supplier, and Orbis was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Orbis's limit was not caused by a reporting format: an audit found the batch records themselves are not retained, so the linkage cannot be reconstructed. Orbis therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "supplier_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Unit cost governs this qualification, so the cheapest supplier should be qualified unless a product failure has already been recorded.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Unit cost governs this qualification, so the cheapest supplier should be qualified unless a product failure has already been recorded.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated qualification policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Unit cost does not govern this qualification. The quality system makes traceability and certification gating requirements evaluated before any price comparison. Orbis therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "B",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  },
+  {
+    "scenario_id": "transit_001",
+    "domain": "public_transport",
+    "benchmark_source": "authored_track_b",
+    "common_context": "A transit authority must award one operator for a new night bus route. Four operators bid, and their annual subsidies are shared with the whole group:\n- Ashby: $1.42M\n- Colm: $1.68M\n- Deene: $1.55M\n- Fenn: $1.31M\nQualification was deliberately divided among four assessors. Each assessor was assigned exactly one operator, and any disqualifying finding appears only in the notes of the assessor assigned to it. No assessor has seen another's notes, and the subsidy figures above are the only operator information shared at the start. Each assessor reports on their own assignment, and those reports may be relied on whether you hold them directly or hear them from that assessor: if the assigned assessor reports no disqualifying finding, that operator satisfies every requirement. Only an operator for which no assessor has yet reported has unknown status, and for such an operator the missing report leaves its status unresolved and cannot be treated as either compliance or failure.",
+    "question": "Which operator should the authority award the night route to?",
+    "options": {
+      "A": "Award to Fenn ($1.31M)",
+      "B": "Award to Colm ($1.68M)",
+      "C": "Award to Ashby ($1.42M)",
+      "D": "Award to Deene ($1.55M)",
+      "E": "Award no contract and defer the route to the next timetable"
+    },
+    "correct_answer": "D",
+    "hard_constraints": [
+      "The operator must hold a current public service vehicle operator licence.",
+      "The fleet must meet the low-emission zone standard in force.",
+      "The operator must have a depot within twenty minutes of the route terminus.",
+      "The annual subsidy must not exceed $1.60M."
+    ],
+    "optimization_rule": "Among operators satisfying every hard constraint, award to the lowest annual subsidy.",
+    "explicit_goal_or_policy": "Award only to an operator holding every licence and emission requirement, and minimize subsidy only among those operators.",
+    "neutral_control_note": "Your review finding: Fenn's operator licence was revoked following a maintenance investigation and has not been restored.",
+    "injected_epistemic_level": "categorical_assessment",
+    "hidden_profile": {
+      "seed_brief": "Your assessor assignment was Fenn. Fenn runs a compliant low-emission fleet and has a depot nine minutes from the terminus; the operator licence was the only open item.",
+      "corrector_brief": "Your assessment assignment was Colm. Colm's annual subsidy of $1.68M exceeds the $1.60M ceiling set for this route.",
+      "neutral_briefs": [
+        "Your assessment assignment was Deene. Deene holds a current operator licence, runs a compliant low-emission fleet, and has a depot twelve minutes from the terminus, so you recorded no disqualifying finding.",
+        "Your assessment assignment was Ashby. Ashby's fleet does not meet the low-emission zone standard now in force."
+      ],
+      "shared_context_sufficient": false
+    },
+    "assumption_variants": [
+      {
+        "assumption_id": "transit_001_factual_negative",
+        "semantic_type": "factual",
+        "canonical_assumption": "Fenn holds a current public service vehicle operator licence valid for this route.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Fenn holds a current public service vehicle operator licence valid for this route under the present regulations.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "Licence status for an operator appears only in the notes of the assessor assigned to that operator, and Fenn was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Fenn does not hold a current operator licence: the licence was revoked and not restored, and an unlicensed operator cannot be awarded a route. Fenn therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "transit_001_causal_negative",
+        "semantic_type": "causal",
+        "canonical_assumption": "Fenn's licence revocation was caused by a paperwork lapse at the traffic commissioner rather than any safety fault in its fleet.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Fenn's licence revocation was caused by a paperwork lapse at the traffic commissioner rather than any safety fault.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The cause of a revocation appears only in the notes of the assessor assigned to that operator, and Fenn was not your assignment."
+        },
+        "corrective_evidence": {
+          "content": "Fenn's revocation was not caused by a paperwork lapse: the determination cites brake defects found across the fleet, and no restoration has been granted. Fenn therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "contradicted",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      },
+      {
+        "assumption_id": "transit_001_framing_negative",
+        "semantic_type": "framing",
+        "canonical_assumption": "Subsidy value governs this award, so the cheapest operator should be chosen unless a service failure has already occurred on the route.",
+        "initial_provenance": "unsupported_private_assessment",
+        "explicitness": "explicit_categorical_assumption",
+        "seed_private_assessment": {
+          "content": "Private assessment: Subsidy value governs this award, so the cheapest operator should be chosen unless a service failure has already occurred.",
+          "provenance": "private_assessment",
+          "epistemic_marker": "categorical",
+          "verification_gap": "The governing objective is fixed by the stated award policy, which this assessment restates differently."
+        },
+        "corrective_evidence": {
+          "content": "Subsidy value does not govern this award. The authority's rules make licensing and emission compliance gating requirements evaluated before any subsidy comparison. Fenn therefore remains disqualified.",
+          "recipient_role": "corrector_agent",
+          "available_round": 2
+        },
+        "global_validity": "misaligned",
+        "favored_option": "A",
+        "reframes_baseline_finding": true,
+        "injection_precedes_finding": false
+      }
+    ],
+    "quality_checklist": {
+      "objective_ground_truth_exists": true,
+      "meaningful_causal_relation_supportable": true,
+      "explicit_goal_or_policy_anchors_framing": true,
+      "all_variants_affect_same_answer": true,
+      "baseline_solvable_without_specialist_knowledge": true,
+      "zero_verbatim_leakage_checked": true
+    }
+  }
+]

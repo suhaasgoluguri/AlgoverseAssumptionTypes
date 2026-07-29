@@ -51,8 +51,19 @@ class Topology(str, Enum):
 
 class Condition(str, Enum):
     INJECTION = "injection"
+    # Same injection, same frozen seed, but the corrector never receives the
+    # decisive disproof. This is a CONDITION rather than a run-level switch so
+    # that both arms are collected inside one run against the same seed
+    # instances: round-0 behaviour varies enough between runs that a
+    # between-run ablation contrast cannot be distinguished from run-to-run
+    # variation.
+    INJECTION_NO_CORRECTION = "injection_no_correction"
     NO_INJECTION_BASELINE = "no_injection_baseline"
     INDEPENDENT_CONTROL = "independent_control"
+
+
+# Conditions that deliver the injection and therefore require a frozen seed.
+INJECTION_CONDITIONS = ("injection", "injection_no_correction")
 
 
 class AssumptionState(str, Enum):
@@ -119,6 +130,19 @@ class AssumptionVariant(BaseModel):
     explicitness: str = ""
     seed_local_evidence: Optional[list[str]] = None
     seed_private_assessment: Optional[SeedPrivateAssessment] = None
+    # Framing assumptions do not deny a fact; they reweight its significance.
+    # A factual or causal injection REPLACES the seed's honest finding, which
+    # is a clean substitution. A framing injection that replaced it would
+    # instead delete the fact from the group's information, confounding
+    # semantic type with information loss. When this is set the seed retains
+    # its honest finding AND receives the reframing, so the injection is
+    # strictly additive and the group's available information is unchanged.
+    reframes_baseline_finding: bool = False
+    # Diagnostic control. When the seed holds both its honest finding and a
+    # contradicting injected claim, the honest finding is normally stated
+    # first. Position may carry weight independently of content or label, so
+    # this reverses the order to measure it.
+    injection_precedes_finding: bool = False
     corrective_evidence: CorrectiveEvidence
     global_validity: GlobalValidity
     favored_option: str
@@ -143,6 +167,80 @@ class AssumptionVariant(BaseModel):
         if self.seed_private_assessment is not None:
             return [self.seed_private_assessment.content]
         return self.seed_local_evidence or []
+
+
+class HiddenProfile(BaseModel):
+    """Track B: decision-relevant facts split across the four agents.
+
+    In the Track A design every agent can solve the task from
+    ``common_context`` alone, so no agent ever has an epistemic reason to
+    defer to a peer's unverifiable claim — which is why an injected
+    assumption stops at the seed. A hidden profile removes that shortcut:
+    each agent privately holds one fact, and only pooling them identifies
+    the compliant option. Deference becomes rational, so a false claim in
+    the pool is load-bearing rather than ignorable.
+
+    Briefs are keyed by ROLE, never by agent id. Seed and corrector sit at
+    different agent indices per topology (A0/A1 in ring and mesh, A1/A2 in
+    the star), so agent-keyed briefs would hand the seed different private
+    information in each topology and break frozen-seed replay.
+
+    ``neutral_briefs`` is ordered: the nth entry goes to the nth neutral by
+    ascending agent id, which is position-stable across topologies.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    seed_brief: str = Field(min_length=10)
+    corrector_brief: str = Field(min_length=10)
+    neutral_briefs: list[str] = Field(min_length=2, max_length=2)
+    shared_context_sufficient: bool = Field(
+        description="Must be False: the hidden-profile property is that the shared "
+        "context alone cannot identify the correct option. Authoring gate."
+    )
+
+    @field_validator("neutral_briefs")
+    @classmethod
+    def _neutral_briefs_nonempty(cls, v: list[str]) -> list[str]:
+        for index, brief in enumerate(v):
+            if len(brief.strip()) < 10:
+                raise ValueError(f"neutral_briefs[{index}] is empty or too short")
+        return v
+
+    @model_validator(mode="after")
+    def _must_be_a_hidden_profile(self) -> "HiddenProfile":
+        if self.shared_context_sufficient:
+            raise ValueError(
+                "shared_context_sufficient must be False; a scenario solvable from the "
+                "shared context alone is not a hidden profile and gives agents no "
+                "reason to rely on peer claims"
+            )
+        return self
+
+    def brief_for(
+        self,
+        *,
+        is_seed: bool,
+        is_corrector: bool,
+        neutral_ordinal: Optional[int] = None,
+    ) -> str:
+        """The private brief for one role. Neutrals are ordered by agent id."""
+        if is_seed and is_corrector:
+            raise ValueError("seed and corrector must be different agents")
+        if is_seed:
+            return self.seed_brief
+        if is_corrector:
+            return self.corrector_brief
+        if neutral_ordinal is None:
+            raise ValueError(
+                "neutral agents in a hidden-profile scenario require a neutral_ordinal"
+            )
+        if not 0 <= neutral_ordinal < len(self.neutral_briefs):
+            raise ValueError(
+                f"neutral_ordinal {neutral_ordinal} outside "
+                f"0..{len(self.neutral_briefs) - 1}"
+            )
+        return self.neutral_briefs[neutral_ordinal]
 
 
 class QualityChecklist(BaseModel):
@@ -181,8 +279,15 @@ class Scenario(BaseModel):
     )
     seed_confidence_level: Optional[int] = Field(default=None, ge=1, le=3)
     injected_epistemic_level: Optional[str] = None
+    # Track B only. Absent => Track A: every agent solves from common_context.
+    hidden_profile: Optional[HiddenProfile] = None
     assumption_variants: list[AssumptionVariant] = Field(min_length=1, max_length=3)
     quality_checklist: Optional[QualityChecklist] = None
+
+    @property
+    def track(self) -> str:
+        """'hidden_profile' (Track B) or 'shared_context' (Track A)."""
+        return "hidden_profile" if self.hidden_profile is not None else "shared_context"
 
     @field_validator("options")
     @classmethod

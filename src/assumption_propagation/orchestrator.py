@@ -33,7 +33,14 @@ from .prompts import (
     build_update_prompt,
     format_peer_message,
 )
-from .schemas import AgentOutput, AgentRoundRecord, Condition, SeedInstance, Topology
+from .schemas import (
+    INJECTION_CONDITIONS,
+    AgentOutput,
+    AgentRoundRecord,
+    Condition,
+    SeedInstance,
+    Topology,
+)
 from .topologies import (
     AGENT_IDS,
     DEFAULT_ROLES,
@@ -182,6 +189,7 @@ async def run_conversation(
     seed_agent_id: Optional[int] = None,
     corrector_agent_id: Optional[int] = None,
     n_rounds: int = N_ROUNDS,
+    withhold_corrective: bool = False,
     log_path: Optional[str | Path] = None,
 ) -> ConversationOutputs:
     """Run one 4-agent, 4-round conversation.
@@ -208,11 +216,17 @@ async def run_conversation(
     if corrector_agent_id is None:
         corrector_agent_id = corrector_for_seed(topology_name, seed_agent_id)
     validate_roles(topology_name, seed_agent_id, corrector_agent_id)
-    if condition == "injection" and frozen_seed is None:
+    # injection_no_correction is the ablation arm: identical delivery, the
+    # corrector simply never receives the disproof. It is validated exactly
+    # like the injection arm so the two remain matched.
+    is_injection = condition in INJECTION_CONDITIONS
+    if condition == "injection_no_correction":
+        withhold_corrective = True
+    if is_injection and frozen_seed is None:
         raise ValueError("injection conversations require a frozen_seed to replay")
-    if condition != "injection" and frozen_seed is not None:
-        raise ValueError("frozen_seed is only valid for the injection condition")
-    if condition == "injection":
+    if not is_injection and frozen_seed is not None:
+        raise ValueError("frozen_seed is only valid for the injection conditions")
+    if is_injection:
         if variant is None:
             raise ValueError("injection conversations require an assumption variant")
         if frozen_seed.scenario_id != scenario.scenario_id:
@@ -227,6 +241,15 @@ async def run_conversation(
             )
         if not frozen_seed.answer or not frozen_seed.included_in_core:
             raise ValueError("frozen seed must contain a valid replayable answer")
+
+    # Track B hidden-profile briefs are role-keyed, and the two neutral slots
+    # are distinguished by ascending agent id. That ordering is stable across
+    # topologies (ring neutrals 2,3; star neutrals 0,3), so "the first neutral"
+    # names the same experimental position everywhere.
+    neutral_ids = [a for a in AGENT_IDS if a not in (seed_agent_id, corrector_agent_id)]
+
+    def neutral_ordinal_of(agent_id: int) -> Optional[int]:
+        return neutral_ids.index(agent_id) if agent_id in neutral_ids else None
 
     run_id = new_run_id()
     outputs: dict[tuple[int, int], ParsedResponse] = {}
@@ -299,7 +322,7 @@ async def run_conversation(
 
         for agent_id in AGENT_IDS:
             injection_visible = (
-                condition == "injection" and agent_id == seed_agent_id
+                is_injection and agent_id == seed_agent_id
             )
             neutral_control_visible = (
                 condition in ("no_injection_baseline", "independent_control")
@@ -307,12 +330,13 @@ async def run_conversation(
             )
             corrective_visible = (
                 variant is not None
+                and not withhold_corrective
                 and agent_id == corrector_agent_id
                 and round_index >= variant.corrective_evidence.available_round
             )
 
             # --- Frozen seed replay (injection, round 0 only) ---
-            if round_index == 0 and condition == "injection" and agent_id == seed_agent_id:
+            if round_index == 0 and is_injection and agent_id == seed_agent_id:
                 parsed = ParsedResponse(
                     raw_response=frozen_seed.raw_response,
                     output=AgentOutput(
@@ -343,6 +367,8 @@ async def run_conversation(
                     condition=condition,
                     variant=variant,
                     round_index=round_index,
+                    neutral_ordinal=neutral_ordinal_of(agent_id),
+                    withhold_corrective=withhold_corrective,
                 )
             else:
                 own_prev = outputs[(agent_id, round_index - 1)]
@@ -361,6 +387,8 @@ async def run_conversation(
                     condition=condition,
                     variant=variant,
                     round_index=round_index,
+                    neutral_ordinal=neutral_ordinal_of(agent_id),
+                    withhold_corrective=withhold_corrective,
                 )
                 prompt = build_update_prompt(
                     scenario,
@@ -455,6 +483,8 @@ async def run_matched_triple(
     *,
     topologies: tuple[str, ...] = ("looped_chain", "neutral_star", "fully_connected_mesh"),
     n_rounds: int = N_ROUNDS,
+    condition: str = "injection",
+    withhold_corrective: bool = False,
     log_path: Optional[str | Path] = None,
 ) -> dict[str, ConversationOutputs]:
     """Replay ONE frozen seed across all three topologies (the matched triple).
@@ -471,10 +501,11 @@ async def run_matched_triple(
             scenario,
             client=client,
             topology_name=topology_name,
-            condition="injection",
+            condition=condition,
             variant=variant,
             frozen_seed=frozen_seed,
             n_rounds=n_rounds,
+            withhold_corrective=withhold_corrective,
             log_path=log_path,
         )
     return results
