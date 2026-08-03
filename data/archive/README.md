@@ -87,3 +87,23 @@ Still live in `data/`: `scenarios_hidden_profile_candidates.json` (the
 33-scenario corpus, and the default for `run_pilot.py`),
 `scenarios_hidden_profile.json`, and `scenarios_fixed.json` (the superseded
 20-scenario Track A set, retained because tests and older runs cite it).
+
+## Archived 3 August 2026 — the last two superseded corpora
+
+`data/` now holds exactly one scenario file, so there is no way to run against
+a superseded corpus by accident.
+
+- `scenarios_fixed.json` — the 20-scenario Track A set. Every agent could solve
+  these alone; Track B replaced them. Still audited by
+  `scripts/audit_scenarios.py`, which now points here.
+- `scenarios_hidden_profile.json` — the pre-28-July hidden-profile corpus, the
+  version the July pilots were collected on. Superseded by the metric reorder
+  that closed the no-pooling shortcut and by the causal-injection rewrite.
+
+**One footgun this closed.** `build_hidden_profile_scenarios.py` had
+`DEFAULT_OUT` pointing at `data/scenarios_hidden_profile.json`, so running the
+builder with no arguments wrote the *current* 33-scenario corpus into the file
+named after the *superseded* one. `DEFAULT_OUT` is now
+`data/scenarios_hidden_profile_candidates.json`, and running the builder with no
+arguments reproduces the live corpus byte-for-byte (sha256 `c0dc5ac5…`,
+33 scenarios), which is what the builder's own comments say it should do.

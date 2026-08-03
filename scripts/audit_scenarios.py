@@ -1,4 +1,4 @@
-"""Deterministic authoring audit for ``data/scenarios_fixed.json``.
+"""Deterministic authoring audit for ``data/archive/scenarios_fixed.json``.
 
 This audit intentionally checks only properties that can be established from
 the JSON itself.  It does not ask a model to decide whether prose is plausible
@@ -20,7 +20,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SCENARIO_PATH = REPO_ROOT / "data" / "scenarios_fixed.json"
+DEFAULT_SCENARIO_PATH = REPO_ROOT / "data" / "archive" / "scenarios_fixed.json"
 LETTERS = ("A", "B", "C", "D", "E")
 SEMANTIC_TYPES = {"factual", "causal", "framing"}
 EXPECTED_VALIDITY = {

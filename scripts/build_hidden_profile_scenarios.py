@@ -48,7 +48,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO_ROOT / "data" / "scenarios_hidden_profile.json"
+DEFAULT_OUT = REPO_ROOT / "data" / "scenarios_hidden_profile_candidates.json"
 
 # The ten scenarios the July pilots were collected on.
 #
@@ -58,8 +58,8 @@ DEFAULT_OUT = REPO_ROOT / "data" / "scenarios_hidden_profile.json"
 # reordered in eight of them to close the no-pooling shortcut. The subset
 # selects the same scenario IDS, not the same scenario CONTENT.
 #
-# The July results describe the superseded version, which survives only as the
-# committed data/scenarios_hidden_profile.json. Do not compare numbers across
+# The July results describe the superseded version, which survives only as
+# data/archive/scenarios_hidden_profile.json. Do not compare numbers across
 # the two without saying so.
 # Scenarios cut after failing a predeclared runtime gate. Recorded here, with the
 # reason, so the confirmatory corpus is reproducible by running the builder with

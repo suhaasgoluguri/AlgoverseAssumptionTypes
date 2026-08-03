@@ -516,9 +516,8 @@ async def main() -> None:
         "--data",
         default="data/scenarios_hidden_profile_candidates.json",
         help="scenario package. Defaults to the 33-scenario hidden-profile corpus "
-             "(the one the no-pooling gate is enforced on). data/scenarios_fixed.json "
-             "is the superseded 20-scenario Track A set, kept only for the older "
-             "runs that cite it.",
+             "(the one the no-pooling gate is enforced on). Superseded corpora live in "
+             "data/archive/ and must be named explicitly.",
     )
     parser.add_argument("--scenario", default=None, help="single scenario_id; default all")
     parser.add_argument("--variants", nargs="+", default=None,

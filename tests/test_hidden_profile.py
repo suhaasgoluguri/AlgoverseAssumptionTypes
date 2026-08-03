@@ -18,7 +18,7 @@ from assumption_propagation.orchestrator import run_conversation
 from assumption_propagation.prompts import build_private_dossier
 from assumption_propagation.schemas import HiddenProfile, Scenario
 
-DATA = Path("data/scenarios_hidden_profile.json")
+DATA = Path("data/scenarios_hidden_profile_candidates.json")
 
 
 def load_track_b() -> list[Scenario]:

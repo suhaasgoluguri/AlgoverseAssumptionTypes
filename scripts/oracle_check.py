@@ -24,7 +24,7 @@ Prompts are built with the same builders the experiment uses, so this
 exercises the actual materials rather than a paraphrase.
 
 Usage:
-  uv run python scripts/oracle_check.py --data data/scenarios_hidden_profile.json
+  uv run python scripts/oracle_check.py --data data/scenarios_hidden_profile_candidates.json
   uv run python scripts/oracle_check.py --data <file> --client azure --n-samples 5
 """
 

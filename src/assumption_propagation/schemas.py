@@ -1,6 +1,7 @@
 """Pydantic schemas for the assumption-propagation experiment.
 
-The executable source of truth is ``data/scenarios_fixed.json``. The current
+The executable source of truth is
+``data/scenarios_hidden_profile_candidates.json``. The current
 injection treatment is a categorical, unsupported seed-private assessment
 (``seed_private_assessment``), not a fabricated record or confirmation. Its
 canonical assumption records the exact target proposition. The legacy
@@ -136,7 +137,7 @@ class AssumptionState(str, Enum):
 
 
 # ---------------------------------------------------------------------------
-# Scenario package (matches data/scenarios_fixed.json)
+# Scenario package (matches data/scenarios_hidden_profile_candidates.json)
 # ---------------------------------------------------------------------------
 
 class CorrectiveEvidence(BaseModel):

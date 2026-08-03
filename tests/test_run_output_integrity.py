@@ -23,7 +23,7 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 def _minimal_run_files(tmp_path: Path) -> tuple[dict[str, Path], list, str]:
-    scenarios = load_scenarios(Path("data/scenarios_fixed.json"), "travel_001")
+    scenarios = load_scenarios(Path("data/archive/scenarios_fixed.json"), "travel_001")
     variant = scenarios[0].assumption_variants[0]
     seed = SeedInstance(
         seed_instance_id=f"{variant.assumption_id}_seed_00",
