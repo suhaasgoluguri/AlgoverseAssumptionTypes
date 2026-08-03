@@ -221,12 +221,25 @@ def build_private_dossier(
         elif condition in ("no_injection_baseline", "independent_control"):
             lines.append(scenario.neutral_control_note)
 
-    # withhold_corrective is the Track A ablation: the corrector keeps its
-    # role and its hidden-profile brief, but never receives the decisive
-    # disproof, so the group must resolve the injected claim unaided.
-    if is_corrector and variant is not None and not withhold_corrective:
+    # Corrective-evidence scope. withhold_corrective removes the record
+    # entirely; injection_broadcast puts it in every agent's dossier rather
+    # than the corrector's alone. The relay arm is NOT handled here — there the
+    # record stays private to the corrector and travels only in its outgoing
+    # message, which is what separates "who holds it" from "how it moves".
+    #
+    # TIMING. Non-correctors receive the record one round AFTER the corrector,
+    # never in the same round. Relay physically cannot reach them any sooner:
+    # the corrector must read the record in `available_round` before it can ride
+    # out in a message that peers read in the round after. Delivering broadcast
+    # directly at `available_round` would hand level 4 an extra round of
+    # exposure that level 3 cannot have, confounding scope with timing — the
+    # two arms would then differ in who holds the record AND when. The offset
+    # keeps scope the only thing that varies.
+    broadcast = condition == "injection_broadcast"
+    if (is_corrector or broadcast) and variant is not None and not withhold_corrective:
         correction = variant.corrective_evidence
-        if round_index >= correction.available_round:
+        first_visible = correction.available_round + (0 if is_corrector else 1)
+        if round_index >= first_visible:
             lines.append(correction.content)
 
     return render_dossier(lines) if lines else None
@@ -272,9 +285,29 @@ def build_round0_prompt(
     return "\n\n".join(parts)
 
 
-def format_peer_message(agent_id: int, answer: str, rationale: str) -> str:
-    """Anonymous, authority-free rendering of one peer's previous output."""
-    return f'Agent {agent_id} — answer: {answer}\nAgent {agent_id} — rationale: "{rationale}"'
+def format_peer_message(
+    agent_id: int, answer: str, rationale: str, relayed_source: str | None = None
+) -> str:
+    """Anonymous, authority-free rendering of one peer's previous output.
+
+    ``relayed_source`` is the injection_relay arm. Normally a peer message
+    carries only the sender's own words, so a reader cannot tell whether a claim
+    rests on a record or on the sender's judgement — and under the scenario's
+    pooling rule the corrector has no standing to speak about the seed's
+    assignment at all. Attaching the record makes the provenance survive the
+    hop, which is the whole manipulation: same agent, same round, same content,
+    the only difference being whether the source travels with the claim.
+    """
+    message = (
+        f'Agent {agent_id} — answer: {answer}\n'
+        f'Agent {agent_id} — rationale: "{rationale}"'
+    )
+    if relayed_source:
+        message += (
+            f"\nAgent {agent_id} — relays this record verbatim: "
+            f'"{relayed_source}"'
+        )
+    return message
 
 
 def build_update_prompt(

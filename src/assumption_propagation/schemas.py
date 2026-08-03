@@ -58,12 +58,63 @@ class Condition(str, Enum):
     # between-run ablation contrast cannot be distinguished from run-to-run
     # variation.
     INJECTION_NO_CORRECTION = "injection_no_correction"
+    # Corrective-evidence SCOPE. The four injection arms differ only in who can
+    # see the refuting record and how it travels, which makes scope an ordered
+    # variable rather than a switch:
+    #
+    #   injection_no_correction  nobody holds it
+    #   injection                one agent holds it, and speaks only in its own
+    #                            voice — peers cannot tell the claim is backed
+    #                            by a record rather than by an opinion
+    #   injection_relay          one agent holds it AND carries the record into
+    #                            its outgoing message, so provenance survives
+    #                            the hop
+    #   injection_broadcast      every agent holds it directly
+    #
+    # The gaps localise the failure: 1->2 asks whether the truth is present but
+    # powerless, 2->3 whether the carrier lacks standing, 3->4 whether the
+    # conversational channel is the bottleneck. Flat across all four would mean
+    # the loss is in aggregation rather than in information.
+    INJECTION_RELAY = "injection_relay"
+    INJECTION_BROADCAST = "injection_broadcast"
     NO_INJECTION_BASELINE = "no_injection_baseline"
     INDEPENDENT_CONTROL = "independent_control"
 
 
 # Conditions that deliver the injection and therefore require a frozen seed.
-INJECTION_CONDITIONS = ("injection", "injection_no_correction")
+INJECTION_CONDITIONS = (
+    "injection",
+    "injection_no_correction",
+    "injection_relay",
+    "injection_broadcast",
+)
+
+# Corrective-evidence scope, weakest to strongest. The preregistered primary
+# outcome is a monotonic decrease in peer conversion along this ordering.
+CORRECTION_SCOPE = (
+    "injection_no_correction",
+    "injection",
+    "injection_relay",
+    "injection_broadcast",
+)
+
+# Human-readable labels for console output and analysis tables. The stored
+# condition strings stay as they are so older runs remain readable, but the
+# raw names say nothing about what varies -- "injection" in particular now
+# means "one verifier holds the record", which nobody would guess.
+CONDITION_LABELS = {
+    "injection_no_correction": "1 no correction",
+    "injection":               "2 one verifier",
+    "injection_relay":         "3 relayed w/ source",
+    "injection_broadcast":     "4 broadcast to all",
+    "no_injection_baseline":   "-  honest baseline",
+    "independent_control":     "-  no communication",
+}
+
+
+def condition_label(condition: str) -> str:
+    """Display name for a condition; falls back to the raw value."""
+    return CONDITION_LABELS.get(condition, condition)
 
 
 class AssumptionState(str, Enum):

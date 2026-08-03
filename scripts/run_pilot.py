@@ -51,6 +51,7 @@ from assumption_propagation.reproducibility import (
 )
 from assumption_propagation.schemas import (
     INJECTION_CONDITIONS,
+    condition_label,
     AgentRoundRecord,
     Scenario,
     SeedInstance,
@@ -376,7 +377,16 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
     # between-run ablation contrast is not identifiable; replaying one seed into
     # both arms makes the comparison paired and within-run.
     arms = [("injection", False)]
-    if args.ablation_arm:
+    if args.scope_ladder:
+        # All four correction-scope levels against the SAME frozen seed, so the
+        # ordered contrast is paired and within-run.
+        arms = [
+            ("injection_no_correction", True),
+            ("injection", False),
+            ("injection_relay", False),
+            ("injection_broadcast", False),
+        ]
+    elif args.ablation_arm:
         arms.append(("injection_no_correction", True))
     elif args.withhold_corrective:
         arms = [("injection_no_correction", True)]
@@ -412,7 +422,8 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                 verdict = summary["plurality_answer"] or "TIE"
                 flag = ("correct" if summary["final_answer_correct"]
                         else "no consensus" if summary["no_consensus"] else "WRONG")
-                print(f"    {seed.seed_instance_id} @ {topology_name:22s}"
+                print(f"    [{condition_label(arm_condition):19s}] {seed.seed_instance_id}"
+                      f" @ {topology_name:22s}"
                       f" votes={summary['final_votes']} -> {verdict} ({flag})")
                 if args.verbose or args.show_rationales:
                     seed_id = result.records[0].seed_agent_id
@@ -461,7 +472,8 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
             }
             with paths["results"].open("a", encoding="utf-8") as f:
                 f.write(json.dumps(row) + "\n")
-            print(f"    independent rep {rep}: votes={summary['final_votes']}"
+            print(f"    [{condition_label('independent_control'):19s}] rep {rep}:"
+                  f" votes={summary['final_votes']}"
                   f" -> {summary['plurality_answer'] or 'TIE'}")
 
     # Topology-matched no-injection baselines.
@@ -491,7 +503,8 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                 }
                 with paths["results"].open("a", encoding="utf-8") as f:
                     f.write(json.dumps(row) + "\n")
-                print(f"    baseline rep {rep} @ {topology_name:22s}"
+                print(f"    [{condition_label('no_injection_baseline'):19s}] rep {rep}"
+                      f" @ {topology_name:22s}"
                       f" -> {summary['plurality_answer'] or 'TIE'}"
                       f" ({'correct' if summary['final_answer_correct'] else 'not correct'})")
 
@@ -499,7 +512,14 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
 async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--client", choices=("mock", "azure"), default="mock")
-    parser.add_argument("--data", default="data/scenarios_fixed.json")
+    parser.add_argument(
+        "--data",
+        default="data/scenarios_hidden_profile_candidates.json",
+        help="scenario package. Defaults to the 33-scenario hidden-profile corpus "
+             "(the one the no-pooling gate is enforced on). data/scenarios_fixed.json "
+             "is the superseded 20-scenario Track A set, kept only for the older "
+             "runs that cite it.",
+    )
     parser.add_argument("--scenario", default=None, help="single scenario_id; default all")
     parser.add_argument("--variants", nargs="+", default=None,
                         choices=("factual", "causal", "framing"),
@@ -523,6 +543,14 @@ async def main() -> None:
         help="collect no seeds and no injection arm. The pooling-gap contrast "
              "(oracle ceiling vs distributed group) needs only baselines, so this "
              "runs the primary outcome at a fraction of the cost.",
+    )
+    parser.add_argument(
+        "--scope-ladder",
+        action="store_true",
+        help="run all four corrective-evidence scope levels against the same frozen "
+             "seeds inside one run: none / one verifier / relayed with its source / "
+             "broadcast to all. Supersedes --ablation-arm, which is the first two "
+             "levels only.",
     )
     parser.add_argument(
         "--ablation-arm",
@@ -658,6 +686,7 @@ async def main() -> None:
             "n_rounds": args.rounds,
             "withhold_corrective": args.withhold_corrective,
             "ablation_arm": args.ablation_arm,
+            "scope_ladder": args.scope_ladder,
             "independent_control_n_rounds": 1,
             "topologies": list(args.topologies),
             "n_seeds": args.n_seeds,

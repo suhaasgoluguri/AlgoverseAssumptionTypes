@@ -70,3 +70,20 @@ The revisions that changed the design substantively, in order:
 4. **Causal injections, 28 July** — three conceded the deficiency while
    explaining its cause ("revoked *because of* a paperwork lapse"), which still
    fails the constraint. Rewritten to entail compliance.
+
+## Archived 3 August 2026 — superseded working sets
+
+Moved here during a repo tidy. None was referenced by any script, test or doc
+at the time; all three are calibration-era artefacts kept for provenance.
+
+- `scenarios_candidates_additive.json` — the additive-framing candidate set from
+  the 34-scenario build. Superseded by `scenarios_hidden_profile_candidates.json`,
+  which carries the same variants after the metric reorder.
+- `scenarios_remaining_v2b.json` — the partial v2b batch, folded into v3.
+- `scenarios_six_calibration.json` — the six-scenario calibration subset used
+  before the corpus reached 10.
+
+Still live in `data/`: `scenarios_hidden_profile_candidates.json` (the
+33-scenario corpus, and the default for `run_pilot.py`),
+`scenarios_hidden_profile.json`, and `scenarios_fixed.json` (the superseded
+20-scenario Track A set, retained because tests and older runs cite it).

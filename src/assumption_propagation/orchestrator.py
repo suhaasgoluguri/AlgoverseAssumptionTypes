@@ -328,11 +328,24 @@ async def run_conversation(
                 condition in ("no_injection_baseline", "independent_control")
                 and agent_id == seed_agent_id
             )
+            # Broadcast puts the record in every dossier; every other arm keeps
+            # it with the corrector alone. The relay arm does NOT widen this —
+            # there the record stays private and travels in the corrector's
+            # outgoing message instead, so "who holds it" and "how it moves"
+            # stay separable.
+            # Non-correctors get it one round later than the corrector, matching
+            # build_private_dossier: relay cannot reach a peer before the round
+            # after the corrector reads it, so broadcast must not either, or
+            # level 4 gains an extra round of exposure that level 3 cannot have.
             corrective_visible = (
                 variant is not None
                 and not withhold_corrective
-                and agent_id == corrector_agent_id
+                and (
+                    agent_id == corrector_agent_id
+                    or condition == "injection_broadcast"
+                )
                 and round_index >= variant.corrective_evidence.available_round
+                + (0 if agent_id == corrector_agent_id else 1)
             )
 
             # --- Frozen seed replay (injection, round 0 only) ---
@@ -372,11 +385,28 @@ async def run_conversation(
                 )
             else:
                 own_prev = outputs[(agent_id, round_index - 1)]
+
+                def relayed_source_for(sender: int) -> str | None:
+                    """The record the CORRECTOR carries into its message, relay arm only.
+
+                    Keyed on the round the sender spoke (round_index - 1), not the
+                    current one, so the record appears in a message exactly when the
+                    sender actually held it.
+                    """
+                    if condition != "injection_relay" or variant is None:
+                        return None
+                    if withhold_corrective or sender != corrector_agent_id:
+                        return None
+                    if round_index - 1 < variant.corrective_evidence.available_round:
+                        return None
+                    return variant.corrective_evidence.content
+
                 peer_messages = [
                     format_peer_message(
                         sender,
                         outputs[(sender, round_index - 1)].answer or "(no valid answer)",
                         outputs[(sender, round_index - 1)].rationale or "(no rationale)",
+                        relayed_source=relayed_source_for(sender),
                     )
                     for sender in received_from
                 ]

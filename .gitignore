@@ -8,3 +8,6 @@ venv/
 .ipynb_checkpoints/
 outputs/raw/*
 !outputs/raw/20260728_*
+
+# run logs (raw run dirs are already ignored above)
+outputs/*.log
