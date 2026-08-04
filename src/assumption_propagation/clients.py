@@ -12,17 +12,18 @@ the sample); they are returned as ParsedResponse with parse_failed=True.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Mapping, Optional
+from typing import Any, Callable, Mapping, Optional
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, APIConnectionError, APITimeoutError, RateLimitError
 from pydantic import ValidationError
 from tenacity import (
-    retry,
+    AsyncRetrying,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
@@ -33,6 +34,71 @@ from .schemas import AgentOutput
 load_dotenv()
 
 RETRYABLE = (RateLimitError, APITimeoutError, APIConnectionError)
+
+
+@dataclass(frozen=True)
+class CompletionCallTrace:
+    """Auditable metadata for one logical Chat Completions request.
+
+    ``attempts`` includes transport-level retries. The response body is not
+    duplicated here; callers retain the final model text separately.
+    """
+
+    response_id: Optional[str]
+    model: Optional[str]
+    finish_reason: Optional[str]
+    attempts: int
+    prompt_tokens: Optional[int]
+    completion_tokens: Optional[int]
+    reasoning_tokens: Optional[int]
+    total_tokens: Optional[int]
+
+
+@dataclass(frozen=True)
+class ToolExecutionResult:
+    """Application-side tool output and JSON-serializable receipt metadata."""
+
+    content: str
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ForcedToolTrace:
+    """Complete provenance for a forced function-tool exchange."""
+
+    tool_name: str
+    tool_call_id: str
+    tool_definition_sha256: str
+    arguments_json: str
+    arguments_sha256: str
+    tool_result: str
+    tool_result_sha256: str
+    execution_metadata: Mapping[str, Any]
+    request: CompletionCallTrace
+    final: CompletionCallTrace
+
+    @property
+    def api_call_attempts(self) -> int:
+        """Total HTTP attempts, including retries, across both completions."""
+        return self.request.attempts + self.final.attempts
+
+
+@dataclass(frozen=True)
+class ToolTurnResult:
+    """Final model text plus the tool exchange needed to audit its origin."""
+
+    final_text: str
+    trace: ForcedToolTrace
+
+
+class ForcedToolProtocolError(ValueError):
+    """The model or caller violated the required one-tool protocol."""
+
+
+@dataclass(frozen=True)
+class _CompletionResult:
+    response: Any
+    attempts: int
 
 _CONCLUSION_PATTERNS = tuple(
     re.compile(pattern, re.IGNORECASE)
@@ -286,8 +352,86 @@ def parse_or_repair(raw: str) -> ParsedResponse:
 # Azure OpenAI client
 # ---------------------------------------------------------------------------
 
+
+def _sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _canonical_json(value: Mapping[str, Any]) -> str:
+    """Stable bytes for hashing tool definitions in the audit trace."""
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _completion_call_trace(result: _CompletionResult) -> CompletionCallTrace:
+    response = result.response
+    choice = response.choices[0]
+    usage = getattr(response, "usage", None)
+    details = getattr(usage, "completion_tokens_details", None) if usage else None
+    return CompletionCallTrace(
+        response_id=getattr(response, "id", None),
+        model=getattr(response, "model", None),
+        finish_reason=getattr(choice, "finish_reason", None),
+        attempts=result.attempts,
+        prompt_tokens=getattr(usage, "prompt_tokens", None) if usage else None,
+        completion_tokens=(
+            getattr(usage, "completion_tokens", None) if usage else None
+        ),
+        reasoning_tokens=(
+            getattr(details, "reasoning_tokens", None) if details else None
+        ),
+        total_tokens=getattr(usage, "total_tokens", None) if usage else None,
+    )
+
+
+def _normalise_function_tool(tool: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
+    """Validate and detach one OpenAI-format function-tool definition."""
+    if tool.get("type") != "function":
+        raise ForcedToolProtocolError("forced tool must have type='function'")
+    function = tool.get("function")
+    if not isinstance(function, Mapping):
+        raise ForcedToolProtocolError("forced tool requires a function definition")
+    name = function.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise ForcedToolProtocolError("forced tool requires a non-empty function name")
+    # A JSON round-trip both detaches nested caller-owned mappings and rejects
+    # definitions the SDK could not serialize in a request.
+    try:
+        detached = json.loads(json.dumps(tool, ensure_ascii=False))
+    except (TypeError, ValueError) as exc:
+        raise ForcedToolProtocolError("forced tool definition is not JSON serializable") from exc
+    return detached, name
+
+
+def _normalise_tool_execution(
+    value: str | ToolExecutionResult,
+) -> tuple[str, dict[str, Any]]:
+    if isinstance(value, str):
+        return value, {}
+    if not isinstance(value, ToolExecutionResult):
+        raise ForcedToolProtocolError(
+            "forced tool callback must return a string or ToolExecutionResult"
+        )
+    if not isinstance(value.content, str):
+        raise ForcedToolProtocolError("forced tool result content must be a string")
+    if not isinstance(value.metadata, Mapping):
+        raise ForcedToolProtocolError("tool execution metadata must be a mapping")
+    try:
+        metadata = json.loads(json.dumps(value.metadata, ensure_ascii=False))
+    except (TypeError, ValueError) as exc:
+        raise ForcedToolProtocolError(
+            "tool execution metadata is not JSON serializable"
+        ) from exc
+    if not isinstance(metadata, dict):  # defensive: Mapping serialized unusually
+        raise ForcedToolProtocolError("tool execution metadata must encode an object")
+    return value.content, metadata
+
 class AzureChatClient:
-    """Async client for the team's Azure OpenAI deployment (GPT-5.4 mini).
+    """Async client for the team's Azure OpenAI deployment.
 
     Credentials come from environment:
       AZURE_OPENAI_API_KEY   — the resource key
@@ -300,11 +444,13 @@ class AzureChatClient:
     resources.
     """
 
+    _retry_wait = wait_exponential(multiplier=2, min=2, max=60)
+
     def __init__(
         self,
         deployment: Optional[str] = None,
         temperature: Optional[float] = 0.2,
-        max_tokens: int = 400,
+        max_tokens: int = 8000,
     ) -> None:
         self.deployment = deployment or os.environ["AZURE_OPENAI_DEPLOYMENT"]
         self.temperature = temperature
@@ -318,29 +464,166 @@ class AzureChatClient:
     def model_identifier(self) -> str:
         return f"azure:{self.deployment}"
 
-    @retry(
-        retry=retry_if_exception_type(RETRYABLE),
-        wait=wait_exponential(multiplier=2, min=2, max=60),
-        stop=stop_after_attempt(6),
-        reraise=True,
-    )
-    async def generate(self, system_prompt: str, user_prompt: str) -> str:
-        """One completion. Retries transient errors with exponential backoff."""
-        kwargs: dict = {
+    async def _create_completion(self, **kwargs: Any) -> _CompletionResult:
+        """Run one API request with isolated retries and report attempt count."""
+        response = None
+        attempts = 0
+        async for attempt in AsyncRetrying(
+            retry=retry_if_exception_type(RETRYABLE),
+            wait=self._retry_wait,
+            stop=stop_after_attempt(6),
+            reraise=True,
+        ):
+            with attempt:
+                attempts = attempt.retry_state.attempt_number
+                response = await self._client.chat.completions.create(**kwargs)
+        if response is None:  # pragma: no cover - AsyncRetrying either returns or raises
+            raise RuntimeError("completion retry loop ended without a response")
+        return _CompletionResult(response=response, attempts=attempts)
+
+    def _base_completion_kwargs(self) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
             "model": self.deployment,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
             "max_completion_tokens": self.max_tokens,
-            "response_format": {"type": "json_object"},
         }
         # Newer reasoning-capable deployments reject custom temperatures;
         # pass None to omit and record the deployment default in logs.
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
-        response = await self._client.chat.completions.create(**kwargs)
-        return response.choices[0].message.content or ""
+        return kwargs
+
+    async def generate(self, system_prompt: str, user_prompt: str) -> str:
+        """One completion. Retries transient errors with exponential backoff."""
+        kwargs = self._base_completion_kwargs()
+        kwargs.update({
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "response_format": {"type": "json_object"},
+        })
+        result = await self._create_completion(**kwargs)
+        return result.response.choices[0].message.content or ""
+
+    async def generate_with_forced_tool(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        tool: Mapping[str, Any],
+        execute: Callable[[dict[str, Any]], str | ToolExecutionResult],
+    ) -> ToolTurnResult:
+        """Force one function call, execute it once, then obtain final JSON.
+
+        API retries are scoped to each completion. In particular, once the
+        synchronous ``execute`` callback has returned, retrying the final
+        completion cannot resample the first call or execute the callback
+        again.
+        """
+        tool_definition, expected_name = _normalise_function_tool(tool)
+        initial_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        request_kwargs = self._base_completion_kwargs()
+        request_kwargs.update(
+            {
+                "messages": initial_messages,
+                "tools": [tool_definition],
+                "tool_choice": {
+                    "type": "function",
+                    "function": {"name": expected_name},
+                },
+                "parallel_tool_calls": False,
+            }
+        )
+        request_result = await self._create_completion(**request_kwargs)
+        request_choice = request_result.response.choices[0]
+        message = request_choice.message
+        tool_calls = list(getattr(message, "tool_calls", None) or [])
+        if getattr(request_choice, "finish_reason", None) != "tool_calls":
+            raise ForcedToolProtocolError(
+                "forced-tool completion must finish with finish_reason='tool_calls'"
+            )
+        if len(tool_calls) != 1:
+            raise ForcedToolProtocolError(
+                f"forced-tool completion must return exactly one call; got {len(tool_calls)}"
+            )
+        tool_call = tool_calls[0]
+        if getattr(tool_call, "type", None) != "function":
+            raise ForcedToolProtocolError("forced tool call must have type='function'")
+        call_id = getattr(tool_call, "id", None)
+        if not isinstance(call_id, str) or not call_id:
+            raise ForcedToolProtocolError("forced tool call requires a non-empty id")
+        function_call = getattr(tool_call, "function", None)
+        actual_name = getattr(function_call, "name", None)
+        if actual_name != expected_name:
+            raise ForcedToolProtocolError(
+                f"forced tool called {actual_name!r}; expected {expected_name!r}"
+            )
+        arguments_json = getattr(function_call, "arguments", None)
+        if not isinstance(arguments_json, str):
+            raise ForcedToolProtocolError("forced tool arguments must be a JSON string")
+        try:
+            arguments = json.loads(arguments_json)
+        except json.JSONDecodeError as exc:
+            raise ForcedToolProtocolError("forced tool arguments are not valid JSON") from exc
+        if not isinstance(arguments, dict):
+            raise ForcedToolProtocolError("forced tool arguments must decode to an object")
+
+        # The callback is deliberately outside either retry loop.
+        tool_result, execution_metadata = _normalise_tool_execution(
+            execute(arguments)
+        )
+
+        assistant_tool_message = {
+            "role": "assistant",
+            "content": getattr(message, "content", None),
+            "tool_calls": [
+                {
+                    "id": call_id,
+                    "type": "function",
+                    "function": {
+                        "name": actual_name,
+                        "arguments": arguments_json,
+                    },
+                }
+            ],
+        }
+        tool_result_message = {
+            "role": "tool",
+            "tool_call_id": call_id,
+            "content": tool_result,
+        }
+        final_kwargs = self._base_completion_kwargs()
+        final_kwargs.update(
+            {
+                "messages": [
+                    *initial_messages,
+                    assistant_tool_message,
+                    tool_result_message,
+                ],
+                "tools": [tool_definition],
+                "tool_choice": "none",
+                "parallel_tool_calls": False,
+                "response_format": {"type": "json_object"},
+            }
+        )
+        final_result = await self._create_completion(**final_kwargs)
+        final_text = final_result.response.choices[0].message.content or ""
+        trace = ForcedToolTrace(
+            tool_name=expected_name,
+            tool_call_id=call_id,
+            tool_definition_sha256=_sha256_text(_canonical_json(tool_definition)),
+            arguments_json=arguments_json,
+            arguments_sha256=_sha256_text(arguments_json),
+            tool_result=tool_result,
+            tool_result_sha256=_sha256_text(tool_result),
+            execution_metadata=execution_metadata,
+            request=_completion_call_trace(request_result),
+            final=_completion_call_trace(final_result),
+        )
+        return ToolTurnResult(final_text=final_text, trace=trace)
 
 
 # ---------------------------------------------------------------------------
@@ -358,6 +641,7 @@ class MockClient:
 
     responses: list[str] = field(default_factory=list)
     calls: list[tuple[str, str]] = field(default_factory=list)
+    forced_tool_calls: list[dict[str, Any]] = field(default_factory=list)
     model_identifier: str = "mock:test"
     temperature: Optional[float] = None  # mock samples nothing; log honestly
 
@@ -367,3 +651,76 @@ class MockClient:
             return json.dumps({"answer": "B", "rationale": "Mock default rationale."})
         index = min(len(self.calls) - 1, len(self.responses) - 1)
         return self.responses[index]
+
+    async def generate_with_forced_tool(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        tool: Mapping[str, Any],
+        execute: Callable[[dict[str, Any]], str | ToolExecutionResult],
+    ) -> ToolTurnResult:
+        """Deterministic stand-in for the Azure two-completion tool exchange."""
+        tool_definition, tool_name = _normalise_function_tool(tool)
+        arguments_json = "{}"
+        tool_result, execution_metadata = _normalise_tool_execution(execute({}))
+        call_index = len(self.forced_tool_calls)
+        call_id = f"mock_call_{call_index:04d}"
+        self.forced_tool_calls.append(
+            {
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt,
+                "tool": tool_definition,
+                "tool_name": tool_name,
+                "tool_call_id": call_id,
+                "arguments": {},
+                "tool_result": tool_result,
+            }
+        )
+        if not self.responses:
+            final_text = json.dumps(
+                {"answer": "B", "rationale": "Mock default rationale."}
+            )
+        else:
+            index = min(
+                len(self.calls) + len(self.forced_tool_calls) - 1,
+                len(self.responses) - 1,
+            )
+            final_text = self.responses[index]
+        request_trace = CompletionCallTrace(
+            response_id=f"mock_tool_request_{call_index:04d}",
+            model=self.model_identifier,
+            finish_reason="tool_calls",
+            attempts=1,
+            prompt_tokens=None,
+            completion_tokens=None,
+            reasoning_tokens=None,
+            total_tokens=None,
+        )
+        final_trace = CompletionCallTrace(
+            response_id=f"mock_tool_final_{call_index:04d}",
+            model=self.model_identifier,
+            finish_reason="stop",
+            attempts=1,
+            prompt_tokens=None,
+            completion_tokens=None,
+            reasoning_tokens=None,
+            total_tokens=None,
+        )
+        return ToolTurnResult(
+            final_text=final_text,
+            trace=ForcedToolTrace(
+                tool_name=tool_name,
+                tool_call_id=call_id,
+                tool_definition_sha256=_sha256_text(
+                    _canonical_json(tool_definition)
+                ),
+                arguments_json=arguments_json,
+                arguments_sha256=_sha256_text(arguments_json),
+                tool_result=tool_result,
+                tool_result_sha256=_sha256_text(tool_result),
+                execution_metadata=execution_metadata,
+                request=request_trace,
+                final=final_trace,
+            ),
+        )

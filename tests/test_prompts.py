@@ -11,14 +11,22 @@ from types import SimpleNamespace
 
 import pytest
 
+from assumption_propagation.evidence import (
+    CorrectiveRecord,
+    canonical_placebo_json,
+)
 from assumption_propagation.prompts import (
     PROMPT_VERSION,
+    READ_CASE_RECORD_TOOL,
     build_private_dossier,
     build_round0_prompt,
     build_seed_generation_system_prompt,
     build_system_prompt,
     build_update_prompt,
+    canonical_tool_placebo_payload,
+    canonical_tool_record_payload,
     format_peer_message,
+    format_prompt_record_receipt_control,
 )
 
 INJECTION_TEXT = "H1 has an ADA-accessible room available for both nights"
@@ -189,6 +197,21 @@ def test_corrective_dossier_obeys_delayed_persistent_schedule(
         assert INJECTION_TEXT not in dossier
 
 
+def test_tool_protocol_never_inserts_correction_in_corrector_dossier(
+    scenario, variant
+):
+    """Protocol v2 obtains evidence through the backend tool, not prompt text."""
+    dossier = build_private_dossier(
+        scenario,
+        is_seed=False,
+        is_corrector=True,
+        condition="injection_tool_testimony",
+        variant=variant,
+        round_index=variant.corrective_evidence.available_round,
+    )
+    assert dossier is None or CORRECTIVE_TEXT not in dossier
+
+
 def test_update_prompt_renders_caller_supplied_persistent_dossier(scenario, variant):
     dossier = build_private_dossier(
         scenario,
@@ -220,6 +243,50 @@ def test_update_prompt_shows_own_and_peer_outputs(scenario):
     )
     assert "YOUR PREVIOUS ANSWER" in p and "H1 seems fine." in p
     assert "Agent 2" in p and "H3 is confirmed accessible." in p
+
+
+def test_tool_record_payload_delegates_to_evidence_canonical_json(variant):
+    record = CorrectiveRecord.from_variant(variant)
+    payload = canonical_tool_record_payload(record)
+    assert payload == record.canonical_json()
+    assert payload.encode("utf-8") == record.canonical_json_bytes()
+
+
+def test_tool_placebo_payload_delegates_to_evidence_serializer(variant):
+    record = CorrectiveRecord.from_variant(variant)
+    payload = canonical_tool_placebo_payload(record)
+    assert payload == canonical_placebo_json()
+    assert CORRECTIVE_TEXT not in payload
+
+
+def test_v2_relay_preserves_exact_payload_without_legacy_authority_cues(variant):
+    payload = CorrectiveRecord.from_variant(variant).canonical_json()
+    message = format_peer_message(
+        1,
+        "B",
+        "My current answer is B.",
+        relayed_tool_payload=payload,
+    )
+    assert message.count(payload) == 1
+    wrapper = message.replace(payload, "")
+    assert "claimed source" not in wrapper.lower()
+    assert "verification status" not in wrapper.lower()
+    assert "BEGIN TOOL OUTPUT" in message and "END TOOL OUTPUT" in message
+
+
+def test_prompt_receipt_control_contains_exact_payload_once(variant):
+    payload = CorrectiveRecord.from_variant(variant).canonical_json()
+    receipt = format_prompt_record_receipt_control(payload)
+    assert receipt.count(payload) == 1
+    assert "prompt text" in receipt.lower()
+
+
+def test_record_tool_is_zero_argument_and_neutral():
+    fn = READ_CASE_RECORD_TOOL["function"]
+    assert fn["name"] == "read_case_record"
+    assert fn["parameters"]["properties"] == {}
+    assert fn["parameters"]["additionalProperties"] is False
+    assert CORRECTIVE_TEXT not in str(READ_CASE_RECORD_TOOL)
 
 
 def test_no_experiment_language_visible(scenario, variant):
@@ -268,4 +335,4 @@ def test_all_options_and_constraints_rendered(scenario, variant):
 
 
 def test_prompt_version_defined():
-    assert PROMPT_VERSION == "v2.0"
+    assert PROMPT_VERSION == "v3.0"

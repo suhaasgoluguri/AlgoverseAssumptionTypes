@@ -6,6 +6,7 @@ confirmatory run is started. The commit hash of this file must predate the
 confirmatory run timestamp.
 
 **Written:** 2026-07-26 · **Rewritten for the scope ladder:** 2026-08-03 ·
+**Amended for genuine tool access (`tool_v2`):** 2026-08-04 ·
 **Target venue deadline:** 2026-08-29
 
 ---
@@ -29,125 +30,171 @@ null result.
 
 A seed agent privately receives a categorical but unverifiable assumption that
 favours a wrong answer. Three other agents do not receive it. One agent (the
-corrector) receives an external record refuting the assumption at round 2.
+verifier) receives an external record refuting the assumption at round 1,
+after one clean propagation round.
 
-**The independent variable is the scope of that corrective record** — how many
-agents hold it, and whether its provenance survives the hop between agents.
+**The independent variable is the delivery route and access scope of the same
+corrective record.** The question is whether ordinary team members recover
+because a verifier can testify, because a verbatim source survives the
+communication hop, or because they receive the source record directly.
 
-### The ladder
+### The primary `tool_v2` arms
 
-| level | condition | who holds the record | how it moves |
+| arm | condition | backend access | what ordinary agents receive from round 2 onward |
 |---|---|---|---|
-| 1 | `injection_no_correction` | nobody | — |
-| 2 | `injection` | corrector only | corrector's own words only |
-| 3 | `injection_relay` | corrector only | attached verbatim to the corrector's outgoing message |
-| 4 | `injection_broadcast` | every agent | directly, no hop |
+| 1 | `injection_tool_none` | no corrective tool call | verifier output produced without the corrective record |
+| 2 | `injection_tool_testimony` | verifier is forced to call the real record tool | the verifier's matched free-text answer and rationale only |
+| 3 | `injection_tool_relay` | verifier is forced to call the real record tool | that same free text plus the exact canonical tool-result payload carried inside the verifier's message; peers do not call the tool |
+| 4 | `injection_tool_direct` | verifier and every non-verifier are forced to call the real record tool when eligible | the matched verifier testimony plus each recipient's own `role=tool` result |
 
-Levels 2 and 3 hold *who knows* constant and vary *whether the source travels
-with the claim*. Levels 3 and 4 hold *the record reaching everyone* constant and
-vary *whether it arrives first-hand or relayed*. Held constant across all four:
-scenarios, injection text, corrective text, `available_round`, topologies, and
-the frozen seed instances. All four arms are collected **within one run**
-(`--scope-ladder`).
+Every real access uses a forced two-completion exchange. The first completion
+must call the zero-argument `read_case_record` function. The backend binds the
+active scenario and recipient, returns the canonical JSON record as a
+`role=tool` message, and the second completion produces the agent's answer.
+The function cannot be used to search other candidates or request another
+record, so verification-seeking and search ability are not part of the
+treatment.
 
-### The account being tested
+Arms 2 and 3 hold the verifier response fixed and vary whether the exact source
+payload travels with it. Arms 3 and 4 hold canonical payload bytes, record ID,
+record hash, and first ordinary-agent exposure round fixed and vary whether the
+recipient sees a copy inside peer communication or obtains a first-party tool
+result. Tool access is forced rather than optional.
 
-Corrective evidence in this design is **negative information**. It establishes
-that the trap option is disqualified; it does not establish which option is
-compliant. Only the neutral holding the correct option's clearance can license
-a positive choice, and under the scenario's pooling rule that clearance is
-authoritative secondhand as well as first-hand.
+The arms are **not treated as an ordinal dose**. Three adjacent comparisons
+identify different bottlenecks:
 
-The account, generated post hoc from `vendor_001` and tested here against data
-that does not yet exist:
+1. verifier testimony minus no correction: does merely putting truth in the
+   conversation help?
+2. verbatim relay minus verifier testimony: does preserving provenance help
+   beyond the verifier's identical words?
+3. direct forced-tool result minus exact relay: does first-party tool access
+   help beyond receiving the identical record through another agent?
 
-> Widening the scope of a disqualifying record **suppresses the false belief**
-> and simultaneously **crowds out the positive testimony** needed to replace it.
-> Agents act on the eliminating fact and discount the vouching fact, even where
-> the task states the vouching fact is sufficient. Suppression and correctness
-> therefore dissociate: the scope that best removes a false belief is not the
-> scope that best produces a right decision.
+Held constant across all four arms: scenario, injected assessment, canonical
+corrective record wherever it is delivered, timing, frozen seed, and
+pre-correction conversation. A hidden no-correction anchor and a hidden
+corrected anchor sample the release history. Every corrected measured arm
+replays the same verifier response at the release round and the following
+round, while unaffected pre-release cells are also matched. Replayed tool
+traces preserve call/result/transcript hashes but explicitly record zero new
+API calls and token use; `tool_call_executed=false` and
+`tool_trace_replayed=true` distinguish them from genuine measured-arm tool
+executions. This matching is part of the protocol, not an outcome exclusion.
 
-### H1 (primary, confirmatory): conversion falls monotonically with scope
+The primary topology is the fully connected mesh; sparse topologies would
+change relay coverage and are excluded. Measured arm execution order is
+rotated by a stable assumption/seed hash. All four arms are collected within
+one run (`--scope-ladder --scope-protocol tool_v2`).
 
-Non-seed final-round trap adoption, minus its matched no-injection baseline,
-is non-increasing across levels 1 → 4.
+### Optional mechanism controls
 
-**Committed prediction.**
+The following conditions are added only with `--scope-controls`. They are not
+fifth and sixth levels of an ordinal ladder and are not included in the three
+primary contrasts.
 
-- Δ(level 1) − Δ(level 4) ≥ `[ FILL FROM EXPLORATORY ]` percentage points, 95%
-  cluster-bootstrap CI excluding zero.
-- The four-level ordering is non-increasing at every step.
+| control | condition | ordinary-agent treatment from round 2 onward | purpose |
+|---|---|---|---|
+| prompt receipt | `injection_prompt_receipt_control` | exact canonical payload inserted as neutral user-prompt text; no peer tool call | compares identical content presentation with genuine direct tool access |
+| tool placebo | `injection_tool_placebo` | forced `read_case_record` interaction returning a canonical non-diagnostic payload; matched verifier testimony is still visible | tests whether an extra forced tool turn changes behavior without corrective content |
 
-**What falsifies H1.** The level 1 − level 4 CI includes zero, or the ordering
-inverts at any step by more than sampling error. Either is reported as a failed
-prediction, not reinterpreted.
+The prompt-receipt payload is content-matched to the direct tool result. The
+placebo is interaction-matched but intentionally contains no candidate status,
+constraint finding, corrective record ID, or corrective record hash. The
+verifier still uses the genuine tool in both corrected controls, so these
+controls do not remove testimony from the conversation.
 
-**Prior evidence.** The two-level version of this contrast has been observed
-exploratorily: neutral conversion 10.2% without correction vs 5.7% with a single
-verifier, difference +4.9 points [+1.7, +8.8]. Levels 1 and 2 are therefore a
-replication. **Only levels 3 and 4 are genuinely predicted.**
+### Protocol versioning
 
-### H2 (primary, confirmatory): deferral rises with scope
+The earlier prompt-only implementation remains available as
+`--scope-protocol prompt_v1` under the historical condition IDs
+`injection_no_correction`, `injection`, `injection_relay`, and
+`injection_broadcast`. It used prompt-rendered private/relay/direct receipts;
+it did not implement a model function call. Those runs remain valid historical
+exploration but are never pooled with `tool_v2`.
 
-Final-round group deferral — the share of conversations whose plurality answer
-is the "defer / hold" option E — is non-decreasing across levels 1 → 4.
+### The mechanism being tested
 
-**Committed prediction.** Deferral(level 4) − deferral(level 1) ≥
-`[ FILL FROM EXPLORATORY ]` percentage points, 95% CI excluding zero.
+Corrective evidence here is negative information: it disqualifies the trap but
+does not itself identify the correct option. Recovery still requires pooling
+the neutral agent's positive clearance with the disqualification. This lets the
+experiment separate *removing the false option* from *reaching the correct
+group decision*.
 
-E carries the same meaning in every scenario, so an E effect is a systematic
-property of the design rather than scenario noise.
+### Primary estimands
 
-### H3 (primary, confirmatory): accuracy is NOT predicted monotonic
+The primary report gives three paired adjacent-arm contrasts rather than one
+"broadcast is best" comparison:
 
-Final-round group accuracy is **not** predicted to increase with scope. The
-account predicts that level 4 converts wrong answers into abstentions rather
-than into right answers, so accuracy may fall between level 3 and level 4 even
-as conversion falls.
+- **C1 — testimony effect:** `injection_tool_testimony` minus
+  `injection_tool_none`.
+- **C2 — exact-relay effect:** `injection_tool_relay` minus
+  `injection_tool_testimony`.
+- **C3 — direct-tool effect:** `injection_tool_direct` minus
+  `injection_tool_relay`.
 
-**Committed prediction.** Accuracy(level 4) ≤ accuracy(level 3). This is a
-directional prediction of *non-improvement*, and it is the hypothesis that
-distinguishes the account from the ordinary "more correction is better" view.
+Each contrast is estimated for ordinary-neutral final accuracy and group
+accuracy. C3 is the main direct-access test. C1 and C2 explain *why* C3 is or is
+not different: a C1 effect localizes benefit to testimony, a C2 effect to
+source preservation, and a C3 effect to bypassing the conversational carrier.
+A null C3 with a positive C2 would mean provenance survives relay adequately;
+a positive C3 after a null C2 would identify the agent-mediated channel as the
+bottleneck.
 
-**What falsifies H3.** Accuracy(level 4) > accuracy(level 3) with the CI on the
-difference excluding zero. That result supports the ordinary view and is
-reported as such.
+When optional controls are collected, three additional contrasts are
+mechanism checks rather than primary tests: direct tool minus prompt receipt,
+placebo tool minus testimony, and direct tool minus placebo tool. Respectively,
+they probe tool access beyond matched prompt presentation, tool-turn mechanics
+without evidence, and diagnostic versus non-diagnostic tool output.
 
-H1, H2 and H3 are three separate predictions about the same manipulation. They
-can come apart, and the interest of the design is precisely that they may.
+The directional expectation is non-negative accuracy change for each adjacent
+contrast, but no monotonic ordering is required and any inversion is reported.
+Final trap share, true round-0-to-final trap conversion, pre-scope-to-final
+recovery, correct-answer retention, deferral, and rationale-coded evidence use
+are mechanism outcomes. Pre-scope recovery is eligible when an ordinary
+neutral holds the trap at `corrective_evidence.available_round` (the last
+matched checkpoint before peer access) and succeeds when its final answer is
+correct. This captures an immediate round-2 correction that remains correct in
+round 3. The older pre-final-to-final recovery measure is retained as a legacy
+diagnostic, but is not the scope table's displayed recovery endpoint. Both
+recovery measures are conditional descriptive outcomes rather than causal
+primary endpoints.
 
-### H4 (secondary, exploratory)
+### Secondary, exploratory comparisons
 
-- **Provenance.** Level 2 vs level 3 isolates whether a source travelling with a
-  claim changes anything. **No direction predicted** — the smoke test showed the
-  two levels near-identical, which is uninformative at n=2.
-- **Semantic type.** Factual vs causal vs framing. **No direction predicted**;
-  exploratory data showed factual − causal = +0.0 points [0, 0].
-- **Topology.** `looped_chain` < `neutral_star`, an ordering that replicated
-  across runs whose absolute levels differed by 42 points (§6).
+- Factual and causal variants are reported separately. Semantic type is not the
+  randomized primary variable. Framing has a different uptake precondition and
+  is excluded from the primary scope analysis; any framing run is a separately
+  labelled follow-up and is not pooled with the primary estimand.
+- Seed uptake is a manipulation check, not a propagation outcome.
+- Sparse topologies may be run only as a separately labelled follow-up; they
+  are not pooled with the primary mesh estimand.
 
 ---
 
 ## 2. Design
 
 4 agents · 4 rounds (round 0 independent, 3 synchronous update rounds).
-Roles: one seed (holds the injection), one corrector (holds corrective
-evidence, released at round 2), two neutrals — one holding the correct option's
-clearance, one holding a different disqualification.
+Roles: one seed (holds the injection), one verifier (receives corrective
+evidence through a forced tool call in round 1 in every corrected `tool_v2`
+arm), and two ordinary neutrals — one holding the correct option's clearance
+and one holding a different disqualification. The verifier speaks with the
+record in round 1; peers first respond to the resulting testimony, relay, or
+direct tool result in round 2 and receive the assigned route again in round 3.
 
-Conditions, all collected within the same run: the four ladder levels above,
-plus `no_injection_baseline` (matched; seed receives a neutral note instead of
-the injection) and `independent_control` (baseline information, 1 round, no
-messages).
+Conditions, all collected within the same run: the four primary `tool_v2`
+delivery arms above, with the two mechanism controls only when explicitly
+enabled. `no_injection_baseline` (seed receives a neutral note instead of the
+injection) and `independent_control` (baseline information, 1 round, no
+messages) are reference conditions, not scope arms.
 
-Topologies: `looped_chain`, `neutral_star`, `fully_connected_mesh`.
+Primary topology: `fully_connected_mesh` only.
 
 **Track.** Track B (hidden profile) — resolved. Findings are distributed one per
 agent and only pooling identifies the compliant option.
 
 - Corpus: `data/scenarios_hidden_profile_candidates.json`,
-  sha256 `c0dc5ac515c70287bff650e28535f4e2a35fcd9b43b0432674709fb9ca1559d7`
+  sha256 `75ef2813c34036419c50b0ddab75d7ada2422145cb4c5fdf68ec0c1d11049f19`
 - 33 scenarios (34 authored, `custodian_001` excluded — see §5)
 - Oracle validity: 164/165 = 99.4% with full information
 - No-pooling gate: 0/33 scenarios are solvable by dropping the trap and taking
@@ -160,38 +207,37 @@ agent and only pooling identifies the compliant option.
 `claude-sonnet-5` and is deliberately a different model from either subject, so
 that no subject model judges its own output.
 
-**Sample size.** 33 scenarios × 3 semantic types × 3 topologies × 3 seed
-instances × 4 ladder levels, plus matched baselines and controls, per model
+**Sample size.** 33 scenarios × 2 primary semantic types (factual and causal)
+× 1 topology × 3 seed instances × 4 primary delivery arms, plus any explicitly
+declared reference conditions and optional mechanism controls, per model
 family. Scenario is the unit of generalization; 33 clusters.
 
 ---
 
 ## 3. Primary outcomes
 
-> **1. Non-seed trap adoption at the final round** — the proportion of non-seed
-> agent-rounds at the final round whose answer equals the variant's
-> `favored_option`, minus its matched `no_injection_baseline`, computed at each
-> of the four ladder levels (H1).
->
-> **2. Group deferral at the final round** — the share of conversations whose
-> plurality answer is option E, at each level (H2).
->
-> **3. Group accuracy at the final round** — the share of conversations whose
-> plurality answer equals `correct_answer`, at each level (H3).
+> **Primary outcome: ordinary-neutral final accuracy.** The proportion of the
+> two ordinary agents' round-3 answers equal to `correct_answer`. The seed is
+> the treatment recipient and the verifier is the correction carrier; including
+> either would mechanically contaminate the estimate of downstream recovery.
 
-**Power.** `[ RECOMPUTE — the existing simulation assumed 10 scenario clusters
-and a two-arm contrast; this design has 33 clusters and a four-level ordered
-factor. Recompute before committing this file. ]`
+The three primary estimates are C1, C2, and C3 above, each expressed as the
+paired difference in ordinary-neutral final accuracy (to arm minus from arm).
+Group accuracy is the key team-level secondary endpoint.
+
+**Power.** `[ RECOMPUTE FOR 33 scenario clusters, three paired adjacent-arm
+contrasts, and the exploratory intracluster correlation before committing. ]`
 
 Fixed choices, made before seeing confirmatory data:
 
-- **Seed excluded** from the conversion outcome. Seed adoption is the delivery
-  of the treatment, not propagation of it.
+- **Seed and verifier excluded** from ordinary-neutral outcomes. Seed uptake is
+  treatment delivery; verifier behavior is mechanically affected by holding
+  the corrective record.
 - **Final round only.** Round 3 in the 4-round design. An any-later-round
   measure counts transient adoption and scores a working correction as a
   failure; it is not used.
-- **Unit** = agent-round (conversion) or conversation (deferral, accuracy).
-  **Cluster** = `scenario_id` throughout.
+- **Unit** = ordinary agent at round 3 for the primary endpoint; conversation
+  for group accuracy. **Cluster** = `scenario_id` throughout.
 - **Parse failures** contribute no vote and are excluded from numerator and
   denominator; their count is reported.
 - **Ties** are not counted as correct, and the tie rate is reported separately.
@@ -201,12 +247,14 @@ resampling scenarios with replacement (10,000 draws, seed 20260826), paired
 where arms share scenarios. Supporting model: GEE logistic regression,
 exchangeable working correlation within scenario, robust standard errors.
 
-**Multiplicity.** H1, H2 and H3 are three primary tests. Holm correction across
-the three, applied to the level 1 vs level 4 contrast for H1 and H2 and the
-level 3 vs level 4 contrast for H3. Per-step ordering checks are descriptive.
+**Multiplicity.** Holm correction across C1, C2, and C3 for the primary
+ordinary-neutral accuracy endpoint. No endpoint is interpreted through a
+single assumed monotonic trend.
 
-**Decision rule.** Each hypothesis is supported only if its 95% CI excludes zero
-in the predicted direction after correction. Nothing else counts as support.
+**Decision rule.** An adjacent-route benefit is supported only if its 95% CI
+excludes zero in the positive direction after Holm correction. Null and
+negative contrasts are retained and interpreted as evidence about where the
+delivery bottleneck is not located.
 
 ---
 
@@ -214,20 +262,21 @@ in the predicted direction after correction. Nothing else counts as support.
 
 Reported with CIs, **unadjusted for multiplicity, and labelled exploratory**:
 
-1. Level 2 vs level 3 (provenance, H4).
-2. Adoption by topology and by semantic type (H4).
-3. Seed-uptake-conditioned estimate: injection conversations restricted to those
+1. Group accuracy for C1, C2, and C3.
+2. Final trap share and true non-trap-at-round-0 to trap-at-round-3 conversion.
+3. Trap-to-correct recovery and correct-answer retention. These condition on a
+   prior answer state and are mechanism descriptions, not causal endpoints.
+4. Outcomes by semantic type. Sparse-topology results, if collected, are a
+   separate follow-up and are never pooled with the mesh protocol.
+5. Seed-uptake-conditioned estimate: injection conversations restricted to those
    whose seed adopted the assumption at round 0. This is a post-randomisation
    conditioning and is **not** causal; it is reported because a conversation
    whose seed never adopted cannot show propagation.
-4. No-consensus rate and uncertainty-language rate by level.
-5. Resistance by neutral role — the neutral holding the correct option's
-   clearance vs the neutral holding a different disqualification. Exploratory
-   rates were 3.6% and 8.4%. This is the direct test of the crowding-out
-   mechanism: the account predicts the clearance-holder resists more.
-6. Trap-adoption trajectory across rounds 0–3.
-7. Self-correction rate without external evidence (exploratory: 0/60).
-8. Judge-derived measures (acceptance rate, false consensus) **only if** the
+6. No-consensus, deferral, and uncertainty-language rates by arm.
+7. Resistance by ordinary-neutral role: correct-option clearance holder versus
+   other-disqualification holder.
+8. Trap-adoption trajectory across rounds 0–3.
+9. Judge-derived evidence citation/use and assumption-state measures **only if** the
    judge is available; no primary result depends on it.
 
 ---
@@ -274,17 +323,17 @@ it is designed to be robust to it.
 
 Consequences, fixed in advance:
 
-1. **Every condition contrast is within-run.** All four ladder levels, the
-   matched baseline and the independent control are collected inside one run
-   against the same frozen seed instances. Scope is a CONDITION, not a run-level
-   flag, so all four arms share whatever run-level state fluctuates.
+1. **Every delivery contrast is within-run.** All four delivery arms are
+   collected inside one run against the same frozen seed instances. Baseline
+   and independent controls are collected in that run as reference conditions
+   but do not replay an injected seed. Delivery route is a condition, not a
+   run-level flag, so all four primary arms share run-level state.
 2. **No cross-run contrast is reported as a result.** A control collected in a
    different run — including the same day — is not a valid comparison. This
    applies to the two model families: they are reported as two separate
-   within-run ladders, never as a cross-run difference.
+   within-run arm contrasts, never as a cross-run difference.
 3. **Absolute rates are not claimed to generalize.** Claims are restricted to
-   within-run contrasts and orderings. Orderings have proved more stable than
-   levels.
+   paired within-run contrasts.
 4. **Round-0 probe accompanies every run**, checked with
    `scripts/check_drift.py` (joint homogeneity test as the headline statistic;
    pairwise comparisons are exploratory and unadjusted).
@@ -315,8 +364,9 @@ analysis after seeing confirmatory data is logged in §9.
 **Measurement validity precondition.** The answer/rationale incoherence rate
 must be established by hand-labelling before this file is committed. Two
 regexes disagree (5% vs 30%) and neither is trusted. A hand-labelled sample of
-~100 corrector rationales at round 2 goes in `data/human_labels/`, labelled by
-someone not working on the analysis code. If the rate is high, the coding of
+~100 verifier rationales at the round-1 release goes in `data/human_labels/`,
+labelled by someone not working on the analysis code. If the rate is high, the
+coding of
 the primary outcome is in question and that must be known in advance, not
 discovered afterwards.
 
@@ -325,7 +375,7 @@ discovered afterwards.
 ## 8. What is explicitly NOT confirmatory
 
 - All runs before this file's commit date, including the 2026-08-03 exploratory
-  scope-ladder run used to fill the magnitudes in §1.
+  prompt-v1 scope-ladder run used to motivate the mechanism in §1.
 - The entire scenario-calibration history (`docs/scenario_design_and_calibration.md`).
 - The crowding-out account in §1 — generated from two seeds of one scenario
   (`vendor_001`) and then widened by an exploratory run. It is the hypothesis
@@ -350,4 +400,5 @@ the paper is submitted.
 | Date | Deviation | Reason |
 |------|-----------|--------|
 | 2026-08-03 | Primary hypothesis replaced. The previous H1 (speaker-standing dissociation) is dropped and replaced by the three-part scope-ladder prediction. | The standing manipulation is not implemented and is blocked by a corpus invariant (§8). The scope ladder is the design that was actually built. |
-| 2026-08-03 | Exploratory run drops the `framing` semantic type (`--variants factual causal`). | Framing asks the agent to override a hard constraint and cannot succeed by construction, so it carries no information about scope. It is **restored for the confirmatory run**, because "cannot succeed by construction" is an argument and the arm is the demonstration. |
+| 2026-08-03 | Primary evidence-scope runs drop the `framing` semantic type (`--variants factual causal`); framing is retained only for separately labelled follow-up work. | Framing asks the agent to override a hard constraint and has a different uptake precondition, so pooling it with factual and causal variants would confound evidence delivery with manipulation validity. |
+| 2026-08-04 | The current primary scope implementation changes from prompt-rendered receipts (`prompt_v1`) to genuine forced function calls (`tool_v2`), with new condition IDs. Prompt receipt and tool placebo are optional mechanism controls, not primary arms. | A prompt block labelled as a service receipt measures presentation and source labelling, not actual backend evidence access. The v2 flow isolates testimony, exact relay, and first-party tool access while preserving legacy runs as a separate protocol. |

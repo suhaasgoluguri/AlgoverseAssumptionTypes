@@ -37,8 +37,10 @@ from assumption_propagation.clients import AzureChatClient, MockClient
 from assumption_propagation.orchestrator import (
     N_ROUNDS,
     generate_seed_instances,
+    run_correction_scope_ladder,
     run_conversation,
     run_matched_triple,
+    run_tool_correction_scope_ladder,
 )
 from assumption_propagation.prompts import PROMPT_VERSION
 from assumption_propagation.reproducibility import (
@@ -50,9 +52,13 @@ from assumption_propagation.reproducibility import (
     snapshot_tracked_git_diff,
 )
 from assumption_propagation.schemas import (
+    CORRECTION_SCOPE,
     INJECTION_CONDITIONS,
+    TOOL_CORRECTION_SCOPE,
+    TOOL_CORRECTION_SCOPE_WITH_CONTROLS,
     condition_label,
     AgentRoundRecord,
+    CorrectionDelivery,
     Scenario,
     SeedInstance,
 )
@@ -65,6 +71,7 @@ PROTOCOL_SOURCE_PATHS = tuple(
         "uv.lock",
         "scripts/run_pilot.py",
         "src/assumption_propagation/prompts.py",
+        "src/assumption_propagation/evidence.py",
         "src/assumption_propagation/orchestrator.py",
         "src/assumption_propagation/topologies.py",
         "src/assumption_propagation/schemas.py",
@@ -113,6 +120,25 @@ def load_scenarios(path: Path, only: str | None) -> list[Scenario]:
     return scenarios
 
 
+def planned_injection_conditions(args) -> tuple[str, ...]:
+    """Return the exact injection-arm grid implied by CLI flags."""
+    if args.skip_injection:
+        return ()
+    if args.scope_ladder:
+        if args.scope_protocol == "prompt_v1":
+            return CORRECTION_SCOPE
+        return (
+            TOOL_CORRECTION_SCOPE_WITH_CONTROLS
+            if args.scope_controls
+            else TOOL_CORRECTION_SCOPE
+        )
+    if args.ablation_arm:
+        return ("injection", "injection_no_correction")
+    if args.withhold_corrective:
+        return ("injection_no_correction",)
+    return ("injection",)
+
+
 def _load_jsonl_objects(path: Path) -> list[dict]:
     rows: list[dict] = []
     for line_number, line in enumerate(
@@ -143,6 +169,7 @@ def _validate_run_outputs(
     skip_injection: bool = False,
     independent_reps: int,
     skip_independent: bool,
+    injection_conditions: tuple[str, ...] = ("injection",),
 ) -> dict[str, object]:
     """Fail closed before a raw run is marked complete.
 
@@ -268,10 +295,14 @@ def _validate_run_outputs(
         for seed_id in replayable_seed_ids
         for topology in topologies
     }
-    if not injection_coordinates and not skip_injection:
-        raise ValueError("no injection results found")
-    if injection_coordinates and skip_injection:
-        raise ValueError("injection results present despite --skip-injection")
+    expected_arms = set() if skip_injection else set(injection_conditions)
+    observed_arms = set(injection_coordinates)
+    if observed_arms != expected_arms:
+        raise ValueError(
+            "injection arm grid differs from the plan: "
+            f"missing={sorted(expected_arms - observed_arms)}, "
+            f"extra={sorted(observed_arms - expected_arms)}"
+        )
     for arm, coords in sorted(injection_coordinates.items()):
         if len(coords) != len(set(coords)) or set(coords) != expected_injection_coordinates:
             raise ValueError(
@@ -325,11 +356,225 @@ def _validate_run_outputs(
                     f"conversation {run_id!r} disagrees with its result metadata"
                 )
 
-    injection_count = len(expected_injection_coordinates) * len(injection_coordinates)
+    scope_conditions: tuple[str, ...] | None = None
+    corrected_scope_conditions: tuple[str, ...] = ()
+    tool_scope = False
+    if tuple(injection_conditions) == CORRECTION_SCOPE:
+        scope_conditions = CORRECTION_SCOPE
+        corrected_scope_conditions = CORRECTION_SCOPE[1:]
+    elif tuple(injection_conditions) in (
+        TOOL_CORRECTION_SCOPE,
+        TOOL_CORRECTION_SCOPE_WITH_CONTROLS,
+    ):
+        scope_conditions = tuple(injection_conditions)
+        corrected_scope_conditions = tuple(
+            condition
+            for condition in scope_conditions
+            if condition != TOOL_CORRECTION_SCOPE[0]
+        )
+        tool_scope = True
+
+    if scope_conditions is not None and not skip_injection:
+        available_by_assumption = {
+            variant.assumption_id: variant.corrective_evidence.available_round
+            for scenario in scenarios
+            for variant in scenario.assumption_variants
+        }
+        scope_groups: dict[tuple[str, str], dict[str, list[AgentRoundRecord]]] = (
+            defaultdict(dict)
+        )
+        for run_id, conversation in records_by_run.items():
+            result = result_by_run[run_id]
+            if result["condition"] not in scope_conditions:
+                continue
+            scope_groups[(result["seed_instance_id"], result["topology"])][
+                result["condition"]
+            ] = conversation
+
+        def cell_signature(record: AgentRoundRecord) -> tuple:
+            return (
+                record.system_prompt_sha256,
+                record.user_prompt_sha256,
+                record.answer,
+                record.rationale,
+                record.raw_response,
+                record.parse_failed,
+                record.generation_failed,
+            )
+
+        for coordinate in expected_injection_coordinates:
+            seed_id, topology = coordinate
+            arms = scope_groups.get((seed_id, topology), {})
+            if set(arms) != set(scope_conditions):
+                raise ValueError(f"scope group {coordinate!r} is incomplete")
+            by_arm = {
+                arm: {(record.agent_id, record.round): record for record in rows}
+                for arm, rows in arms.items()
+            }
+            positions = set()
+            canonical_record_keys = set()
+            for arm, rows in arms.items():
+                arm_positions = {record.arm_sequence_position for record in rows}
+                if len(arm_positions) != 1 or None in arm_positions:
+                    raise ValueError(f"scope arm {arm!r} has invalid sequence metadata")
+                positions.update(arm_positions)
+                for record in rows:
+                    if (
+                        record.corrective_record_delivery is None
+                        or record.response_origin is None
+                        or not record.system_prompt_sha256
+                        or not record.user_prompt_sha256
+                    ):
+                        raise ValueError(
+                            f"scope arm {arm!r} lacks route/replay instrumentation"
+                        )
+                    if record.corrective_record_id:
+                        canonical_record_keys.add(
+                            (
+                                record.corrective_record_id,
+                                record.corrective_record_sha256,
+                            )
+                        )
+            expected_positions = set(range(1, len(scope_conditions) + 1))
+            if positions != expected_positions:
+                raise ValueError(
+                    f"scope group {coordinate!r} does not contain positions "
+                    f"1-{len(scope_conditions)}"
+                )
+            if len(canonical_record_keys) != 1:
+                raise ValueError(
+                    f"scope group {coordinate!r} used inconsistent corrective records"
+                )
+
+            sample = next(iter(arms.values()))[0]
+            available = available_by_assumption[sample.assumption_id]
+            corrector_id = sample.corrector_agent_id
+            if corrector_id is None:
+                raise ValueError("scope conversation has no corrector id")
+            matched_cells = [
+                (agent_id, round_index)
+                for round_index in range(available)
+                for agent_id in range(4)
+            ]
+            matched_cells.extend(
+                (agent_id, available)
+                for agent_id in range(4)
+                if agent_id != corrector_id
+            )
+            for cell in matched_cells:
+                signatures = {
+                    cell_signature(by_arm[arm][cell]) for arm in scope_conditions
+                }
+                if len(signatures) != 1:
+                    raise ValueError(
+                        f"scope arms diverged before treatment at {coordinate!r} {cell!r}"
+                    )
+            for round_index in (available, available + 1):
+                cell = (corrector_id, round_index)
+                corrected_signatures = {
+                    cell_signature(by_arm[arm][cell])
+                    for arm in corrected_scope_conditions
+                }
+                if len(corrected_signatures) != 1:
+                    raise ValueError(
+                        "corrected verifier was resampled across testimony, relay, "
+                        f"and direct arms at {coordinate!r} {cell!r}"
+                    )
+
+            if tool_scope:
+                none_arm = by_arm[TOOL_CORRECTION_SCOPE[0]]
+                if any(record.tool_trace is not None for record in none_arm.values()):
+                    raise ValueError("tool-v2 no-correction arm unexpectedly called a tool")
+                for arm in corrected_scope_conditions:
+                    for round_index in (available, available + 1):
+                        record = by_arm[arm][(corrector_id, round_index)]
+                        if (
+                            record.corrective_record_delivery
+                            != CorrectionDelivery.CORRECTOR_TOOL_RECORD
+                            or record.tool_trace is None
+                        ):
+                            raise ValueError(
+                                f"tool-v2 corrected verifier lacks a tool record in "
+                                f"{arm!r} round {round_index}"
+                            )
+
+                first_peer_round = available + 1
+                expected_peer_delivery = {
+                    "injection_tool_testimony": CorrectionDelivery.NONE,
+                    "injection_tool_relay": CorrectionDelivery.RELAYED_RECORD,
+                    "injection_tool_direct": CorrectionDelivery.DIRECT_TOOL_RECORD,
+                    "injection_prompt_receipt_control": (
+                        CorrectionDelivery.PROMPT_RECEIPT_CONTROL
+                    ),
+                    "injection_tool_placebo": CorrectionDelivery.TOOL_PLACEBO,
+                }
+                for arm, expected_delivery in expected_peer_delivery.items():
+                    if arm not in by_arm:
+                        continue
+                    for agent_id in range(4):
+                        if agent_id == corrector_id:
+                            continue
+                        record = by_arm[arm][(agent_id, first_peer_round)]
+                        if record.corrective_record_delivery != expected_delivery:
+                            raise ValueError(
+                                f"tool-v2 arm {arm!r} delivered "
+                                f"{record.corrective_record_delivery!r}, expected "
+                                f"{expected_delivery.value!r}"
+                            )
+                        expects_tool = expected_delivery in {
+                            CorrectionDelivery.DIRECT_TOOL_RECORD,
+                            CorrectionDelivery.TOOL_PLACEBO,
+                        }
+                        if (record.tool_trace is not None) != expects_tool:
+                            raise ValueError(
+                                f"tool-v2 arm {arm!r} has inconsistent tool trace"
+                            )
+
+                # Direct corrective and placebo tools start from the same base
+                # prompt as testimony. The treatment enters only in the role=tool
+                # result, not in persuasive user-prompt wording.
+                matched_base_prompt_arms = [
+                    arm
+                    for arm in (
+                        "injection_tool_testimony",
+                        "injection_tool_direct",
+                        "injection_tool_placebo",
+                    )
+                    if arm in by_arm
+                ]
+                for agent_id in range(4):
+                    if agent_id == corrector_id:
+                        continue
+                    prompt_hashes = {
+                        by_arm[arm][(agent_id, first_peer_round)].user_prompt_sha256
+                        for arm in matched_base_prompt_arms
+                    }
+                    if len(prompt_hashes) != 1:
+                        raise ValueError(
+                            "tool-v2 direct/placebo treatments changed the base user prompt"
+                        )
+
+    injection_count = len(expected_injection_coordinates) * len(expected_arms)
     baseline_count = sum(expected_baseline_coordinates.values())
     independent_count = sum(expected_independent_coordinates.values())
+    response_quality = {
+        "agent_round_records": len(records),
+        "parse_failed": sum(bool(record.parse_failed) for record in records),
+        "parse_repaired": sum(bool(record.parse_repaired) for record in records),
+        "generation_failed": sum(bool(record.generation_failed) for record in records),
+        "carried_forward": sum(bool(record.carried_forward) for record in records),
+        "tool_trace_records": sum(record.tool_trace is not None for record in records),
+        "tool_calls_executed": sum(record.tool_call_executed is True for record in records),
+        "tool_traces_replayed": sum(record.tool_trace_replayed is True for record in records),
+        "tool_api_call_attempts": sum(
+            record.tool_trace.api_call_count
+            for record in records
+            if record.tool_trace is not None
+        ),
+    }
+    response_quality["zero_parse_failures"] = response_quality["parse_failed"] == 0
     return {
-        "output_integrity_check_version": "1.0",
+        "output_integrity_check_version": "1.1",
         "replayable_seed_generations": len(replayable_seed_ids),
         "unreplayable_seed_generations": len(seeds) - len(replayable_seed_ids),
         "reconciled_expected_rows": {
@@ -344,10 +589,15 @@ def _validate_run_outputs(
         },
         "observed_conversations": {
             "injection": injection_count,
+            "injection_by_condition": {
+                arm: len(injection_coordinates.get(arm, []))
+                for arm in sorted(expected_arms)
+            },
             "no_injection_baseline": baseline_count,
             "independent_control": independent_count,
             "total": len(result_rows),
         },
+        "response_quality": response_quality,
     }
 
 
@@ -377,16 +627,7 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
     # between-run ablation contrast is not identifiable; replaying one seed into
     # both arms makes the comparison paired and within-run.
     arms = [("injection", False)]
-    if args.scope_ladder:
-        # All four correction-scope levels against the SAME frozen seed, so the
-        # ordered contrast is paired and within-run.
-        arms = [
-            ("injection_no_correction", True),
-            ("injection", False),
-            ("injection_relay", False),
-            ("injection_broadcast", False),
-        ]
-    elif args.ablation_arm:
+    if args.ablation_arm:
         arms.append(("injection_no_correction", True))
     elif args.withhold_corrective:
         arms = [("injection_no_correction", True)]
@@ -394,56 +635,121 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
     for seed in seeds:
         if not seed.answer:
             continue  # nothing to replay; the failure is already logged
-        for arm_condition, arm_withhold in arms:
-            triple = await run_matched_triple(
-                scenario, variant, seed, client,
-                topologies=tuple(args.topologies), n_rounds=args.rounds,
-                condition=arm_condition,
-                withhold_corrective=arm_withhold,
-                log_path=paths["records"],
-            )
-            for topology_name, result in triple.items():
-                summary = summarize_final_round(
-                    result.final_answers(),
-                    correct_answer=scenario.correct_answer,
-                    favored_option=variant.favored_option,
+        conversations = []
+        if args.scope_ladder:
+            if args.scope_protocol == "tool_v2":
+                ladder = await run_tool_correction_scope_ladder(
+                    scenario,
+                    variant,
+                    seed,
+                    client,
+                    topology_name=args.topologies[0],
+                    n_rounds=args.rounds,
+                    log_path=paths["records"],
+                    include_controls=args.scope_controls,
                 )
-                row = {
-                    "run_id": result.run_id,
-                    "scenario_id": scenario.scenario_id,
-                    "assumption_id": variant.assumption_id,
-                    "seed_instance_id": seed.seed_instance_id,
-                    "condition": arm_condition,
-                    "topology": topology_name,
-                    **summary,
-                }
-                with paths["results"].open("a", encoding="utf-8") as f:
-                    f.write(json.dumps(row) + "\n")
-                verdict = summary["plurality_answer"] or "TIE"
-                flag = ("correct" if summary["final_answer_correct"]
-                        else "no consensus" if summary["no_consensus"] else "WRONG")
-                print(f"    [{condition_label(arm_condition):19s}] {seed.seed_instance_id}"
-                      f" @ {topology_name:22s}"
-                      f" votes={summary['final_votes']} -> {verdict} ({flag})")
-                if args.verbose or args.show_rationales:
-                    seed_id = result.records[0].seed_agent_id
-                    corr_id = result.records[0].corrector_agent_id
-                    def _tag(a):
-                        return "*" if a == seed_id else "^" if a == corr_id else " "
-                    for rnd in range(result.n_rounds):
-                        cells = "  ".join(
-                            f"A{a}={result.outputs[(a, rnd)].answer or '-'}{_tag(a)}"
-                            for a in range(4)
-                        )
-                        print(f"        round {rnd}: {cells}")
-                        if args.show_rationales:
-                            for a in range(4):
-                                r = (result.outputs[(a, rnd)].rationale or "")
-                                r = r.strip().replace("\n", " ")
-                                if len(r) > 140:
-                                    r = r[:137] + "..."
-                                print(f"            A{a}{_tag(a)}: {r}")
-                    print("        (*=seed  ^=corrector)")
+            else:
+                ladder = await run_correction_scope_ladder(
+                    scenario,
+                    variant,
+                    seed,
+                    client,
+                    topology_name=args.topologies[0],
+                    n_rounds=args.rounds,
+                    log_path=paths["records"],
+                )
+            conversations.extend(
+                (arm_condition, args.topologies[0], result)
+                for arm_condition, result in ladder.items()
+            )
+        else:
+            for arm_condition, arm_withhold in arms:
+                triple = await run_matched_triple(
+                    scenario,
+                    variant,
+                    seed,
+                    client,
+                    topologies=tuple(args.topologies),
+                    n_rounds=args.rounds,
+                    condition=arm_condition,
+                    withhold_corrective=arm_withhold,
+                    log_path=paths["records"],
+                )
+                conversations.extend(
+                    (arm_condition, topology_name, result)
+                    for topology_name, result in triple.items()
+                )
+
+        for arm_condition, topology_name, result in conversations:
+            summary = summarize_final_round(
+                result.final_answers(),
+                correct_answer=scenario.correct_answer,
+                favored_option=variant.favored_option,
+            )
+            row = {
+                "run_id": result.run_id,
+                "scenario_id": scenario.scenario_id,
+                "assumption_id": variant.assumption_id,
+                "seed_instance_id": seed.seed_instance_id,
+                "condition": arm_condition,
+                "topology": topology_name,
+                "arm_sequence_position": result.records[0].arm_sequence_position,
+                **summary,
+            }
+            with paths["results"].open("a", encoding="utf-8") as f:
+                f.write(json.dumps(row) + "\n")
+            verdict = summary["plurality_answer"] or "TIE"
+            flag = (
+                "correct"
+                if summary["final_answer_correct"]
+                else "no consensus"
+                if summary["no_consensus"]
+                else "WRONG"
+            )
+            print(
+                f"    [{condition_label(arm_condition):19s}] {seed.seed_instance_id}"
+                f" @ {topology_name:22s}"
+                f" votes={summary['final_votes']} -> {verdict} ({flag})"
+            )
+            if args.scope_ladder and args.scope_protocol == "tool_v2":
+                traced = [record for record in result.records if record.tool_trace]
+                actual_calls = sum(
+                    record.tool_call_executed is True for record in traced
+                )
+                replayed_traces = sum(
+                    record.tool_trace_replayed is True for record in traced
+                )
+                routes = Counter(
+                    record.corrective_record_delivery.value
+                    for record in result.records
+                    if record.corrective_record_delivery != CorrectionDelivery.NONE
+                )
+                print(
+                    "        tool audit: "
+                    f"actual={actual_calls}, replayed={replayed_traces}, "
+                    f"deliveries={dict(sorted(routes.items()))}"
+                )
+            if args.verbose or args.show_rationales:
+                seed_id = result.records[0].seed_agent_id
+                corr_id = result.records[0].corrector_agent_id
+
+                def _tag(a):
+                    return "*" if a == seed_id else "^" if a == corr_id else " "
+
+                for rnd in range(result.n_rounds):
+                    cells = "  ".join(
+                        f"A{a}={result.outputs[(a, rnd)].answer or '-'}{_tag(a)}"
+                        for a in range(4)
+                    )
+                    print(f"        round {rnd}: {cells}")
+                    if args.show_rationales:
+                        for a in range(4):
+                            rationale = result.outputs[(a, rnd)].rationale or ""
+                            rationale = rationale.strip().replace("\n", " ")
+                            if len(rationale) > 140:
+                                rationale = rationale[:137] + "..."
+                            print(f"            A{a}{_tag(a)}: {rationale}")
+                print("        (*=seed  ^=corrector)")
 
     # Independent no-communication control: the baseline round-0 information
     # state, with the neutral seed note and only correction scheduled for round
@@ -522,8 +828,9 @@ async def main() -> None:
     parser.add_argument("--scenario", default=None, help="single scenario_id; default all")
     parser.add_argument("--variants", nargs="+", default=None,
                         choices=("factual", "causal", "framing"),
-                        help="semantic types to run; default all present")
-    parser.add_argument("--topologies", nargs="+", default=list(TOPOLOGIES),
+                        help="semantic types to run; scope-ladder default is factual + "
+                             "causal, while other protocols default to all present")
+    parser.add_argument("--topologies", nargs="+", default=None,
                         choices=TOPOLOGIES)
     parser.add_argument(
         "--rounds",
@@ -546,10 +853,22 @@ async def main() -> None:
     parser.add_argument(
         "--scope-ladder",
         action="store_true",
-        help="run all four corrective-evidence scope levels against the same frozen "
-             "seeds inside one run: none / one verifier / relayed with its source / "
-             "broadcast to all. Supersedes --ablation-arm, which is the first two "
-             "levels only.",
+        help="run a four-arm matched corrective-evidence scope protocol. The "
+             "default tool_v2 protocol uses genuine forced function calls; use "
+             "--scope-protocol prompt_v1 only to reproduce legacy prompt receipts.",
+    )
+    parser.add_argument(
+        "--scope-protocol",
+        choices=("tool_v2", "prompt_v1"),
+        default=None,
+        help="scope implementation. Defaults to tool_v2 when --scope-ladder is set; "
+             "prompt_v1 exists only for exact legacy replication.",
+    )
+    parser.add_argument(
+        "--scope-controls",
+        action="store_true",
+        help="with tool_v2, add the prompt-receipt and non-diagnostic tool-placebo "
+             "mechanism controls to the four primary arms.",
     )
     parser.add_argument(
         "--ablation-arm",
@@ -579,16 +898,85 @@ async def main() -> None:
                         help="sampling temperature for the azure client, or 'none' to "
                              "omit the parameter (deployments that reject custom "
                              "temperatures). Ignored by the mock client.")
+    parser.add_argument(
+        "--max-completion-tokens",
+        type=int,
+        default=8000,
+        help="maximum completion-token budget for Azure responses (default: 8000). "
+             "Reasoning models may return empty content when this is too small.",
+    )
     args = parser.parse_args()
+    if args.scope_ladder:
+        args.scope_protocol = args.scope_protocol or "tool_v2"
+    elif args.scope_protocol is not None:
+        parser.error("--scope-protocol requires --scope-ladder")
+    if args.scope_controls and (
+        not args.scope_ladder or args.scope_protocol != "tool_v2"
+    ):
+        parser.error("--scope-controls requires --scope-ladder --scope-protocol tool_v2")
+    if args.scope_ladder and args.variants is None:
+        # Framing asks the seed to override a hard constraint and has a different
+        # uptake precondition. Keep it available for separately labelled follow-up
+        # work, but do not let it enter the primary evidence-scope run by omission.
+        args.variants = ["factual", "causal"]
+    if args.topologies is None:
+        args.topologies = (
+            ["fully_connected_mesh"] if args.scope_ladder else list(TOPOLOGIES)
+        )
     if len(set(args.topologies)) != len(args.topologies):
         parser.error(f"--topologies values must be unique, got {args.topologies}")
+    if args.scope_ladder and (
+        args.ablation_arm or args.withhold_corrective or args.skip_injection
+    ):
+        parser.error(
+            "--scope-ladder cannot be combined with --ablation-arm, "
+            "--withhold-corrective, or --skip-injection"
+        )
+    if args.ablation_arm and args.withhold_corrective:
+        parser.error("--ablation-arm and --withhold-corrective are mutually exclusive")
+    if args.skip_injection and (args.ablation_arm or args.withhold_corrective):
+        parser.error(
+            "--skip-injection cannot be combined with an injection ablation flag"
+        )
+    if args.scope_ladder and args.topologies != ["fully_connected_mesh"]:
+        parser.error(
+            "--scope-ladder requires exactly --topologies fully_connected_mesh; "
+            "otherwise relay coverage is confounded with topology"
+        )
     if args.n_seeds < 1:
         parser.error("--n-seeds must be at least 1")
     if args.baseline_reps < 0 or args.independent_reps < 0:
         parser.error("replicate counts must be non-negative")
+    if args.max_completion_tokens < 1:
+        parser.error("--max-completion-tokens must be at least 1")
     temperature = None if args.temperature.lower() == "none" else float(args.temperature)
 
     data_path = Path(args.data)
+    if args.scope_ladder:
+        # Fail before creating an output directory. The snapshot is still the
+        # authoritative input later; this read is only a no-side-effect timing
+        # preflight for the selected variants.
+        try:
+            preview_scenarios = load_scenarios(data_path, args.scenario)
+        except (OSError, UnicodeError, json.JSONDecodeError, ValidationError, ValueError) as exc:
+            parser.error(f"invalid scenario data {data_path}: {exc}")
+        preview_variants = [
+            variant
+            for scenario in preview_scenarios
+            for variant in scenario.assumption_variants
+            if not args.variants or variant.semantic_type.value in args.variants
+        ]
+        if not preview_variants:
+            parser.error("no assumption variants match the requested scope run")
+        minimum_rounds = max(
+            variant.corrective_evidence.available_round + 3
+            for variant in preview_variants
+        )
+        if args.rounds < minimum_rounds:
+            parser.error(
+                "scope ladder needs two peer-response rounds after correction: "
+                f"need --rounds at least {minimum_rounds}, got {args.rounds}"
+            )
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S") + f"_{args.client}"
     if args.tag:
         safe_tag = re.sub(r"[^A-Za-z0-9._-]+", "_", args.tag).strip("_")
@@ -633,8 +1021,14 @@ async def main() -> None:
         variant.assumption_id for variant in selected_variants
     ]
 
-    client = (MockClient() if args.client == "mock"
-              else AzureChatClient(temperature=temperature))
+    client = (
+        MockClient()
+        if args.client == "mock"
+        else AzureChatClient(
+            temperature=temperature,
+            max_tokens=args.max_completion_tokens,
+        )
+    )
 
     try:
         protocol_sources = snapshot_protocol_sources(
@@ -645,8 +1039,12 @@ async def main() -> None:
         sys.exit(str(exc))
 
     # Freeze all remaining run-defining provenance before the first request.
+    injection_conditions = planned_injection_conditions(args)
     planned_injection_conversations = (
-        len(selected_variants) * args.n_seeds * len(args.topologies)
+        len(selected_variants)
+        * args.n_seeds
+        * len(args.topologies)
+        * len(injection_conditions)
     )
     planned_baseline_conversations = (
         0
@@ -659,7 +1057,7 @@ async def main() -> None:
         else len(selected_variants) * args.independent_reps
     )
     manifest = {
-        "manifest_version": "1.2",
+        "manifest_version": "1.4",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "runner": "scripts/run_pilot.py",
         "command_argv": sys.argv,
@@ -686,6 +1084,24 @@ async def main() -> None:
             "withhold_corrective": args.withhold_corrective,
             "ablation_arm": args.ablation_arm,
             "scope_ladder": args.scope_ladder,
+            "scope_protocol": args.scope_protocol if args.scope_ladder else None,
+            "scope_controls": args.scope_controls if args.scope_ladder else False,
+            "injection_conditions": list(injection_conditions),
+            "scope_primary_topology": (
+                "fully_connected_mesh" if args.scope_ladder else None
+            ),
+            "matched_pre_correction_replay": args.scope_ladder,
+            "matched_verifier_response_replay": args.scope_ladder,
+            "arm_order_counterbalanced_by_assumption_seed_hash": args.scope_ladder,
+            "direct_access_delivery": (
+                (
+                    "forced function call plus role=tool result"
+                    if args.scope_protocol == "tool_v2"
+                    else "automatic scoped record-service prompt receipt"
+                )
+                if args.scope_ladder
+                else None
+            ),
             "independent_control_n_rounds": 1,
             "topologies": list(args.topologies),
             "n_seeds": args.n_seeds,
@@ -743,6 +1159,7 @@ async def main() -> None:
             skip_injection=args.skip_injection,
             independent_reps=args.independent_reps,
             skip_independent=args.skip_independent,
+            injection_conditions=injection_conditions,
         )
     except (OSError, UnicodeError, ValueError) as exc:
         sys.exit(

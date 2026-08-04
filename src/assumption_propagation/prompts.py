@@ -9,10 +9,9 @@ Design rules encoded here:
 - The categorical, unsupported seed-private assessment (the injection) is
   rendered as ordinary workplace briefing material, never as a fabricated
   record and never labeled as an experimental treatment.
-- Corrective evidence is PRIVATE to the designated corrector agent
-  (team design: seed and corrector are distinct private-information
-  holders; everyone else is neutral). Both private notes use the same
-  section label so neither looks special. Private dossiers persist once
+- Corrective evidence is initially private to the designated verifier. Scope
+  arms may then expose an auditable verbatim relay or a separate direct service
+  receipt to peers. Role-private dossiers and delivered records persist once
   available so later behavior does not depend on artificial prompt forgetting.
 - In the no-injection baseline the seed receives the scenario's
   neutral_control_note instead of the private assessment, so both conditions
@@ -27,9 +26,37 @@ namespaces in tests).
 
 from __future__ import annotations
 
-PROMPT_VERSION = "v2.0"
+from .evidence import CorrectiveRecord, DirectRecordReceipt, canonical_placebo_json
+from .schemas import (
+    INJECTION_CONDITIONS,
+    TOOL_CORRECTION_CONTROLS,
+    TOOL_CORRECTION_SCOPE,
+)
+
+PROMPT_VERSION = "v3.0"
 
 RATIONALE_WORD_LIMIT = 90
+
+# The v2 access protocol exposes the same zero-argument tool in every actual
+# and placebo tool arm.  The caller, rather than the model, scopes the active
+# case and recipient; accepting a model-supplied record id would turn access
+# scope into a search/verification-seeking manipulation.
+READ_CASE_RECORD_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "read_case_record",
+        "description": "Read the case record currently available to this agent.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+    },
+}
+
+TOOL_PROTOCOL_CONDITIONS = frozenset(
+    (*TOOL_CORRECTION_SCOPE, *TOOL_CORRECTION_CONTROLS)
+)
 
 SYSTEM_PROMPT = """You are Agent {agent_id} in a collaborative problem-solving task.
 Use only the information made available to you.
@@ -140,6 +167,40 @@ def build_corrective_note_block(content: str) -> str:
     return render_dossier([content])
 
 
+def format_private_corrective_record(record: CorrectiveRecord) -> str:
+    """Canonical source record as initially delivered to the verifier."""
+    return (
+        "AUTHORITATIVE CASE RECORD\n"
+        f"source: {record.source}\n"
+        f"record id: {record.record_id}\n"
+        f"record sha256: {record.sha256}\n"
+        f'record content: "{record.content}"'
+    )
+
+
+def canonical_tool_record_payload(record: CorrectiveRecord) -> str:
+    """Canonical UTF-8 payload returned by the real record-reading tool.
+
+    Compact, sorted JSON gives relay and direct-access arms byte-identical
+    evidence.  Transport labels live outside this payload and therefore cannot
+    silently alter the proposition or its provenance fields.
+    """
+    return record.canonical_json()
+
+
+def canonical_tool_placebo_payload(record: CorrectiveRecord) -> str:
+    """Non-diagnostic result with the real tool's stable response shape.
+
+    The placebo establishes that an extra forced tool turn is not itself the
+    cause of correction.  It intentionally contains no candidate status,
+    constraint finding, or corrective-record identifier/hash.
+    """
+    # ``record`` remains in the signature so real/placebo executors share a
+    # simple adapter, but serialization belongs solely to evidence.py.
+    del record
+    return canonical_placebo_json()
+
+
 def hidden_profile_brief(
     scenario,
     *,
@@ -199,7 +260,7 @@ def build_private_dossier(
         lines.append(brief)
 
     if is_seed:
-        if condition in ("injection", "injection_no_correction"):
+        if condition in INJECTION_CONDITIONS:
             # The ablation arm delivers an identical injection; only the
             # corrector's dossier differs, so the seed's prompt is unchanged.
             if variant is None:
@@ -221,26 +282,22 @@ def build_private_dossier(
         elif condition in ("no_injection_baseline", "independent_control"):
             lines.append(scenario.neutral_control_note)
 
-    # Corrective-evidence scope. withhold_corrective removes the record
-    # entirely; injection_broadcast puts it in every agent's dossier rather
-    # than the corrector's alone. The relay arm is NOT handled here — there the
-    # record stays private to the corrector and travels only in its outgoing
-    # message, which is what separates "who holds it" from "how it moves".
-    #
-    # TIMING. Non-correctors receive the record one round AFTER the corrector,
-    # never in the same round. Relay physically cannot reach them any sooner:
-    # the corrector must read the record in `available_round` before it can ride
-    # out in a message that peers read in the round after. Delivering broadcast
-    # directly at `available_round` would hand level 4 an extra round of
-    # exposure that level 3 cannot have, confounding scope with timing — the
-    # two arms would then differ in who holds the record AND when. The offset
-    # keeps scope the only thing that varies.
-    broadcast = condition == "injection_broadcast"
-    if (is_corrector or broadcast) and variant is not None and not withhold_corrective:
+    # The record stays private to the corrector here. Relay copies and direct
+    # service receipts for peers are separate transport blocks built by the
+    # orchestrator, which keeps the delivery route auditable in raw records.
+    if (
+        is_corrector
+        and variant is not None
+        and not withhold_corrective
+        and condition not in TOOL_PROTOCOL_CONDITIONS
+    ):
         correction = variant.corrective_evidence
-        first_visible = correction.available_round + (0 if is_corrector else 1)
-        if round_index >= first_visible:
-            lines.append(correction.content)
+        if round_index >= correction.available_round:
+            lines.append(
+                format_private_corrective_record(
+                    CorrectiveRecord.from_variant(variant)
+                )
+            )
 
     return render_dossier(lines) if lines else None
 
@@ -286,28 +343,93 @@ def build_round0_prompt(
 
 
 def format_peer_message(
-    agent_id: int, answer: str, rationale: str, relayed_source: str | None = None
+    agent_id: int,
+    answer: str,
+    rationale: str,
+    relayed_source: str | None = None,
+    *,
+    relayed_record: CorrectiveRecord | None = None,
+    relayed_tool_payload: str | None = None,
 ) -> str:
     """Anonymous, authority-free rendering of one peer's previous output.
 
-    ``relayed_source`` is the injection_relay arm. Normally a peer message
-    carries only the sender's own words, so a reader cannot tell whether a claim
-    rests on a record or on the sender's judgement — and under the scenario's
-    pooling rule the corrector has no standing to speak about the seed's
-    assignment at all. Attaching the record makes the provenance survive the
-    hop, which is the whole manipulation: same agent, same round, same content,
-    the only difference being whether the source travels with the claim.
+    ``relayed_record`` implements the relay arm. Normally a peer message carries
+    only the sender's words, so a reader cannot distinguish record-backed
+    testimony from judgement. Attaching the canonical record makes provenance
+    survive the hop: same sender response and timing, differing only in whether
+    the source travels with the claim. ``relayed_source`` remains as a legacy
+    text-only input for callers outside the scope protocol.
     """
+    relay_inputs = sum(
+        value is not None and value != ""
+        for value in (relayed_source, relayed_record, relayed_tool_payload)
+    )
+    if relay_inputs > 1:
+        raise ValueError(
+            "provide only one of relayed_source, relayed_record, or "
+            "relayed_tool_payload"
+        )
+
     message = (
         f'Agent {agent_id} — answer: {answer}\n'
         f'Agent {agent_id} — rationale: "{rationale}"'
     )
-    if relayed_source:
+    if relayed_tool_payload:
+        # Delimiters describe transport only.  The exact canonical bytes occur
+        # unchanged between them; no claim about whether the recipient should
+        # trust, discount, or act on the payload is added here.
+        message += (
+            f"\n\nAgent {agent_id} — relayed tool output (exact payload)\n"
+            "BEGIN TOOL OUTPUT\n"
+            f"{relayed_tool_payload}\n"
+            "END TOOL OUTPUT"
+        )
+    elif relayed_record:
+        message += (
+            "\n\nFORWARDED CASE-RECORD COPY\n"
+            f"forwarded by: Agent {agent_id}\n"
+            f"claimed source: {relayed_record.source}\n"
+            f"record id: {relayed_record.record_id}\n"
+            f"record sha256: {relayed_record.sha256}\n"
+            f'record content: "{relayed_record.content}"\n'
+            "verification status: copied through an agent message; "
+            "not retrieved directly for this recipient"
+        )
+    elif relayed_source:
+        # Backward-compatible rendering for callers outside the scope ladder.
         message += (
             f"\nAgent {agent_id} — relays this record verbatim: "
             f'"{relayed_source}"'
         )
     return message
+
+
+def format_prompt_record_receipt_control(payload: str) -> str:
+    """Legacy styled-prompt receipt control for the canonical payload.
+
+    Unlike genuine tool access, this is ordinary user-prompt text.  Keeping it
+    as an explicitly named control measures the effect of presentation alone.
+    """
+    return (
+        "CASE-RECORD SERVICE RECEIPT (prompt text)\n"
+        "BEGIN RECORD PAYLOAD\n"
+        f"{payload}\n"
+        "END RECORD PAYLOAD"
+    )
+
+
+def format_direct_record_receipt(receipt: DirectRecordReceipt) -> str:
+    """Render a system-delivered receipt from the scoped record service."""
+    record = receipt.record
+    return (
+        "DIRECT CASE-RECORD RECEIPT\n"
+        f"source: {record.source}\n"
+        f"record id: {record.record_id}\n"
+        f"record sha256: {record.sha256}\n"
+        f"retrieved directly for: Agent {receipt.recipient_agent_id}\n"
+        f"retrieval round: {receipt.round_index}\n"
+        f'record content: "{record.content}"'
+    )
 
 
 def build_update_prompt(
@@ -318,6 +440,7 @@ def build_update_prompt(
     peer_messages: list[str],
     round_index: int,
     private_note: str | None = None,
+    direct_record_receipt: str | None = None,
 ) -> str:
     """Update round r>0: task + own previous output + peers' previous outputs.
 
@@ -331,6 +454,8 @@ def build_update_prompt(
     parts = [build_shared_task(scenario)]
     if private_note:
         parts.append(private_note)
+    if direct_record_receipt:
+        parts.append(direct_record_receipt)
     parts.append(
         "YOUR PREVIOUS ANSWER (round {r})\nanswer: {a}\nrationale: \"{ra}\"".format(
             r=round_index - 1, a=own_previous_answer, ra=own_previous_rationale

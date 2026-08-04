@@ -5,12 +5,100 @@ repair attempt, and no response is ever silently discarded.
 """
 
 import json
+from types import SimpleNamespace
+
+import httpx
+import pytest
+from openai import APIConnectionError
+from tenacity import wait_none
 
 from assumption_propagation.clients import (
+    AzureChatClient,
+    ForcedToolProtocolError,
     MockClient,
+    ToolExecutionResult,
     audit_answer_rationale,
     parse_or_repair,
 )
+
+
+CASE_RECORD_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "read_case_record",
+        "description": "Read the case record available to this agent.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+        "strict": True,
+    },
+}
+
+
+def _tool_call(
+    *,
+    call_id: str = "call_record_123",
+    name: str = "read_case_record",
+    arguments: str = "{}",
+):
+    return SimpleNamespace(
+        id=call_id,
+        type="function",
+        function=SimpleNamespace(name=name, arguments=arguments),
+    )
+
+
+def _completion(
+    *,
+    content: str | None,
+    finish_reason: str,
+    tool_calls=None,
+    response_id: str = "completion_1",
+):
+    return SimpleNamespace(
+        id=response_id,
+        model="gpt-5-mini",
+        choices=[
+            SimpleNamespace(
+                finish_reason=finish_reason,
+                message=SimpleNamespace(content=content, tool_calls=tool_calls),
+            )
+        ],
+        usage=SimpleNamespace(
+            prompt_tokens=100,
+            completion_tokens=20,
+            total_tokens=120,
+            completion_tokens_details=SimpleNamespace(reasoning_tokens=10),
+        ),
+    )
+
+
+class _FakeCompletions:
+    def __init__(self, outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = []
+
+    async def create(self, **kwargs):
+        self.calls.append(kwargs)
+        outcome = self.outcomes.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+
+def _azure_client(outcomes) -> tuple[AzureChatClient, _FakeCompletions]:
+    completions = _FakeCompletions(outcomes)
+    client = AzureChatClient.__new__(AzureChatClient)
+    client.deployment = "gpt-5-mini"
+    client.temperature = None
+    client.max_tokens = 8000
+    client._retry_wait = wait_none()
+    client._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=completions)
+    )
+    return client, completions
 
 
 def test_clean_json_parses():
@@ -164,3 +252,208 @@ async def test_mock_client_default_is_valid():
     mock = MockClient()
     r = parse_or_repair(await mock.generate("s", "u"))
     assert not r.parse_failed
+
+
+async def test_forced_tool_runs_two_call_protocol_and_returns_auditable_trace():
+    tool_request = _completion(
+        content=None,
+        finish_reason="tool_calls",
+        tool_calls=[_tool_call()],
+        response_id="request_completion",
+    )
+    final_text = '{"answer":"B","rationale":"The record disqualifies A."}'
+    final_response = _completion(
+        content=final_text,
+        finish_reason="stop",
+        response_id="final_completion",
+    )
+    client, completions = _azure_client([tool_request, final_response])
+    executor_arguments = []
+
+    def execute(arguments):
+        executor_arguments.append(arguments)
+        return ToolExecutionResult(
+            content='{"record_id":"REC-123","content":"A is disqualified."}',
+            metadata={"recipient_agent_id": 2, "retrieval_round": 2},
+        )
+
+    result = await client.generate_with_forced_tool(
+        "system prompt",
+        "base user prompt",
+        tool=CASE_RECORD_TOOL,
+        execute=execute,
+    )
+
+    assert result.final_text == final_text
+    assert executor_arguments == [{}]
+    assert len(completions.calls) == 2
+
+    request = completions.calls[0]
+    assert request["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "read_case_record"},
+    }
+    assert request["parallel_tool_calls"] is False
+    assert "response_format" not in request
+
+    final = completions.calls[1]
+    assert final["tool_choice"] == "none"
+    assert final["response_format"] == {"type": "json_object"}
+    assert [message["role"] for message in final["messages"]] == [
+        "system",
+        "user",
+        "assistant",
+        "tool",
+    ]
+    assistant_message = final["messages"][2]
+    tool_message = final["messages"][3]
+    assert assistant_message["tool_calls"][0]["id"] == "call_record_123"
+    assert tool_message["tool_call_id"] == "call_record_123"
+    assert tool_message["content"] == result.trace.tool_result
+
+    assert result.trace.tool_name == "read_case_record"
+    assert result.trace.arguments_json == "{}"
+    assert result.trace.request.finish_reason == "tool_calls"
+    assert result.trace.final.finish_reason == "stop"
+    assert result.trace.request.reasoning_tokens == 10
+    assert result.trace.api_call_attempts == 2
+    assert result.trace.execution_metadata == {
+        "recipient_agent_id": 2,
+        "retrieval_round": 2,
+    }
+    assert len(result.trace.tool_definition_sha256) == 64
+    assert len(result.trace.arguments_sha256) == 64
+    assert len(result.trace.tool_result_sha256) == 64
+
+
+@pytest.mark.parametrize(
+    ("tool_calls", "match"),
+    [
+        (None, "exactly one call; got 0"),
+        ([_tool_call(call_id="one"), _tool_call(call_id="two")], "got 2"),
+        ([_tool_call(name="wrong_tool")], "expected 'read_case_record'"),
+        ([_tool_call(arguments="not-json")], "arguments are not valid JSON"),
+        ([_tool_call(arguments="[]")], "arguments must decode to an object"),
+    ],
+)
+async def test_forced_tool_rejects_missing_multiple_wrong_or_malformed_calls(
+    tool_calls, match
+):
+    client, completions = _azure_client(
+        [
+            _completion(
+                content=None,
+                finish_reason="tool_calls",
+                tool_calls=tool_calls,
+            )
+        ]
+    )
+    executor_calls = []
+
+    with pytest.raises(ForcedToolProtocolError, match=match):
+        await client.generate_with_forced_tool(
+            "system",
+            "user",
+            tool=CASE_RECORD_TOOL,
+            execute=lambda arguments: executor_calls.append(arguments) or "result",
+        )
+
+    assert executor_calls == []
+    assert len(completions.calls) == 1
+
+
+async def test_forced_tool_rejects_non_tool_finish_before_execution():
+    client, _ = _azure_client(
+        [
+            _completion(
+                content="I answered instead.",
+                finish_reason="stop",
+                tool_calls=[_tool_call()],
+            )
+        ]
+    )
+    executor_calls = []
+    with pytest.raises(ForcedToolProtocolError, match="finish_reason='tool_calls'"):
+        await client.generate_with_forced_tool(
+            "system",
+            "user",
+            tool=CASE_RECORD_TOOL,
+            execute=lambda arguments: executor_calls.append(arguments) or "result",
+        )
+    assert executor_calls == []
+
+
+async def test_final_completion_retry_does_not_repeat_tool_or_callback():
+    tool_request = _completion(
+        content=None,
+        finish_reason="tool_calls",
+        tool_calls=[_tool_call()],
+    )
+    transient = APIConnectionError(
+        request=httpx.Request("POST", "https://example.invalid/chat/completions")
+    )
+    final_response = _completion(
+        content='{"answer":"B","rationale":"Recovered after retry."}',
+        finish_reason="stop",
+    )
+    client, completions = _azure_client([tool_request, transient, final_response])
+    executor_calls = []
+
+    result = await client.generate_with_forced_tool(
+        "system",
+        "user",
+        tool=CASE_RECORD_TOOL,
+        execute=lambda arguments: executor_calls.append(arguments) or "record-result",
+    )
+
+    assert executor_calls == [{}]
+    assert len(completions.calls) == 3
+    assert completions.calls[1] == completions.calls[2]
+    assert result.trace.request.attempts == 1
+    assert result.trace.final.attempts == 2
+    assert result.trace.api_call_attempts == 3
+
+
+async def test_initial_completion_retry_executes_callback_only_after_success():
+    transient = APIConnectionError(
+        request=httpx.Request("POST", "https://example.invalid/chat/completions")
+    )
+    tool_request = _completion(
+        content=None,
+        finish_reason="tool_calls",
+        tool_calls=[_tool_call()],
+    )
+    final_response = _completion(
+        content='{"answer":"B","rationale":"Successful."}',
+        finish_reason="stop",
+    )
+    client, completions = _azure_client([transient, tool_request, final_response])
+    executor_calls = []
+
+    result = await client.generate_with_forced_tool(
+        "system",
+        "user",
+        tool=CASE_RECORD_TOOL,
+        execute=lambda arguments: executor_calls.append(arguments) or "record-result",
+    )
+
+    assert executor_calls == [{}]
+    assert len(completions.calls) == 3
+    assert result.trace.request.attempts == 2
+    assert result.trace.final.attempts == 1
+
+
+async def test_mock_client_exposes_matching_forced_tool_interface():
+    mock = MockClient()
+    executor_calls = []
+    result = await mock.generate_with_forced_tool(
+        "system",
+        "user",
+        tool=CASE_RECORD_TOOL,
+        execute=lambda arguments: executor_calls.append(arguments) or "mock-result",
+    )
+    assert executor_calls == [{}]
+    assert parse_or_repair(result.final_text).answer == "B"
+    assert result.trace.tool_result == "mock-result"
+    assert result.trace.api_call_attempts == 2
+    assert mock.forced_tool_calls[0]["tool_name"] == "read_case_record"

@@ -32,6 +32,216 @@ from .schemas import (
     Scenario,
 )
 
+
+def _agent_role(record: AgentRoundRecord) -> str:
+    """Return the protocol role without treating the verifier as a neutral.
+
+    Older logs can lack role identifiers.  Those rows stay explicitly unknown
+    instead of being silently admitted to an ordinary-neutral denominator.
+    """
+    if record.seed_agent_id is not None and record.agent_id == record.seed_agent_id:
+        return "seed"
+    if (
+        record.corrector_agent_id is not None
+        and record.agent_id == record.corrector_agent_id
+    ):
+        return "corrector"
+    if record.seed_agent_id is None or record.corrector_agent_id is None:
+        return "unknown"
+    return "ordinary_neutral"
+
+
+def _delivery_value(record: AgentRoundRecord) -> str | None:
+    delivery = getattr(record, "corrective_record_delivery", None)
+    return delivery.value if hasattr(delivery, "value") else delivery
+
+
+def _condition_value(record: AgentRoundRecord) -> str:
+    condition = record.condition
+    return condition.value if hasattr(condition, "value") else str(condition)
+
+
+_TOOL_PROTOCOL_CONDITIONS = {
+    "injection_tool_none",
+    "injection_tool_testimony",
+    "injection_tool_relay",
+    "injection_prompt_receipt_control",
+    "injection_tool_direct",
+    "injection_tool_placebo",
+}
+
+
+def _tool_trace_snapshot(record: AgentRoundRecord) -> dict[str, object]:
+    """Flatten nullable protocol-v2 tool telemetry for analysis exports.
+
+    The protocol-v2 condition is itself enough to establish that tool
+    instrumentation applies.  The trace remains absent for the no-tool and
+    prompt-receipt controls; that observed absence must remain distinct from a
+    legacy row for which tool instrumentation did not exist.
+    """
+    trace = getattr(record, "tool_trace", None)
+    executed = getattr(record, "tool_call_executed", None)
+    replayed = getattr(record, "tool_trace_replayed", None)
+    instrumented = (
+        _condition_value(record) in _TOOL_PROTOCOL_CONDITIONS
+        or trace is not None
+        or executed is not None
+        or replayed is not None
+    )
+
+    def trace_value(name: str) -> object:
+        return getattr(trace, name, None) if trace is not None else None
+
+    return {
+        "instrumented": instrumented,
+        "present": trace is not None if instrumented else None,
+        "call_executed": executed,
+        "trace_replayed": replayed,
+        "name": trace_value("tool_name"),
+        "call_id": trace_value("tool_call_id"),
+        "arguments_sha256": trace_value("arguments_sha256"),
+        "result_sha256": trace_value("result_sha256"),
+        "transcript_sha256": trace_value("transcript_sha256"),
+        "success": trace_value("success"),
+        "error": trace_value("error"),
+        "api_call_count": trace_value("api_call_count"),
+        "finish_reasons": (
+            list(trace.finish_reasons) if trace is not None else None
+        ),
+        "input_tokens": trace_value("input_tokens"),
+        "output_tokens": trace_value("output_tokens"),
+        "total_tokens": trace_value("total_tokens"),
+    }
+
+
+def _record_route_snapshot(record: AgentRoundRecord) -> dict[str, object]:
+    """Normalize new route instrumentation while preserving legacy meaning.
+
+    ``corrective_visible`` predates the relay/direct-record arms and only
+    records dossier visibility.  It remains the fallback for that historical
+    field, but a legacy ``False`` cannot establish that no relayed record was
+    present.  The route-aware aggregate therefore stays ``None`` in that case.
+    """
+    delivery = _delivery_value(record)
+    dossier = getattr(record, "corrective_record_in_dossier", None)
+    relayed = getattr(record, "corrective_record_in_peer_message", None)
+    # Kept duck-typed so analysis remains compatible if direct receipts are
+    # represented separately from dossiers in a newer record schema.
+    direct_receipt = getattr(record, "corrective_record_in_direct_receipt", None)
+    sender_ids = getattr(record, "corrective_record_sender_ids", None)
+    route_instrumented = any(
+        value is not None
+        for value in (delivery, dossier, relayed, direct_receipt, sender_ids)
+    )
+
+    if route_instrumented:
+        # This explicit protocol field is authoritative. In particular, a
+        # successful placebo tool call is route-instrumented but exposes no
+        # corrective record and therefore remains false.
+        visible: bool | None = bool(record.corrective_visible)
+    elif record.corrective_visible:
+        visible = True
+    else:
+        # A legacy false value rules out a direct dossier only, not a relay.
+        visible = None
+
+    def route_match(value: str) -> bool | None:
+        return delivery == value if route_instrumented else None
+    legacy_direct_system = (
+        delivery == "direct_system_record"
+        or (delivery is None and direct_receipt is True)
+        if route_instrumented
+        else None
+    )
+    in_dossier = (
+        dossier
+        if dossier is not None
+        else route_match("corrector_private_record")
+        if route_instrumented
+        else record.corrective_visible
+    )
+    in_peer_message = (
+        relayed
+        if relayed is not None
+        else route_match("relayed_record")
+        if route_instrumented
+        else None
+    )
+    in_direct_receipt = (
+        direct_receipt
+        if direct_receipt is not None
+        else (
+            delivery in {"direct_system_record", "prompt_receipt_control"}
+            if delivery is not None
+            else None
+        )
+    )
+
+    return {
+        "delivery": delivery,
+        "route_instrumented": route_instrumented,
+        "visible": visible,
+        "in_dossier": in_dossier,
+        "in_peer_message": in_peer_message,
+        "in_direct_receipt": in_direct_receipt,
+        "relayed": (
+            delivery == "relayed_record" or in_peer_message is True
+            if route_instrumented
+            else None
+        ),
+        # The old direct-system receipt remains a separate historical route;
+        # prompt receipt controls must not be folded into it merely because
+        # both occupy the direct-receipt prompt slot.
+        "direct_system": legacy_direct_system,
+        "legacy_direct_system": legacy_direct_system,
+        "corrector_private": route_match("corrector_private_record"),
+        "corrector_tool": route_match("corrector_tool_record"),
+        "direct_tool": route_match("direct_tool_record"),
+        "prompt_receipt_control": route_match("prompt_receipt_control"),
+        "tool_placebo": route_match("tool_placebo"),
+        "sender_ids": sender_ids,
+        "record_id": getattr(record, "corrective_record_id", None),
+        "record_sha256": getattr(record, "corrective_record_sha256", None),
+        "tool": _tool_trace_snapshot(record),
+    }
+
+
+def _tri_state_seen(values: Sequence[bool | None]) -> bool | None:
+    """Cumulative OR that does not turn missing instrumentation into false."""
+    if any(value is True for value in values):
+        return True
+    if values and all(value is False for value in values):
+        return False
+    return None
+
+
+def _trace_sum_by_round(
+    values: Sequence[int | None], trace_present: Sequence[bool | None]
+) -> int | None:
+    """Sum trace usage without treating unavailable provider usage as zero."""
+    observed = [
+        value
+        for value, present in zip(values, trace_present)
+        if present is True
+    ]
+    if not observed or any(value is None for value in observed):
+        return None
+    return sum(value for value in observed if value is not None)
+
+
+def _finish_reasons_by_round(
+    values: Sequence[list[str] | None], trace_present: Sequence[bool | None]
+) -> list[str] | None:
+    """Retain ordered API finish reasons for all observed traces so far."""
+    if not any(present is True for present in trace_present):
+        return None
+    return [
+        reason
+        for reasons, present in zip(values, trace_present)
+        if present is True and reasons is not None
+        for reason in reasons
+    ]
+
 # ---------------------------------------------------------------------------
 # Loading
 # ---------------------------------------------------------------------------
@@ -170,6 +380,10 @@ def summarize_conversation(
     first = records[0]
     final_round = max(r.round for r in records)
     finals = [r for r in records if r.round == final_round]
+    ordinary_neutral_finals = [r for r in finals if _agent_role(r) == "ordinary_neutral"]
+    ordinary_neutral_answered = [
+        r for r in ordinary_neutral_finals if r.answer is not None
+    ]
     agent_ids = sorted({r.agent_id for r in records})
     vote_summary = summarize_final_round(
         {r.agent_id: r.answer for r in finals},
@@ -209,6 +423,19 @@ def summarize_conversation(
         "final_no_consensus": vote_summary["no_consensus"],
         "final_consensus_strength": vote_summary["consensus_strength"],
         "final_votes": vote_summary["final_votes"],
+        # Scope-of-correction effects are evaluated on agents who neither
+        # received the injected dossier nor served as the designated verifier.
+        # The verifier's own accuracy is a manipulation check, not neutral
+        # recovery, and including it mechanically rewards every correction arm.
+        "ordinary_neutral_role_observed": bool(ordinary_neutral_finals),
+        "ordinary_neutral_final_assigned_n": len(ordinary_neutral_finals),
+        "ordinary_neutral_final_answered_n": len(ordinary_neutral_answered),
+        "ordinary_neutral_final_accuracy": (
+            sum(r.answer == correct_answer for r in ordinary_neutral_answered)
+            / len(ordinary_neutral_answered)
+            if ordinary_neutral_answered
+            else None
+        ),
         "record_count": len(records),
         "parse_failure_count": sum(r.parse_failed for r in records),
         "generation_failure_count": sum(r.generation_failed for r in records),
@@ -243,6 +470,12 @@ def summarize_conversation(
         favored_by_round = metrics.favored_adoption_by_round(records, favored_option)
         summary["favored_adoption_final"] = (
             sum(r.answer == favored_option for r in finals) / len(finals)
+        )
+        summary["ordinary_neutral_favored_adoption_final"] = (
+            sum(r.answer == favored_option for r in ordinary_neutral_answered)
+            / len(ordinary_neutral_answered)
+            if ordinary_neutral_answered
+            else None
         )
         summary["favored_adoption_by_round"] = favored_by_round
         summary["favored_share_auc"] = metrics.favored_share_auc(favored_by_round)
@@ -291,7 +524,11 @@ def summarize_conversation(
                         favored_option=favored_option,
                     )
                 )
-        correction_rounds = [r.round for r in records if r.corrective_visible]
+        correction_rounds = [
+            r.round
+            for r in records
+            if _record_route_snapshot(r)["visible"] is True
+        ]
         summary["correction_release_round"] = (
             min(correction_rounds) if correction_rounds else None
         )
@@ -346,6 +583,15 @@ def summarize_judged_conversation(
         and not seed_initial_candidates[0].judge_uncertain
         else None
     )
+    ordinary_role_ids = (
+        {
+            record.agent_id
+            for record in records
+            if _agent_role(record) == "ordinary_neutral"
+        }
+        if records is not None
+        else set()
+    )
     summary = {
         "judge_coverage": coverage,
         "judge_duplicate_key_count": duplicate_key_count,
@@ -362,6 +608,12 @@ def summarize_judged_conversation(
         "first_correction_round": None,
         "correction_occurred": None,
         "correction_latency": None,
+        "ordinary_neutral_role_observed": bool(ordinary_role_ids),
+        "ordinary_neutral_final_acceptance_rate": None,
+        "ordinary_neutral_final_correction_expression_rate": None,
+        "ordinary_neutral_final_corrective_evidence_use_rate": None,
+        "ordinary_neutral_correction_occurred": None,
+        "first_ordinary_neutral_correction_round": None,
         "semantic_direct_exposure_adoption_rate": None,
         "semantic_direct_exposure_adoption_count": None,
         "semantic_direct_exposure_evaluable_opportunity_count": None,
@@ -398,6 +650,11 @@ def summarize_judged_conversation(
         return summary
 
     final_round = max(label.round for label in unique_rows)
+    ordinary_rows = [row for row in unique_rows if row.agent_id in ordinary_role_ids]
+    ordinary_finals = [row for row in ordinary_rows if row.round == final_round]
+    ordinary_correction_rounds = [
+        row.round for row in ordinary_rows if row.correction_present
+    ]
     summary.update({
         "final_acceptance_rate": metrics.final_acceptance_rate(
             unique_rows, seed_agent_id, final_round
@@ -408,6 +665,30 @@ def summarize_judged_conversation(
         "first_correction_round": metrics.first_correction_round(unique_rows),
         "correction_occurred": metrics.correction_occurred(unique_rows),
         "correction_latency": metrics.correction_latency(unique_rows, seed_agent_id),
+        "ordinary_neutral_final_acceptance_rate": (
+            sum(row.assumption_state in metrics.ACCEPTING_STATES for row in ordinary_finals)
+            / len(ordinary_finals)
+            if ordinary_finals
+            else None
+        ),
+        "ordinary_neutral_final_correction_expression_rate": (
+            sum(row.correction_present for row in ordinary_finals)
+            / len(ordinary_finals)
+            if ordinary_finals
+            else None
+        ),
+        "ordinary_neutral_final_corrective_evidence_use_rate": (
+            sum(row.corrective_evidence_used for row in ordinary_finals)
+            / len(ordinary_finals)
+            if ordinary_finals
+            else None
+        ),
+        "ordinary_neutral_correction_occurred": (
+            bool(ordinary_correction_rounds) if ordinary_rows else None
+        ),
+        "first_ordinary_neutral_correction_round": (
+            min(ordinary_correction_rounds) if ordinary_correction_rounds else None
+        ),
     })
     return summary
 
@@ -542,6 +823,64 @@ def derive_protocol_metadata(
         tuple[str, int], list[Optional[bool]]
     ] = defaultdict(list)
     correction_note_seen: dict[tuple[str, int], bool] = defaultdict(bool)
+    corrective_record_visible_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_dossier_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_relay_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_direct_system_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_direct_receipt_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_corrector_tool_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_direct_tool_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_prompt_control_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_placebo_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    corrective_record_route_history: dict[
+        tuple[str, int], list[bool]
+    ] = defaultdict(list)
+    corrective_record_delivery_history: dict[
+        tuple[str, int], list[str | None]
+    ] = defaultdict(list)
+    tool_instrumentation_history: dict[tuple[str, int], list[bool]] = defaultdict(list)
+    tool_trace_present_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    tool_call_executed_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    tool_trace_replayed_history: dict[
+        tuple[str, int], list[bool | None]
+    ] = defaultdict(list)
+    tool_api_call_count_history: dict[
+        tuple[str, int], list[int | None]
+    ] = defaultdict(list)
+    tool_finish_reasons_history: dict[
+        tuple[str, int], list[list[str] | None]
+    ] = defaultdict(list)
+    tool_input_tokens_history: dict[
+        tuple[str, int], list[int | None]
+    ] = defaultdict(list)
+    tool_output_tokens_history: dict[
+        tuple[str, int], list[int | None]
+    ] = defaultdict(list)
+    tool_total_tokens_history: dict[
+        tuple[str, int], list[int | None]
+    ] = defaultdict(list)
     target_routed_seen: dict[tuple[str, int], bool] = defaultdict(bool)
     acceptance_routed_seen: dict[tuple[str, int], bool] = defaultdict(bool)
     correction_routed_seen: dict[tuple[str, int], bool] = defaultdict(bool)
@@ -575,6 +914,8 @@ def derive_protocol_metadata(
                     correction_senders.append(sender)
 
         agent_key = (record.run_id, record.agent_id)
+        route = _record_route_snapshot(record)
+        tool = route["tool"]
         injection_note_seen[agent_key] |= record.injection_visible
         neutral_control_note_history[agent_key].append(record.neutral_control_visible)
         neutral_history = neutral_control_note_history[agent_key]
@@ -588,12 +929,45 @@ def derive_protocol_metadata(
         else:
             neutral_visible_by_round = False
         correction_note_seen[agent_key] |= record.corrective_visible
+        corrective_record_visible_history[agent_key].append(route["visible"])
+        corrective_record_dossier_history[agent_key].append(route["in_dossier"])
+        corrective_record_relay_history[agent_key].append(route["relayed"])
+        corrective_record_direct_system_history[agent_key].append(
+            route["direct_system"]
+        )
+        corrective_record_direct_receipt_history[agent_key].append(
+            route["in_direct_receipt"]
+        )
+        corrective_record_corrector_tool_history[agent_key].append(
+            route["corrector_tool"]
+        )
+        corrective_record_direct_tool_history[agent_key].append(
+            route["direct_tool"]
+        )
+        corrective_record_prompt_control_history[agent_key].append(
+            route["prompt_receipt_control"]
+        )
+        corrective_record_placebo_history[agent_key].append(route["tool_placebo"])
+        corrective_record_route_history[agent_key].append(
+            bool(route["route_instrumented"])
+        )
+        corrective_record_delivery_history[agent_key].append(route["delivery"])
+        tool_instrumentation_history[agent_key].append(bool(tool["instrumented"]))
+        tool_trace_present_history[agent_key].append(tool["present"])
+        tool_call_executed_history[agent_key].append(tool["call_executed"])
+        tool_trace_replayed_history[agent_key].append(tool["trace_replayed"])
+        tool_api_call_count_history[agent_key].append(tool["api_call_count"])
+        tool_finish_reasons_history[agent_key].append(tool["finish_reasons"])
+        tool_input_tokens_history[agent_key].append(tool["input_tokens"])
+        tool_output_tokens_history[agent_key].append(tool["output_tokens"])
+        tool_total_tokens_history[agent_key].append(tool["total_tokens"])
         target_routed_seen[agent_key] |= bool(target_senders)
         acceptance_routed_seen[agent_key] |= bool(acceptance_senders)
         correction_routed_seen[agent_key] |= bool(correction_senders)
         routing_uncertain_seen[agent_key] |= bool(uncertain_senders)
 
         result[key] = {
+            "agent_role": _agent_role(record),
             "injection_note_visible_this_round": record.injection_visible,
             "injection_note_visible_by_round": injection_note_seen[agent_key],
             "neutral_control_note_visible_this_round": record.neutral_control_visible,
@@ -610,6 +984,128 @@ def derive_protocol_metadata(
             ),
             "correction_note_visible_this_round": record.corrective_visible,
             "correction_note_visible_by_round": correction_note_seen[agent_key],
+            # Route-aware record exposure. The older correction-note keys above
+            # retain their dossier-only meaning for compatibility.
+            "corrective_record_route_instrumented_this_round": route[
+                "route_instrumented"
+            ],
+            "corrective_record_route_instrumentation_complete_by_round": all(
+                corrective_record_route_history[agent_key]
+            ),
+            "corrective_record_delivery_this_round": route["delivery"],
+            "corrective_record_delivery_history": list(
+                corrective_record_delivery_history[agent_key]
+            ),
+            "corrective_record_visible_this_round": route["visible"],
+            "corrective_record_visible_by_round": _tri_state_seen(
+                corrective_record_visible_history[agent_key]
+            ),
+            "corrective_record_in_dossier_this_round": route["in_dossier"],
+            "corrective_record_in_dossier_by_round": _tri_state_seen(
+                corrective_record_dossier_history[agent_key]
+            ),
+            "corrective_record_relayed_this_round": route["relayed"],
+            "corrective_record_relayed_by_round": _tri_state_seen(
+                corrective_record_relay_history[agent_key]
+            ),
+            "corrective_record_direct_system_this_round": route["direct_system"],
+            "corrective_record_direct_system_by_round": _tri_state_seen(
+                corrective_record_direct_system_history[agent_key]
+            ),
+            "corrective_record_legacy_direct_system_this_round": route[
+                "legacy_direct_system"
+            ],
+            "corrective_record_legacy_direct_system_by_round": _tri_state_seen(
+                corrective_record_direct_system_history[agent_key]
+            ),
+            "corrective_record_in_direct_receipt_this_round": route[
+                "in_direct_receipt"
+            ],
+            "corrective_record_in_direct_receipt_by_round": _tri_state_seen(
+                corrective_record_direct_receipt_history[agent_key]
+            ),
+            "corrective_record_private_to_corrector_this_round": route[
+                "corrector_private"
+            ],
+            "corrective_record_corrector_tool_this_round": route[
+                "corrector_tool"
+            ],
+            "corrective_record_corrector_tool_by_round": _tri_state_seen(
+                corrective_record_corrector_tool_history[agent_key]
+            ),
+            "corrective_record_direct_tool_this_round": route["direct_tool"],
+            "corrective_record_direct_tool_by_round": _tri_state_seen(
+                corrective_record_direct_tool_history[agent_key]
+            ),
+            "corrective_record_prompt_receipt_control_this_round": route[
+                "prompt_receipt_control"
+            ],
+            "corrective_record_prompt_receipt_control_by_round": _tri_state_seen(
+                corrective_record_prompt_control_history[agent_key]
+            ),
+            "corrective_record_tool_placebo_this_round": route["tool_placebo"],
+            "corrective_record_tool_placebo_by_round": _tri_state_seen(
+                corrective_record_placebo_history[agent_key]
+            ),
+            "corrective_record_sender_ids": route["sender_ids"],
+            "corrective_record_id": route["record_id"],
+            "corrective_record_sha256": route["record_sha256"],
+            # Flattened genuine-tool audit fields. Nullable values on legacy
+            # rows preserve "not instrumented" instead of inventing a zero.
+            "tool_trace_instrumented_this_round": tool["instrumented"],
+            "tool_trace_instrumentation_complete_by_round": all(
+                tool_instrumentation_history[agent_key]
+            ),
+            "tool_trace_present_this_round": tool["present"],
+            "tool_trace_present_by_round": _tri_state_seen(
+                tool_trace_present_history[agent_key]
+            ),
+            "tool_call_executed": tool["call_executed"],
+            "tool_call_executed_by_round": _tri_state_seen(
+                tool_call_executed_history[agent_key]
+            ),
+            "tool_trace_replayed": tool["trace_replayed"],
+            "tool_trace_replayed_by_round": _tri_state_seen(
+                tool_trace_replayed_history[agent_key]
+            ),
+            "tool_name": tool["name"],
+            "tool_call_id": tool["call_id"],
+            "tool_arguments_sha256": tool["arguments_sha256"],
+            "tool_result_sha256": tool["result_sha256"],
+            "tool_transcript_sha256": tool["transcript_sha256"],
+            "tool_success": tool["success"],
+            "tool_error": tool["error"],
+            "tool_api_call_count": tool["api_call_count"],
+            "tool_api_call_count_by_round": _trace_sum_by_round(
+                tool_api_call_count_history[agent_key],
+                tool_trace_present_history[agent_key],
+            ),
+            "tool_finish_reasons": tool["finish_reasons"],
+            "tool_finish_reasons_by_round": _finish_reasons_by_round(
+                tool_finish_reasons_history[agent_key],
+                tool_trace_present_history[agent_key],
+            ),
+            "tool_input_tokens": tool["input_tokens"],
+            "tool_input_tokens_by_round": _trace_sum_by_round(
+                tool_input_tokens_history[agent_key],
+                tool_trace_present_history[agent_key],
+            ),
+            "tool_output_tokens": tool["output_tokens"],
+            "tool_output_tokens_by_round": _trace_sum_by_round(
+                tool_output_tokens_history[agent_key],
+                tool_trace_present_history[agent_key],
+            ),
+            "tool_total_tokens": tool["total_tokens"],
+            "tool_total_tokens_by_round": _trace_sum_by_round(
+                tool_total_tokens_history[agent_key],
+                tool_trace_present_history[agent_key],
+            ),
+            "corrector_message_received_this_round": getattr(
+                record, "corrector_message_received", None
+            ),
+            "corrector_held_record_when_speaking": getattr(
+                record, "corrector_held_record_when_speaking", None
+            ),
             "target_engagement_routed_this_round": bool(target_senders),
             "target_engagement_routed_by_round": target_routed_seen[agent_key],
             "acceptance_routed_this_round": bool(acceptance_senders),
@@ -638,10 +1134,12 @@ AGGREGATE_KEYS = ("condition", "topology", "semantic_type")
 # all-conversations rule so unresolved runs cannot disappear from denominators.
 _ANSWER_MEAN_FIELDS = (
     "final_individual_accuracy",
+    "ordinary_neutral_final_accuracy",
     "final_plurality_accuracy",
     "final_no_consensus",
     "final_consensus_strength",
     "favored_adoption_final",
+    "ordinary_neutral_favored_adoption_final",
     "favored_share_auc",
     "seed_trap_uptake",
     "seed_recanted",
@@ -660,11 +1158,15 @@ _JUDGE_OPTIONAL_MEAN_FIELDS = (
     # Null when a conversation has no evaluable exposure opportunity, so
     # average only across conversations where the transition rate applies.
     "semantic_direct_exposure_adoption_rate",
+    "ordinary_neutral_final_acceptance_rate",
+    "ordinary_neutral_final_correction_expression_rate",
+    "ordinary_neutral_final_corrective_evidence_use_rate",
 )
 _JUDGE_HEADLINE_FIELDS = (
     "final_acceptance_rate",
     "false_consensus",
     "correction_occurred",
+    "ordinary_neutral_correction_occurred",
     "seed_initial_assumption_acceptance",
     "seed_initial_decision_reliance",
 )
@@ -697,6 +1199,18 @@ def aggregate_summaries(summaries: Sequence[dict]) -> list[dict]:
     for key, members in sorted(groups.items(), key=lambda kv: tuple(str(x) for x in kv[0])):
         row: dict = dict(zip(AGGREGATE_KEYS, key))
         row["n_conversations"] = len(members)
+        row["ordinary_neutral_role_observed_conversation_n"] = sum(
+            member.get("ordinary_neutral_role_observed") is True
+            for member in members
+        )
+        row["ordinary_neutral_final_assigned_n"] = sum(
+            int(member.get("ordinary_neutral_final_assigned_n") or 0)
+            for member in members
+        )
+        row["ordinary_neutral_final_answered_n"] = sum(
+            int(member.get("ordinary_neutral_final_answered_n") or 0)
+            for member in members
+        )
         row["n_judged_conversations"] = sum(
             "judge_coverage" in member for member in members
         )

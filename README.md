@@ -1,23 +1,45 @@
 # Assumption Propagation in Multi-Agent LLM Systems
 
-This repository studies how explicitly introduced factual, causal, and
-framing assumptions are adopted, qualified, transmitted, resisted, and
-corrected under different four-agent communication topologies.
+This repository studies how corrective evidence reaches a four-agent team
+after one agent receives a categorical, unsupported private assessment. The
+current primary protocol is `tool_v2`: no correction, verifier testimony,
+the verifier's testimony plus an exact relay of the tool result, or a genuine
+forced tool call that gives each non-verifier direct access to the same record.
 
-The core comparison replays the same frozen seed response through a directed
-loop, a neutral star, and a fully connected mesh. Each conversation has round
-0 plus three synchronous update rounds. A designated seed receives a
-categorical, unsupported private assessment from round 0 onward. A distinct
-corrector receives decisive counterevidence at round 2 and retains it through
-the remaining round. All message routing, private-dossier visibility, and model
-outputs are logged for post-hoc analysis.
+The primary comparison uses a fully connected mesh and four synchronous
+rounds. The seed's assessment persists from round 0. After one clean
+propagation round, a distinct verifier is forced to call the zero-argument
+`read_case_record` tool in round 1. Ordinary peers first respond to the
+verifier's testimony, an exact relayed tool payload, or their own direct tool
+result in round 2; those routes persist through round 3. A hidden corrected
+anchor samples the verifier once, and all corrected measured arms replay that
+same verifier response. The no-correction arm shares the matched pre-release
+history but not the corrected response. This prevents route effects from being
+confounded with resampling the conversation carrier.
+
+The direct arm is an actual two-step model/tool exchange: the first completion
+is forced to request `read_case_record`, the backend returns the canonical JSON
+as a `role=tool` message, and a second completion produces the answer. Prompt
+hashes, canonical record and tool-result hashes, delivery route, execution
+versus replay status, API attempts, finish reasons, token usage, and model
+outputs are logged. A copied hidden-anchor trace has zero new calls/tokens and
+is explicitly marked as replayed; it is never counted as a fresh measured-arm
+tool execution.
+For backward compatibility, schemas still call the designated verifier
+`corrector_agent`; analysis reports it as the verifier/correction carrier and
+keeps it out of ordinary-neutral outcomes.
 
 ## Repository map
 
-- `data/scenarios_fixed.json`: executable scenario packages and matched
+- `data/scenarios_hidden_profile_candidates.json`: executable hidden-profile
+  scenario packages and matched
   assumption variants.
 - `src/assumption_propagation/orchestrator.py`: frozen-seed generation and
   synchronous propagation.
+- `src/assumption_propagation/evidence.py`: deterministic canonical record and
+  placebo payloads.
+- `src/assumption_propagation/clients.py`: ordinary completion and forced-tool
+  client flows.
 - `src/assumption_propagation/topologies.py`: graph routing and role placement.
 - `src/assumption_propagation/judge.py`: blinded semantic Judge LLM pipeline.
 - `src/assumption_propagation/metrics.py` and `analysis.py`: answer- and
@@ -25,9 +47,12 @@ outputs are logged for post-hoc analysis.
 - `docs/JUDGE_RUBRIC.md`: shared Judge LLM/human annotation codebook.
 - `docs/JUDGE_INTERFACE.md`: exact judge input, output, and merge boundary.
 
-There are currently 20 executable scenarios with 60 matched variants: one
-factual, causal, and framing treatment for every base scenario. Correct-answer
-and assumption-favored letters are balanced across A-E.
+There are currently 33 executable scenarios with 99 matched variants: one
+factual, causal, and framing treatment for every base scenario.
+The primary evidence-scope protocol uses factual and causal variants only;
+`--scope-ladder` therefore excludes framing by default. Framing remains in the
+corpus for explicitly labelled follow-up work and can be requested with
+`--variants framing`.
 
 ## Quick start
 
@@ -37,10 +62,67 @@ Install the locked environment:
 uv sync
 ```
 
-Run a no-cost mock pilot:
+Run a no-cost ordinary pilot:
 
 ```bash
-uv run python scripts/run_pilot.py --client mock --scenario travel_001
+uv run python scripts/run_pilot.py --client mock --scenario vendor_001
+```
+
+Run the four primary `tool_v2` arms:
+
+```bash
+uv run python scripts/run_pilot.py --client mock --scenario vendor_001 \
+  --variants factual --scope-ladder --scope-protocol tool_v2 --n-seeds 1 \
+  --skip-baselines --skip-independent --rounds 4 --tag scope_smoke
+```
+
+Add the two mechanism controls only when the analysis calls for them:
+
+```bash
+uv run python scripts/run_pilot.py --client mock --scenario vendor_001 \
+  --variants factual --scope-ladder --scope-protocol tool_v2 --scope-controls \
+  --n-seeds 1 --skip-baselines --skip-independent --rounds 4 \
+  --tag scope_smoke_controls
+```
+
+The four primary arms are kept separate from the controls:
+
+| role in analysis | condition | ordinary agents receive from round 2 onward |
+|---|---|---|
+| primary | `injection_tool_none` | no corrective evidence |
+| primary | `injection_tool_testimony` | the matched verifier answer/rationale only |
+| primary | `injection_tool_relay` | that testimony plus the exact canonical tool-result payload inside the verifier message |
+| primary | `injection_tool_direct` | that testimony plus a forced personal `read_case_record` call and `role=tool` result |
+| optional control | `injection_prompt_receipt_control` | the canonical payload inserted as ordinary prompt text, with no tool call |
+| optional control | `injection_tool_placebo` | the same forced tool interaction but a non-diagnostic payload; verifier testimony remains present |
+
+The primary paired contrasts are testimony minus none, relay minus testimony,
+and direct tool access minus relay. With controls enabled, direct minus the
+prompt receipt tests genuine tool access against matched content presentation;
+placebo minus testimony tests the extra tool-turn mechanics; and direct minus
+placebo tests receipt of diagnostic rather than non-diagnostic tool output.
+
+`--scope-ladder` is mesh-only by design. Using a sparse topology would change
+which agents receive the verifier's relay and would confound evidence route
+with recipient coverage.
+
+`tool_v2` is the default when `--scope-ladder` is supplied. The older
+prompt-only conditions remain reproducible with `--scope-protocol prompt_v1`
+for historical comparisons. Prompt-v1 and tool-v2 runs use distinct condition
+IDs and must never be pooled.
+
+Convenience runners are available under `outputs/validation/`:
+
+```powershell
+# One scenario, no API cost. Add -IncludeControls to exercise both controls.
+.\outputs\validation\run_tool_v2_mock_smoke.ps1
+
+# One-scenario Azure compatibility gate; run this before the larger pilot.
+.\outputs\validation\run_tool_v2_azure_smoke.ps1
+
+# Six scenarios on Azure. Controls remain opt-in.
+.\outputs\validation\run_tool_v2_azure_six.ps1
+.\outputs\validation\run_tool_v2_azure_six.ps1 -IncludeControls
 ```
 
 Each raw run freezes the exact scenario bytes and protocol source files in its

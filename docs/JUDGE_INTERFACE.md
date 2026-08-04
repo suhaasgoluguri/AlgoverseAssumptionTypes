@@ -192,6 +192,26 @@ only facts supported by the logs:
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `injection_note_visible_this_round` / `_by_round`       | direct treatment-note visibility now / cumulatively, without claiming that the note states the canonical target |
 | `correction_note_visible_this_round` / `_by_round`      | direct corrective-note visibility now / cumulatively                                                            |
+| `corrective_record_delivery_this_round` / `_history`    | exact logged route; see the delivery vocabulary below                                                            |
+| `corrective_record_visible_this_round` / `_by_round`    | whether the canonical correction was observably delivered now / cumulatively; a placebo tool remains false      |
+| `corrective_record_in_dossier_this_round` / `_by_round` | whether the canonical record is in the verifier's role-private dossier now / cumulatively                        |
+| `corrective_record_relayed_this_round` / `_by_round`    | whether a verbatim record copy arrived inside a peer message now / cumulatively                                  |
+| `corrective_record_in_direct_receipt_this_round` / `_by_round` | whether the scoped record service delivered a direct receipt now / cumulatively                           |
+| `corrective_record_corrector_tool_this_round` / `_by_round` | whether the verifier obtained the real record through the v2 tool now / cumulatively                          |
+| `corrective_record_direct_tool_this_round` / `_by_round` | whether this non-verifier obtained the real record through its own v2 tool call now / cumulatively              |
+| `corrective_record_prompt_receipt_control_this_round` / `_by_round` | whether identical record content arrived as ordinary prompt text now / cumulatively                    |
+| `corrective_record_tool_placebo_this_round` / `_by_round` | whether a forced tool call returned the non-diagnostic placebo now / cumulatively                               |
+| `corrective_record_id` / `corrective_record_sha256`     | canonical record identity used to verify that relay and direct arms carry identical content                      |
+| `tool_trace_instrumented_this_round` / `_complete_by_round` | whether the row belongs to a protocol with v2 trace instrumentation now / for every observed round           |
+| `tool_trace_present_this_round` / `_by_round`            | whether a real or replayed tool trace is attached now / has appeared cumulatively                               |
+| `tool_call_executed` / `_by_round`                        | whether this measured cell actually issued the backend tool exchange now / cumulatively                         |
+| `tool_trace_replayed` / `_by_round`                       | whether this cell reuses a hidden-anchor tool-backed response/trace now / cumulatively                           |
+| `tool_name` / `tool_call_id`                              | provider/tool identifiers for the interaction                                                                   |
+| `tool_arguments_sha256` / `tool_result_sha256` / `tool_transcript_sha256` | hashes of the zero-argument request, exact result payload, and auditable exchange transcript        |
+| `tool_success` / `tool_error`                             | tool outcome without inferring semantic use                                                                     |
+| `tool_api_call_count` / `_by_round`                       | API attempts for this cell / cumulative attempts; a replay is zero rather than a new call                       |
+| `tool_finish_reasons` / `_by_round`                       | provider finish reasons now / cumulatively                                                                      |
+| `tool_input_tokens`, `tool_output_tokens`, `tool_total_tokens` / `_by_round` | provider usage now / cumulatively; replayed traces contribute zero                                |
 | `target_engagement_routed_this_round` / `_by_round`     | a routed preceding-round response determinately engaged the canonical target now / cumulatively                 |
 | `acceptance_routed_this_round` / `_by_round`            | a routed preceding-round response determinately accepted or relied on the target now / cumulatively             |
 | `correction_routed_this_round` / `_by_round`            | a routed preceding-round response determinately communicated the correction now / cumulatively                  |
@@ -200,6 +220,27 @@ only facts supported by the logs:
 | `correction_bearing_sender_ids`                           | peer senders actually routed this round whose preceding messages had`correction_present=true`                 |
 | `uncertain_sender_ids`                                    | routed senders whose needed label was missing,`unclear`, or judge-uncertain                                   |
 | `routing_derivation_uncertain_this_round` / `_by_round` | semantic routing status is unresolved now / has ever been unresolved cumulatively                               |
+
+The delivery vocabulary is deliberately versioned rather than collapsed:
+
+- `none`: no correction record was delivered in that cell;
+- `corrector_private_record`, `relayed_record`, and `direct_system_record`:
+  historical prompt-v1 routes;
+- `corrector_tool_record`: the protocol-v2 verifier's real tool result;
+- `direct_tool_record`: a protocol-v2 non-verifier's own real tool result;
+- `prompt_receipt_control`: canonical record bytes rendered as ordinary prompt
+  text, with no tool execution; and
+- `tool_placebo`: a real forced tool turn with a non-diagnostic result and no
+  corrective-record identity.
+
+`tool_call_executed` and `tool_trace_replayed` are mutually exclusive whenever
+a trace exists. A hidden corrected anchor samples the verifier's tool-backed
+response once so corrected arms receive matched testimony. Measured copies keep
+the source call ID and content hashes but set `tool_call_executed=false`,
+`tool_trace_replayed=true`, API calls to zero, and token counts to zero. This
+prevents matching from being misreported as repeated backend access. The relay
+arm carries the exact canonical tool-result payload inside a peer message but
+does not give the recipient a tool trace; the direct arm does.
 
 For a round-`r` peer message, use the routed sender's preceding-round response,
 not the recipient's current label. A basis cue alone is not target engagement.

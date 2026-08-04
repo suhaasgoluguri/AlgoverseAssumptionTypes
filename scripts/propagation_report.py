@@ -6,10 +6,11 @@ WHEN. That is the calibration signal — seed uptake, neutral temptability, and
 corrector capitulation are three different numbers, and a run can look healthy
 on final accuracy while having no propagation to measure at all.
 
-The corrector's dossier appears only at ``corrective_evidence.available_round``,
-so rounds before it are a natural no-corrective-evidence window. Rounds are
-marked accordingly, which lets one run answer "is correction suppressing
-propagation, or is propagation already absent before correction arrives?".
+Corrective evidence is scheduled at ``corrective_evidence.available_round``.
+In prompt-v1 it enters the corrector's dossier; in tool-v2 the verifier obtains
+it through the record tool. Rounds are marked accordingly, including explicit
+no-correction arms, so the report never confuses a scenario schedule with an
+evidence delivery that actually occurred.
 
 Usage:
   uv run python scripts/propagation_report.py outputs/raw/<stamp>
@@ -28,7 +29,7 @@ from typing import Optional
 
 from assumption_propagation.aggregation import N_AGENTS
 from assumption_propagation.analysis import load_agent_records
-from assumption_propagation.schemas import AgentRoundRecord
+from assumption_propagation.schemas import INJECTION_CONDITIONS, AgentRoundRecord
 from assumption_propagation.reproducibility import resolve_scenario_data, sha256_file
 
 ROLES = ("seed", "corrector", "neutral")
@@ -170,11 +171,19 @@ def print_report(counts, available, conditions, scenarios, max_round, withheld=F
                 # when every assumption in the run agrees, so the marker can
                 # never imply a precision the data does not have.
                 rounds_live = set(available.values())
-                if withheld:
+                arm_withholds = condition in {
+                    "injection_no_correction",
+                    "injection_tool_none",
+                }
+                if withheld or arm_withholds:
                     marker = "  [corrective WITHHELD]"
                 elif len(rounds_live) == 1:
                     live = rnd >= next(iter(rounds_live))
-                    marker = "  [corrective live]" if live else "  [no corrective evidence yet]"
+                    marker = (
+                        "  [corrector record released]"
+                        if live
+                        else "  [no corrective evidence yet]"
+                    )
                 else:
                     marker = ""
                 print(f"    r{rnd}: " + "  ".join(parts) + marker)
@@ -250,32 +259,45 @@ def main() -> None:
         trajectories[key][record.round] = record.answer
         context[key] = record
 
-    converted: dict[tuple[str, str], int] = defaultdict(int)
-    held: dict[tuple[str, str], int] = defaultdict(int)
-    totals: dict[tuple[str, str], int] = defaultdict(int)
+    converted: dict[tuple[str, str, str], int] = defaultdict(int)
+    held: dict[tuple[str, str, str], int] = defaultdict(int)
+    totals: dict[tuple[str, str, str], int] = defaultdict(int)
     for key, rounds in trajectories.items():
         record = context[key]
-        if record.condition.value != "injection" or role_of(record) == "seed":
+        if (
+            record.condition.value not in INJECTION_CONDITIONS
+            or role_of(record) != "neutral"
+        ):
             continue
         fav = favored.get(record.assumption_id)
         if fav is None:
             continue
-        cell = (record.scenario_id, record.topology.value)
+        cell = (
+            record.condition.value,
+            record.scenario_id,
+            record.topology.value,
+        )
         totals[cell] += 1
         if rounds.get(0) == fav:
             held[cell] += 1
         elif any(rounds.get(r) == fav for r in range(1, max_round + 1)):
             converted[cell] += 1
 
-    print(f"\n{'=' * 78}\nnon-seed CONVERSIONS after round 0 (injection only)\n{'=' * 78}")
+    print(
+        f"\n{'=' * 78}\n"
+        "ordinary-neutral CONVERSIONS after round 0 (all injection arms)\n"
+        f"{'=' * 78}"
+    )
     print("  converted = did not hold the trap at round 0, held it later")
     print("  held-r0   = independent round-0 prior, NOT propagation\n")
     total_conv = sum(converted.values())
     for cell in sorted(totals):
-        scenario, topology = cell
-        print(f"  {scenario:16s} {topology:22s} "
-              f"converted {converted[cell]:>3d}/{totals[cell]:<3d}   "
-              f"held-r0 {held[cell]:>3d}")
+        condition, scenario, topology = cell
+        print(
+            f"  {condition:25s} {scenario:16s} {topology:22s} "
+            f"converted {converted[cell]:>3d}/{totals[cell]:<3d}   "
+            f"held-r0 {held[cell]:>3d}"
+        )
     if not total_conv:
         print("\n  NO CONVERSIONS — the assumption never propagated beyond the seed.")
         print("  Compare the converted rate against the matched baseline before")
@@ -291,9 +313,16 @@ def main() -> None:
                 {"condition": c, "scenario_id": s, "round": r, "role": role, **cell}
                 for (c, s, r, role), cell in sorted(counts.items(), key=lambda kv: tuple(map(str, kv[0])))
             ],
-            "non_seed_post_round0_adoptions": [
-                {"scenario_id": s, "topology": t, "count": n}
-                for (s, t), n in sorted(spread.items())
+            "ordinary_neutral_post_round0_conversions": [
+                {
+                    "condition": condition,
+                    "scenario_id": scenario,
+                    "topology": topology,
+                    "converted": converted[(condition, scenario, topology)],
+                    "held_round0": held[(condition, scenario, topology)],
+                    "total": total,
+                }
+                for (condition, scenario, topology), total in sorted(totals.items())
             ],
         }
         args.json.parent.mkdir(parents=True, exist_ok=True)

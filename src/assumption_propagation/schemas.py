@@ -60,8 +60,8 @@ class Condition(str, Enum):
     # variation.
     INJECTION_NO_CORRECTION = "injection_no_correction"
     # Corrective-evidence SCOPE. The four injection arms differ only in who can
-    # see the refuting record and how it travels, which makes scope an ordered
-    # variable rather than a switch:
+    # see the refuting record and how it travels. These are mechanistically
+    # distinct arms, not interchangeable doses of one ordered treatment:
     #
     #   injection_no_correction  nobody holds it
     #   injection                one agent holds it, and speaks only in its own
@@ -70,16 +70,47 @@ class Condition(str, Enum):
     #   injection_relay          one agent holds it AND carries the record into
     #                            its outgoing message, so provenance survives
     #                            the hop
-    #   injection_broadcast      every agent holds it directly
+    #   injection_broadcast      every agent receives it directly from the
+    #                            deterministic record service
     #
-    # The gaps localise the failure: 1->2 asks whether the truth is present but
+    # Adjacent gaps localise the failure: 1->2 asks whether the truth is present but
     # powerless, 2->3 whether the carrier lacks standing, 3->4 whether the
     # conversational channel is the bottleneck. Flat across all four would mean
     # the loss is in aggregation rather than in information.
     INJECTION_RELAY = "injection_relay"
     INJECTION_BROADCAST = "injection_broadcast"
+    # Protocol v2: the model must make a genuine backend tool call to obtain
+    # the record.  These names are new rather than aliases so old prompt-only
+    # runs remain distinguishable and loadable.
+    INJECTION_TOOL_NONE = "injection_tool_none"
+    INJECTION_TOOL_TESTIMONY = "injection_tool_testimony"
+    INJECTION_TOOL_RELAY = "injection_tool_relay"
+    INJECTION_PROMPT_RECEIPT_CONTROL = "injection_prompt_receipt_control"
+    INJECTION_TOOL_DIRECT = "injection_tool_direct"
+    INJECTION_TOOL_PLACEBO = "injection_tool_placebo"
     NO_INJECTION_BASELINE = "no_injection_baseline"
     INDEPENDENT_CONTROL = "independent_control"
+
+
+class CorrectionDelivery(str, Enum):
+    """How the canonical corrective record reached this agent in this round."""
+
+    NONE = "none"
+    CORRECTOR_PRIVATE = "corrector_private_record"
+    RELAYED_RECORD = "relayed_record"
+    DIRECT_SYSTEM_RECORD = "direct_system_record"
+    CORRECTOR_TOOL_RECORD = "corrector_tool_record"
+    DIRECT_TOOL_RECORD = "direct_tool_record"
+    PROMPT_RECEIPT_CONTROL = "prompt_receipt_control"
+    TOOL_PLACEBO = "tool_placebo"
+
+
+class ResponseOrigin(str, Enum):
+    """Whether a propagation response was sampled or protocol-replayed."""
+
+    GENERATED = "generated"
+    FROZEN_SEED = "frozen_seed"
+    MATCHED_REPLAY = "matched_replay"
 
 
 # Conditions that deliver the injection and therefore require a frozen seed.
@@ -88,15 +119,38 @@ INJECTION_CONDITIONS = (
     "injection_no_correction",
     "injection_relay",
     "injection_broadcast",
+    "injection_tool_none",
+    "injection_tool_testimony",
+    "injection_tool_relay",
+    "injection_prompt_receipt_control",
+    "injection_tool_direct",
+    "injection_tool_placebo",
 )
 
-# Corrective-evidence scope, weakest to strongest. The preregistered primary
-# outcome is a monotonic decrease in peer conversion along this ordering.
+# Corrective-evidence arms in their explanatory sequence. Analysis compares
+# adjacent mechanisms; it does not assume a monotonic dose-response ordering.
 CORRECTION_SCOPE = (
     "injection_no_correction",
     "injection",
     "injection_relay",
     "injection_broadcast",
+)
+
+# Protocol-v2 scope.  Keep ``CORRECTION_SCOPE`` byte-for-byte stable so old
+# runners and analyses do not silently gain conditions they cannot execute.
+TOOL_CORRECTION_SCOPE = (
+    "injection_tool_none",
+    "injection_tool_testimony",
+    "injection_tool_relay",
+    "injection_tool_direct",
+)
+TOOL_CORRECTION_CONTROLS = (
+    "injection_prompt_receipt_control",
+    "injection_tool_placebo",
+)
+TOOL_CORRECTION_SCOPE_WITH_CONTROLS = (
+    *TOOL_CORRECTION_SCOPE,
+    *TOOL_CORRECTION_CONTROLS,
 )
 
 # Human-readable labels for console output and analysis tables. The stored
@@ -105,9 +159,15 @@ CORRECTION_SCOPE = (
 # means "one verifier holds the record", which nobody would guess.
 CONDITION_LABELS = {
     "injection_no_correction": "1 no correction",
-    "injection":               "2 one verifier",
-    "injection_relay":         "3 relayed w/ source",
-    "injection_broadcast":     "4 broadcast to all",
+    "injection":               "2 verifier testimony",
+    "injection_relay":         "3 verbatim record relay",
+    "injection_broadcast":     "4 direct record to all",
+    "injection_tool_none": "1T no corrective tool",
+    "injection_tool_testimony": "2T verifier tool + testimony",
+    "injection_tool_relay": "3T verifier tool + record relay",
+    "injection_tool_direct": "4T direct corrective tool",
+    "injection_prompt_receipt_control": "CT prompt receipt control",
+    "injection_tool_placebo": "CT non-diagnostic tool placebo",
     "no_injection_baseline":   "-  honest baseline",
     "independent_control":     "-  no communication",
 }
@@ -146,7 +206,9 @@ class CorrectiveEvidence(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     content: str = Field(min_length=10)
-    recipient_role: str = Field(description="e.g. 'corrector_agent' — the predeclared recipient.")
+    recipient_role: Literal["corrector_agent"] = Field(
+        description="The predeclared initial recipient of the corrective record."
+    )
     available_round: int = Field(ge=0, le=3)
 
 
@@ -431,6 +493,77 @@ class SeedInstance(BaseModel):
         return v
 
 
+class ToolCallTrace(BaseModel):
+    """Auditable lifecycle of one corrective-record tool interaction.
+
+    A trace records the complete model/API cycle rather than only whether a
+    record appeared in a prompt.  It can be copied onto a matched replay, but
+    ``AgentRoundRecord.tool_call_executed`` distinguishes that copy from the
+    one backend execution that produced it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    tool_name: str = Field(min_length=1)
+    tool_call_id: str = Field(min_length=1)
+    arguments_sha256: str
+    result_sha256: Optional[str] = None
+    success: bool
+    error: Optional[str] = None
+    api_call_count: int = Field(ge=0)
+    finish_reasons: list[str] = Field(default_factory=list)
+    input_tokens: Optional[int] = Field(default=None, ge=0)
+    output_tokens: Optional[int] = Field(default=None, ge=0)
+    total_tokens: Optional[int] = Field(default=None, ge=0)
+    transcript_sha256: str
+
+    @field_validator("arguments_sha256", "result_sha256", "transcript_sha256")
+    @classmethod
+    def _full_sha256(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if len(normalized) != 64 or any(c not in "0123456789abcdef" for c in normalized):
+            raise ValueError("tool trace digests must be full hexadecimal SHA-256 values")
+        return normalized
+
+    @field_validator("tool_name", "tool_call_id")
+    @classmethod
+    def _nonblank_identifier(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("tool identifiers cannot be blank")
+        return value
+
+    @field_validator("finish_reasons")
+    @classmethod
+    def _nonblank_finish_reasons(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(not value for value in normalized):
+            raise ValueError("finish reasons cannot contain blank values")
+        return normalized
+
+    @model_validator(mode="after")
+    def _valid_tool_outcome(self) -> "ToolCallTrace":
+        if self.success:
+            if self.result_sha256 is None:
+                raise ValueError("successful tool trace requires result_sha256")
+            if self.error is not None:
+                raise ValueError("successful tool trace cannot carry an error")
+        elif not (self.error or "").strip():
+            raise ValueError("failed tool trace requires an error")
+        if len(self.finish_reasons) > self.api_call_count:
+            raise ValueError("finish_reasons cannot outnumber API calls")
+        if (
+            self.total_tokens is not None
+            and self.input_tokens is not None
+            and self.output_tokens is not None
+            and self.total_tokens != self.input_tokens + self.output_tokens
+        ):
+            raise ValueError("total_tokens must equal input_tokens + output_tokens")
+        return self
+
+
 class AgentRoundRecord(BaseModel):
     """Raw log for one agent in one round."""
 
@@ -457,6 +590,30 @@ class AgentRoundRecord(BaseModel):
     # visible.
     neutral_control_visible: Optional[bool] = None
     corrective_visible: bool = False
+    # Route-specific correction instrumentation was added after the first
+    # runs. Nullable defaults preserve the distinction between missing legacy
+    # instrumentation and an observed false exposure.
+    corrective_record_delivery: Optional[CorrectionDelivery] = None
+    corrective_record_in_dossier: Optional[bool] = None
+    corrective_record_in_peer_message: Optional[bool] = None
+    corrective_record_in_direct_receipt: Optional[bool] = None
+    corrective_record_sender_ids: Optional[list[int]] = None
+    corrective_record_id: Optional[str] = None
+    corrective_record_sha256: Optional[str] = None
+    corrector_message_received: Optional[bool] = None
+    corrector_held_record_when_speaking: Optional[bool] = None
+    system_prompt_sha256: Optional[str] = None
+    user_prompt_sha256: Optional[str] = None
+    response_origin: Optional[ResponseOrigin] = None
+    replay_source_condition: Optional[Condition] = None
+    arm_sequence_position: Optional[int] = Field(default=None, ge=1)
+    # Protocol-v2 genuine tool instrumentation.  The nested trace is nullable
+    # so every legacy record remains valid.  Execution/replay flags are
+    # separate because a matched arm may retain the original hashes without
+    # issuing another backend request.
+    tool_trace: Optional[ToolCallTrace] = None
+    tool_call_executed: Optional[bool] = None
+    tool_trace_replayed: Optional[bool] = None
     received_from: list[int] = Field(default_factory=list)
     messages_received: int = 0
     peer_input_tokens: int = 0
@@ -503,6 +660,137 @@ class AgentRoundRecord(BaseModel):
             raise ValueError("a failed response may retain an answer only when carried forward")
         if self.parse_failed and self.answer_rationale_inconsistent is not None:
             raise ValueError("failed/carried responses are outside the rationale-audit denominator")
+        delivery = self.corrective_record_delivery
+        if delivery is not None:
+            dossier = bool(self.corrective_record_in_dossier)
+            relayed = bool(self.corrective_record_in_peer_message)
+            direct = bool(self.corrective_record_in_direct_receipt)
+            senders = self.corrective_record_sender_ids or []
+            has_record_key = bool(self.corrective_record_id and self.corrective_record_sha256)
+            if delivery == CorrectionDelivery.NONE:
+                if dossier or relayed or direct or senders or has_record_key:
+                    raise ValueError("delivery=none cannot carry corrective record metadata")
+                if self.corrective_visible:
+                    raise ValueError("delivery=none requires corrective_visible=false")
+            elif delivery == CorrectionDelivery.TOOL_PLACEBO:
+                if dossier or relayed or direct or senders or has_record_key:
+                    raise ValueError("tool placebo cannot carry corrective record metadata")
+                if self.corrective_visible:
+                    raise ValueError("tool placebo requires corrective_visible=false")
+            else:
+                if not has_record_key:
+                    raise ValueError("record delivery requires record id and sha256")
+                if len(self.corrective_record_sha256 or "") != 64:
+                    raise ValueError("corrective_record_sha256 must be a full SHA-256 digest")
+                if not self.corrective_visible:
+                    raise ValueError("record delivery requires corrective_visible=true")
+            if delivery == CorrectionDelivery.RELAYED_RECORD:
+                if dossier or direct or not relayed or not senders:
+                    raise ValueError("relayed delivery requires a peer-message source only")
+                if self.corrector_agent_id is None or senders != [self.corrector_agent_id]:
+                    raise ValueError("relayed record must come from the designated corrector")
+                if any(sender not in self.received_from for sender in senders):
+                    raise ValueError("relayed record sender must be present in received_from")
+                if self.agent_id == self.corrector_agent_id:
+                    raise ValueError("corrector cannot receive its own relayed record")
+            if delivery == CorrectionDelivery.CORRECTOR_PRIVATE and (
+                not dossier or relayed or direct or senders
+            ):
+                raise ValueError("private delivery must be dossier-only")
+            if (
+                delivery == CorrectionDelivery.CORRECTOR_PRIVATE
+                and self.agent_id != self.corrector_agent_id
+            ):
+                raise ValueError("private corrective record belongs to the corrector")
+            if delivery == CorrectionDelivery.DIRECT_SYSTEM_RECORD and (
+                dossier or relayed or not direct or senders
+            ):
+                raise ValueError("direct system delivery must be receipt-only")
+            if (
+                delivery == CorrectionDelivery.DIRECT_SYSTEM_RECORD
+                and self.agent_id == self.corrector_agent_id
+            ):
+                raise ValueError("corrector retains its private record, not a direct receipt")
+            if delivery == CorrectionDelivery.CORRECTOR_TOOL_RECORD:
+                if dossier or relayed or direct or senders:
+                    raise ValueError("corrector tool delivery must be tool-only")
+                if self.agent_id != self.corrector_agent_id:
+                    raise ValueError("corrector tool record belongs to the corrector")
+                if self.condition == Condition.INJECTION_TOOL_NONE:
+                    raise ValueError("condition cannot deliver a corrective record to the tool")
+            if delivery == CorrectionDelivery.DIRECT_TOOL_RECORD:
+                if dossier or relayed or direct or senders:
+                    raise ValueError("direct tool delivery must be tool-only")
+                if self.condition != Condition.INJECTION_TOOL_DIRECT:
+                    raise ValueError("direct tool delivery requires injection_tool_direct")
+                if self.agent_id == self.corrector_agent_id:
+                    raise ValueError("corrector uses corrector_tool_record delivery")
+            if delivery == CorrectionDelivery.PROMPT_RECEIPT_CONTROL:
+                if dossier or relayed or not direct or senders:
+                    raise ValueError("prompt receipt control must be receipt-only")
+                if self.condition != Condition.INJECTION_PROMPT_RECEIPT_CONTROL:
+                    raise ValueError(
+                        "prompt receipt delivery requires injection_prompt_receipt_control"
+                    )
+                if self.agent_id == self.corrector_agent_id:
+                    raise ValueError("corrector cannot receive the peer prompt-receipt control")
+            if delivery == CorrectionDelivery.TOOL_PLACEBO:
+                if self.condition != Condition.INJECTION_TOOL_PLACEBO:
+                    raise ValueError("tool placebo delivery requires injection_tool_placebo")
+        tool_conditions = set(TOOL_CORRECTION_SCOPE_WITH_CONTROLS)
+        tool_condition = self.condition.value in tool_conditions
+        trace = self.tool_trace
+        if trace is None:
+            if self.tool_call_executed is not None or self.tool_trace_replayed is not None:
+                raise ValueError("tool execution flags require tool_trace")
+            if delivery in {
+                CorrectionDelivery.CORRECTOR_TOOL_RECORD,
+                CorrectionDelivery.DIRECT_TOOL_RECORD,
+                CorrectionDelivery.TOOL_PLACEBO,
+            }:
+                raise ValueError("tool delivery requires tool_trace")
+        else:
+            if delivery is None:
+                raise ValueError("tool_trace requires explicit corrective_record_delivery")
+            if not tool_condition:
+                raise ValueError("tool_trace is only valid in a protocol-v2 tool condition")
+            if self.tool_call_executed is None or self.tool_trace_replayed is None:
+                raise ValueError("tool_trace requires execution and replay flags")
+            if self.tool_call_executed == self.tool_trace_replayed:
+                raise ValueError("exactly one of tool_call_executed or tool_trace_replayed is true")
+            if self.tool_call_executed and trace.api_call_count < 1:
+                raise ValueError("executed tool trace requires at least one API call")
+            if self.tool_trace_replayed:
+                if trace.api_call_count != 0:
+                    raise ValueError("replayed tool trace requires api_call_count=0")
+                if trace.finish_reasons:
+                    raise ValueError("replayed tool trace cannot claim new finish reasons")
+                if any(
+                    count not in (None, 0)
+                    for count in (trace.input_tokens, trace.output_tokens, trace.total_tokens)
+                ):
+                    raise ValueError("replayed tool trace cannot claim new token usage")
+            if delivery in {
+                CorrectionDelivery.CORRECTOR_TOOL_RECORD,
+                CorrectionDelivery.DIRECT_TOOL_RECORD,
+                CorrectionDelivery.TOOL_PLACEBO,
+            } and not trace.success:
+                raise ValueError("successful tool delivery requires a successful tool trace")
+            if delivery == CorrectionDelivery.PROMPT_RECEIPT_CONTROL:
+                raise ValueError("prompt receipt control cannot claim a tool execution")
+        if self.condition == Condition.INJECTION_TOOL_NONE and trace is not None:
+            raise ValueError("injection_tool_none cannot carry a tool trace")
+        if bool(self.system_prompt_sha256) != bool(self.user_prompt_sha256):
+            raise ValueError("system and user prompt hashes must be recorded together")
+        if self.system_prompt_sha256 and (
+            len(self.system_prompt_sha256) != 64 or len(self.user_prompt_sha256 or "") != 64
+        ):
+            raise ValueError("prompt digests must be full SHA-256 values")
+        if self.response_origin == ResponseOrigin.MATCHED_REPLAY:
+            if self.replay_source_condition is None:
+                raise ValueError("matched replay requires replay_source_condition")
+        elif self.replay_source_condition is not None:
+            raise ValueError("replay_source_condition is only valid for matched replay")
         return self
 
 

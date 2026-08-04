@@ -114,6 +114,26 @@ def test_summarize_four_round_conversation():
     assert s["flip_counts"][1] == 0 and s["flip_counts"][3] == 1
 
 
+def test_scope_summary_reports_ordinary_neutrals_separately_from_corrector():
+    records = [
+        rec("scope", 0, 0, "A"),  # seed
+        rec("scope", 1, 0, "D"),  # designated corrector
+        rec("scope", 2, 0, "D"),  # ordinary neutral
+        rec("scope", 3, 0, "A"),  # ordinary neutral
+    ]
+
+    summary = summarize_conversation(
+        records, correct_answer="D", favored_option="A", semantic_type="factual"
+    )
+
+    assert summary["final_individual_accuracy"] == 0.5
+    assert summary["ordinary_neutral_role_observed"] is True
+    assert summary["ordinary_neutral_final_assigned_n"] == 2
+    assert summary["ordinary_neutral_final_answered_n"] == 2
+    assert summary["ordinary_neutral_final_accuracy"] == 0.5
+    assert summary["ordinary_neutral_favored_adoption_final"] == 0.5
+
+
 def test_summarize_reports_routed_adoption_correction_and_audit_flags():
     records = [
         rec("r4", 0, 0, "A"),
@@ -496,6 +516,279 @@ def test_protocol_exposure_uses_prior_message_content_not_routing_alone():
     later = derived[("r1", 1, 2)]
     assert later["target_engagement_routed_this_round"] is False
     assert later["target_engagement_routed_by_round"] is True
+
+
+def test_protocol_metadata_distinguishes_relay_route_and_legacy_unknown():
+    digest = "a" * 64
+    relayed = AgentRoundRecord(
+        run_id="route",
+        scenario_id="s1",
+        assumption_id="s1_factual_negative",
+        condition="injection_relay",
+        topology="fully_connected_mesh",
+        model="mock",
+        seed_agent_id=0,
+        corrector_agent_id=1,
+        agent_id=2,
+        round=3,
+        answer="D",
+        rationale="span",
+        corrective_visible=True,
+        corrective_record_delivery="relayed_record",
+        corrective_record_in_dossier=False,
+        corrective_record_in_peer_message=True,
+        corrective_record_sender_ids=[1],
+        corrective_record_id="record:s1",
+        corrective_record_sha256=digest,
+        received_from=[0, 1, 3],
+        messages_received=3,
+    )
+    legacy = AgentRoundRecord(
+        run_id="legacy-route",
+        scenario_id="s1",
+        assumption_id="s1_factual_negative",
+        condition="injection",
+        topology="independent",
+        model="mock",
+        seed_agent_id=0,
+        corrector_agent_id=1,
+        agent_id=2,
+        round=0,
+        answer="D",
+        rationale="span",
+        corrective_visible=False,
+    )
+
+    derived = derive_protocol_metadata([relayed, legacy], [])
+    route = derived[("route", 2, 3)]
+    assert route["agent_role"] == "ordinary_neutral"
+    assert route["corrective_record_route_instrumented_this_round"] is True
+    assert route["corrective_record_delivery_this_round"] == "relayed_record"
+    assert route["corrective_record_visible_this_round"] is True
+    assert route["corrective_record_relayed_this_round"] is True
+    assert route["corrective_record_direct_system_this_round"] is False
+    assert route["corrective_record_sender_ids"] == [1]
+    assert route["corrective_record_id"] == "record:s1"
+    assert route["corrective_record_sha256"] == digest
+
+    old = derived[("legacy-route", 2, 0)]
+    assert old["agent_role"] == "ordinary_neutral"
+    assert old["correction_note_visible_this_round"] is False
+    assert old["corrective_record_route_instrumented_this_round"] is False
+    # Legacy false rules out a direct dossier, but cannot rule out an
+    # uninstrumented peer relay.
+    assert old["corrective_record_visible_this_round"] is None
+    assert old["corrective_record_relayed_this_round"] is None
+
+
+def test_protocol_metadata_separates_tool_routes_prompt_control_and_placebo():
+    record_digest = "a" * 64
+    arguments_digest = "b" * 64
+    result_digest = "c" * 64
+    transcript_digest = "d" * 64
+
+    def trace(*, replayed=False):
+        return {
+            "tool_name": "read_case_record",
+            "tool_call_id": "call-7",
+            "arguments_sha256": arguments_digest,
+            "result_sha256": result_digest,
+            "success": True,
+            "api_call_count": 0 if replayed else 2,
+            "finish_reasons": [] if replayed else ["tool_calls", "stop"],
+            "input_tokens": 0 if replayed else 30,
+            "output_tokens": 0 if replayed else 12,
+            "total_tokens": 0 if replayed else 42,
+            "transcript_sha256": transcript_digest,
+        }
+
+    common = {
+        "scenario_id": "s1",
+        "assumption_id": "s1_factual_negative",
+        "topology": "fully_connected_mesh",
+        "model": "mock",
+        "seed_agent_id": 0,
+        "corrector_agent_id": 1,
+        "round": 1,
+        "answer": "D",
+        "rationale": "span",
+    }
+    rows = [
+        AgentRoundRecord(
+            **common,
+            run_id="corrector-tool",
+            condition="injection_tool_testimony",
+            agent_id=1,
+            corrective_visible=True,
+            corrective_record_delivery="corrector_tool_record",
+            corrective_record_id="record:s1",
+            corrective_record_sha256=record_digest,
+            tool_trace=trace(),
+            tool_call_executed=True,
+            tool_trace_replayed=False,
+        ),
+        AgentRoundRecord(
+            **common,
+            run_id="direct-tool",
+            condition="injection_tool_direct",
+            agent_id=2,
+            corrective_visible=True,
+            corrective_record_delivery="direct_tool_record",
+            corrective_record_id="record:s1",
+            corrective_record_sha256=record_digest,
+            tool_trace=trace(replayed=True),
+            tool_call_executed=False,
+            tool_trace_replayed=True,
+        ),
+        AgentRoundRecord(
+            **common,
+            run_id="prompt-control",
+            condition="injection_prompt_receipt_control",
+            agent_id=2,
+            corrective_visible=True,
+            corrective_record_delivery="prompt_receipt_control",
+            corrective_record_in_direct_receipt=True,
+            corrective_record_id="record:s1",
+            corrective_record_sha256=record_digest,
+        ),
+        AgentRoundRecord(
+            **common,
+            run_id="placebo",
+            condition="injection_tool_placebo",
+            agent_id=2,
+            corrective_visible=False,
+            corrective_record_delivery="tool_placebo",
+            tool_trace=trace(),
+            tool_call_executed=True,
+            tool_trace_replayed=False,
+        ),
+        AgentRoundRecord(
+            **common,
+            run_id="legacy-direct",
+            condition="injection_broadcast",
+            agent_id=2,
+            corrective_visible=True,
+            corrective_record_delivery="direct_system_record",
+            corrective_record_in_direct_receipt=True,
+            corrective_record_id="record:s1",
+            corrective_record_sha256=record_digest,
+        ),
+    ]
+
+    derived = derive_protocol_metadata(rows, [])
+    corrector = derived[("corrector-tool", 1, 1)]
+    assert corrector["corrective_record_corrector_tool_this_round"] is True
+    assert corrector["corrective_record_direct_tool_this_round"] is False
+    assert corrector["tool_call_executed"] is True
+    assert corrector["tool_name"] == "read_case_record"
+    assert corrector["tool_call_id"] == "call-7"
+    assert corrector["tool_arguments_sha256"] == arguments_digest
+    assert corrector["tool_result_sha256"] == result_digest
+    assert corrector["tool_transcript_sha256"] == transcript_digest
+    assert corrector["tool_api_call_count"] == 2
+    assert corrector["tool_finish_reasons"] == ["tool_calls", "stop"]
+    assert corrector["tool_total_tokens"] == 42
+
+    direct = derived[("direct-tool", 2, 1)]
+    assert direct["corrective_record_direct_tool_this_round"] is True
+    assert direct["corrective_record_direct_system_this_round"] is False
+    assert direct["tool_call_executed"] is False
+    assert direct["tool_trace_replayed"] is True
+    assert direct["tool_api_call_count"] == 0
+
+    prompt = derived[("prompt-control", 2, 1)]
+    assert prompt["corrective_record_in_direct_receipt_this_round"] is True
+    assert prompt["corrective_record_prompt_receipt_control_this_round"] is True
+    assert prompt["corrective_record_direct_system_this_round"] is False
+    assert prompt["tool_trace_instrumented_this_round"] is True
+    assert prompt["tool_trace_present_this_round"] is False
+
+    placebo = derived[("placebo", 2, 1)]
+    assert placebo["correction_note_visible_this_round"] is False
+    assert placebo["corrective_record_visible_this_round"] is False
+    assert placebo["corrective_record_visible_by_round"] is False
+    assert placebo["corrective_record_tool_placebo_this_round"] is True
+    assert placebo["tool_call_executed"] is True
+
+    legacy = derived[("legacy-direct", 2, 1)]
+    assert legacy["corrective_record_legacy_direct_system_this_round"] is True
+    assert legacy["corrective_record_prompt_receipt_control_this_round"] is False
+    assert legacy["corrective_record_direct_tool_this_round"] is False
+    assert legacy["tool_trace_instrumented_this_round"] is False
+    assert legacy["tool_trace_present_this_round"] is None
+
+
+def test_protocol_metadata_accumulates_tool_api_and_token_audit_fields():
+    record_digest = "1" * 64
+
+    def trace(*, replayed=False):
+        return {
+            "tool_name": "read_case_record",
+            "tool_call_id": "call-cumulative",
+            "arguments_sha256": "2" * 64,
+            "result_sha256": "3" * 64,
+            "success": True,
+            "api_call_count": 0 if replayed else 2,
+            "finish_reasons": [] if replayed else ["tool_calls", "stop"],
+            "input_tokens": 0 if replayed else 20,
+            "output_tokens": 0 if replayed else 8,
+            "total_tokens": 0 if replayed else 28,
+            "transcript_sha256": "4" * 64,
+        }
+
+    common = {
+        "run_id": "tool-history",
+        "scenario_id": "s1",
+        "assumption_id": "s1_factual_negative",
+        "condition": "injection_tool_direct",
+        "topology": "fully_connected_mesh",
+        "model": "mock",
+        "seed_agent_id": 0,
+        "corrector_agent_id": 1,
+        "agent_id": 2,
+        "answer": "D",
+        "rationale": "span",
+    }
+    rows = [
+        AgentRoundRecord(
+            **common,
+            round=0,
+            corrective_record_delivery="none",
+        ),
+        AgentRoundRecord(
+            **common,
+            round=1,
+            corrective_visible=True,
+            corrective_record_delivery="direct_tool_record",
+            corrective_record_id="record:s1",
+            corrective_record_sha256=record_digest,
+            tool_trace=trace(),
+            tool_call_executed=True,
+            tool_trace_replayed=False,
+        ),
+        AgentRoundRecord(
+            **common,
+            round=2,
+            corrective_visible=True,
+            corrective_record_delivery="direct_tool_record",
+            corrective_record_id="record:s1",
+            corrective_record_sha256=record_digest,
+            tool_trace=trace(replayed=True),
+            tool_call_executed=False,
+            tool_trace_replayed=True,
+        ),
+    ]
+
+    final = derive_protocol_metadata(rows, [])[("tool-history", 2, 2)]
+    assert final["corrective_record_direct_tool_by_round"] is True
+    assert final["tool_trace_present_by_round"] is True
+    assert final["tool_call_executed_by_round"] is True
+    assert final["tool_trace_replayed_by_round"] is True
+    assert final["tool_api_call_count_by_round"] == 2
+    assert final["tool_finish_reasons_by_round"] == ["tool_calls", "stop"]
+    assert final["tool_input_tokens_by_round"] == 20
+    assert final["tool_output_tokens_by_round"] == 8
+    assert final["tool_total_tokens_by_round"] == 28
 
 
 def test_protocol_routing_uncertainty_remains_cumulative():

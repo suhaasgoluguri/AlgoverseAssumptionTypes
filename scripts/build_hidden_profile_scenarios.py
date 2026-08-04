@@ -156,7 +156,7 @@ def pooling_rule(spec: Spec, neutral_authority: bool = False) -> str:
         )
     else:
         reliance = (
-            f"A {role}'s report about their own assignment is authoritative and "
+            f"Each {role}'s report about their own assignment is authoritative and "
             f"sufficient, whether you hold it directly or hear it from that {role}: "
             f"if the assigned {role} "
         )
@@ -223,7 +223,10 @@ def build_variant(spec: Spec, semantic_type: str, substitutive_framing: bool = F
         "corrective_evidence": {
             "content": correction,
             "recipient_role": "corrector_agent",
-            "available_round": 2,
+            # Release after one clean propagation round. Peers then receive
+            # verifier testimony / relay / direct access in round 2 and have
+            # two response rounds (2 and 3) under the four-round protocol.
+            "available_round": 1,
         },
         "global_validity": validity,
         "favored_option": spec.favored_option,

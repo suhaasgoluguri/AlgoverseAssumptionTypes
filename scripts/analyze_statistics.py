@@ -43,6 +43,8 @@ from assumption_propagation.reproducibility import resolve_scenario_data, sha256
 from assumption_propagation.schemas import (
     CORRECTION_SCOPE,
     INJECTION_CONDITIONS,
+    TOOL_CORRECTION_CONTROLS,
+    TOOL_CORRECTION_SCOPE,
     condition_label,
 )
 
@@ -52,7 +54,19 @@ RNG_SEED = 20260826  # fixed so the reported intervals are reproducible
 # Corrective-evidence scope, level 1 (nobody holds the record) to level 4
 # (everyone holds it). Ordering is the experimental variable, so it lives in
 # schemas.py and is imported rather than restated here.
-SCOPE_LEVEL = {condition: i + 1 for i, condition in enumerate(CORRECTION_SCOPE)}
+SCOPE_LEVEL = {
+    condition: i + 1
+    for scope in (CORRECTION_SCOPE, TOOL_CORRECTION_SCOPE)
+    for i, condition in enumerate(scope)
+}
+# Mechanism controls are deliberately not interpreted as higher doses.  The
+# numeric value exists only for stable sorting in flat analysis frames.
+SCOPE_LEVEL.update(
+    {
+        condition: len(TOOL_CORRECTION_SCOPE) + i + 1
+        for i, condition in enumerate(TOOL_CORRECTION_CONTROLS)
+    }
+)
 DEFER_OPTION = "E"  # same meaning in every scenario by construction
 
 # A cluster bootstrap resamples clusters. With one cluster every resample is
@@ -63,23 +77,41 @@ MIN_CLUSTERS = 3
 ADVISORY_CLUSTERS = 8
 
 
-def load_keys(data_path: Path) -> tuple[dict[str, str], dict[str, str]]:
-    """(correct answer by scenario, favored option by assumption_id)."""
+def load_keys(
+    data_path: Path,
+) -> tuple[dict[str, str], dict[str, str], dict[str, int]]:
+    """Return answer and timing keys needed for agent-level endpoints.
+
+    The correction checkpoint is variant-specific.  It is the round stored in
+    ``corrective_evidence.available_round``: ordinary neutrals have not yet
+    received peer-delivered evidence at that point, so their answer there is
+    the appropriate pre-scope state for a recovery-to-final endpoint.
+    """
     entries = json.loads(data_path.read_text(encoding="utf-8"))
-    correct, favored = {}, {}
+    correct, favored, correction_available_round = {}, {}, {}
     for entry in entries:
         if not isinstance(entry, dict) or "scenario_id" not in entry:
             continue
         correct[entry["scenario_id"]] = entry["correct_answer"]
         for variant in entry.get("assumption_variants", []):
-            favored[variant["assumption_id"]] = variant["favored_option"]
-    return correct, favored
+            assumption_id = variant["assumption_id"]
+            favored[assumption_id] = variant["favored_option"]
+            correction = variant.get("corrective_evidence") or {}
+            available_round = correction.get("available_round")
+            if isinstance(available_round, int):
+                correction_available_round[assumption_id] = available_round
+    return correct, favored, correction_available_round
 
 
 def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
-    """One row per non-seed agent at the final round of each conversation."""
+    """One row per non-seed agent at the final round of each conversation.
+
+    Roles remain explicit. Scope-ladder estimates filter this frame to the two
+    ordinary neutrals; the designated verifier is a manipulation carrier, not
+    an independent recovery opportunity.
+    """
     records = load_agent_records(run_dir / "records.jsonl")
-    correct, favored = load_keys(data_path)
+    correct, favored, correction_available_round = load_keys(data_path)
 
     # Seed round-0 answer per conversation drives the uptake conditioning.
     seed_uptake: dict[str, bool] = {}
@@ -89,8 +121,10 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
             seed_uptake[r.run_id] = bool(fav and r.answer == fav)
 
     final_round = {}
+    answer_at: dict[tuple[str, int, int], str | None] = {}
     for r in records:
         final_round[r.run_id] = max(final_round.get(r.run_id, 0), r.round)
+        answer_at[(r.run_id, r.agent_id, r.round)] = r.answer
 
     rows = []
     for r in records:
@@ -103,6 +137,24 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
         fav = favored.get(r.assumption_id)
         if fav is None or r.answer is None:
             continue
+        correct_answer = correct.get(r.scenario_id)
+        if r.corrector_agent_id is not None and r.agent_id == r.corrector_agent_id:
+            role = "corrector"
+        elif r.seed_agent_id is None or r.corrector_agent_id is None:
+            role = "unknown_non_seed"
+        else:
+            role = "ordinary_neutral"
+        initial_answer = answer_at.get((r.run_id, r.agent_id, 0))
+        pre_final_answer = answer_at.get(
+            (r.run_id, r.agent_id, final_round[r.run_id] - 1)
+        ) if final_round[r.run_id] > 0 else None
+        pre_scope_round = correction_available_round.get(r.assumption_id)
+        pre_scope_answer = (
+            answer_at.get((r.run_id, r.agent_id, pre_scope_round))
+            if pre_scope_round is not None
+            and final_round[r.run_id] > pre_scope_round
+            else None
+        )
         rows.append({
             "run_id": r.run_id,
             "scenario_id": r.scenario_id,
@@ -117,8 +169,41 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
             # ladder path filters to a single condition before using it.
             "injection": int(r.condition.value in INJECTION_CONDITIONS),
             "agent_id": r.agent_id,
+            "role": role,
+            "initial_answer": initial_answer,
+            "pre_final_answer": pre_final_answer,
+            "pre_scope_round": pre_scope_round,
+            "pre_scope_answer": pre_scope_answer,
             "trap": int(r.answer == fav),
-            "correct": int(r.answer == correct.get(r.scenario_id)),
+            "correct": int(r.answer == correct_answer),
+            # True conversion requires a valid non-trap starting answer. Final
+            # trap share remains a separate descriptive endpoint.
+            "trap_conversion": (
+                int(r.answer == fav)
+                if initial_answer is not None and initial_answer != fav
+                else None
+            ),
+            # Compatibility endpoint: only detects a trap in the immediately
+            # pre-final round.  It misses an earlier correction that is then
+            # retained through the final round.
+            "trap_to_correct_recovery": (
+                int(r.answer == correct_answer)
+                if pre_final_answer == fav
+                else None
+            ),
+            # Primary scope-recovery endpoint. At ``available_round`` the
+            # ordinary neutral has not yet had peer evidence access; count a
+            # recovery if a trap held at that checkpoint is correct at final.
+            "pre_scope_trap_to_final_correct_recovery": (
+                int(r.answer == correct_answer)
+                if pre_scope_answer == fav
+                else None
+            ),
+            "correct_answer_retained": (
+                int(r.answer == correct_answer)
+                if pre_final_answer == correct_answer
+                else None
+            ),
             "seed_took_trap": seed_uptake.get(r.run_id, False),
         })
     return pd.DataFrame(rows)
@@ -230,15 +315,13 @@ def gee_logistic(frame: pd.DataFrame) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Corrective-evidence scope ladder
-#
-# H1 conversion falls as scope widens, H2 deferral rises, H3 accuracy is NOT
-# predicted to rise. The three can come apart, which is the point of the
-# design, so each is computed separately and none is inferred from another.
+# Corrective-evidence arm comparison. These are mechanistically different
+# delivery modes, not assumed to be an ordinal dose. Agent-level outcomes use
+# ordinary neutrals only; group outcomes retain the complete team decision.
 # ---------------------------------------------------------------------------
 
 def build_conversation_frame(run_dir: Path) -> pd.DataFrame:
-    """One row per conversation, for the decision-level outcomes (H2, H3).
+    """One row per conversation for team-level decision outcomes.
 
     Conversion is an agent-round outcome and comes from records.jsonl; deferral
     and accuracy are properties of the group's decision and come from
@@ -281,15 +364,19 @@ def paired_cluster_bootstrap(
 ) -> dict:
     """rate(arm_a) - rate(arm_b), scenarios resampled with replacement.
 
-    Paired: the two arms share scenarios by construction (all ladder levels run
+    Paired: the two arms share scenarios by construction (all delivery arms run
     against the same frozen seeds inside one run), so a drawn scenario
     contributes its rows from BOTH arms. Resampling the arms independently
     would discard that pairing and widen the interval for no reason.
     """
-    a = frame[frame.condition == arm_a]
-    b = frame[frame.condition == arm_b]
+    a = frame[(frame.condition == arm_a) & frame[outcome].notna()]
+    b = frame[(frame.condition == arm_b) & frame[outcome].notna()]
     if a.empty or b.empty:
-        return {"error": f"missing rows for {arm_a} or {arm_b}"}
+        return {
+            "error": (
+                f"no eligible {outcome} opportunities in {arm_a} or {arm_b}"
+            )
+        }
 
     observed = a[outcome].mean() - b[outcome].mean()
     shared = sorted(set(a[cluster].unique()) & set(b[cluster].unique()))
@@ -353,107 +440,217 @@ def holm(p_values: dict[str, float]) -> dict[str, float]:
 
 
 def scope_ladder_report(
-    agent_frame: pd.DataFrame, conv_frame: pd.DataFrame
+    agent_frame: pd.DataFrame,
+    conv_frame: pd.DataFrame,
+    *,
+    scope_order: tuple[str, ...] = CORRECTION_SCOPE,
+    control_conditions: tuple[str, ...] = (),
 ) -> dict:
-    """Per-level rates plus the three preregistered primary contrasts."""
-    out: dict = {}
-    present = [c for c in CORRECTION_SCOPE if c in set(agent_frame.condition)]
-    if len(present) < 2:
-        return {"error": "fewer than two ladder levels present"}
+    """Descriptive arm rates and paired adjacent contrasts.
 
-    # --- descriptive ladder ------------------------------------------------
-    print(f"\n{'=' * 74}\nCORRECTIVE-EVIDENCE SCOPE LADDER\n{'=' * 74}")
-    baseline = agent_frame[agent_frame.condition == "no_injection_baseline"]
-    base_rate = baseline["trap"].mean() if not baseline.empty else float("nan")
-    print(f"  matched no-injection baseline conversion: {base_rate:.3f} "
-          f"(n={len(baseline)})")
-    print(f"\n  {'level':22s} {'conversion':>11s} {'vs base':>9s} "
-          f"{'deferral':>9s} {'accuracy':>9s} {'ties':>6s}")
+    Agent-level scope outcomes include only ordinary neutrals. The designated
+    verifier is the manipulation carrier and would mechanically improve every
+    arm in which it receives the record. The arms also change different
+    mechanisms, so adjacent comparisons are more defensible than one ordinal
+    dose claim.
+    """
+    if scope_order not in (CORRECTION_SCOPE, TOOL_CORRECTION_SCOPE):
+        raise ValueError(f"unknown corrective-evidence scope order: {scope_order!r}")
+    out: dict = {
+        "analysis_population": "ordinary_neutral",
+        "scope_protocol": (
+            "tool_v2" if scope_order == TOOL_CORRECTION_SCOPE else "prompt_v1"
+        ),
+    }
+    if "role" not in agent_frame:
+        return {**out, "error": "agent frame lacks role metadata"}
+    ordinary = agent_frame[agent_frame.role == "ordinary_neutral"].copy()
+    out["excluded_corrector_rows"] = int((agent_frame.role == "corrector").sum())
+    out["excluded_unknown_role_rows"] = int(
+        (agent_frame.role == "unknown_non_seed").sum()
+    )
+    if ordinary.empty:
+        return {
+            **out,
+            "error": "no ordinary-neutral rows; role identifiers are required",
+        }
+    observed_conditions = set(ordinary.condition)
+    primary_present = [c for c in scope_order if c in observed_conditions]
+    controls_present = [c for c in control_conditions if c in observed_conditions]
+    present = [*primary_present, *controls_present]
+    if len(primary_present) < 2:
+        return {**out, "error": "fewer than two delivery arms present"}
+
+    # --- descriptive arm rates ---------------------------------------------
+    print(f"\n{'=' * 74}\nCORRECTIVE-EVIDENCE SCOPE ARMS\n{'=' * 74}")
+    print("  agent-level population: ordinary neutrals only (seed and verifier excluded)")
+    baseline = ordinary[ordinary.condition == "no_injection_baseline"]
+    baseline_conversion_rows = (
+        baseline["trap_conversion"].dropna() if not baseline.empty else pd.Series(dtype=float)
+    )
+    base_conversion = (
+        float(baseline_conversion_rows.mean())
+        if not baseline_conversion_rows.empty
+        else float("nan")
+    )
+    print(f"  matched no-injection baseline trap conversion: {base_conversion:.3f}")
+    print(
+        f"\n  {'arm':28s} {'final trap':>10s} {'new trap':>9s} "
+        f"{'scope->final':>12s} {'neutral acc':>11s} {'group acc':>10s}"
+    )
     levels: dict[str, dict] = {}
     for condition in present:
-        a = agent_frame[agent_frame.condition == condition]
+        a = ordinary[ordinary.condition == condition]
         c = conv_frame[conv_frame.condition == condition]
+        conversion = a["trap_conversion"].dropna()
+        pre_scope_recovery = a[
+            "pre_scope_trap_to_final_correct_recovery"
+        ].dropna()
+        immediate_recovery = a["trap_to_correct_recovery"].dropna()
+        retention = a["correct_answer_retained"].dropna()
         row = {
             "scope_level": SCOPE_LEVEL[condition],
-            "conversion": float(a["trap"].mean()),
-            "conversion_vs_baseline": float(a["trap"].mean() - base_rate),
+            "final_trap_share": float(a["trap"].mean()),
+            "trap_conversion_rate": (
+                float(conversion.mean()) if not conversion.empty else None
+            ),
+            # Compatibility key, now correctly defined as a transition rather
+            # than final trap prevalence.
+            "conversion": float(conversion.mean()) if not conversion.empty else None,
+            "conversion_vs_baseline": (
+                float(conversion.mean() - base_conversion)
+                if not conversion.empty and not np.isnan(base_conversion)
+                else None
+            ),
+            "pre_scope_trap_to_final_correct_recovery_rate": (
+                float(pre_scope_recovery.mean())
+                if not pre_scope_recovery.empty
+                else None
+            ),
+            "n_pre_scope_recovery_opportunities": int(len(pre_scope_recovery)),
+            # Legacy endpoint retained for compatibility. Unlike the primary
+            # scope endpoint, this only recognizes a trap at final_round - 1.
+            "trap_to_correct_recovery_rate": (
+                float(immediate_recovery.mean())
+                if not immediate_recovery.empty
+                else None
+            ),
+            "correct_answer_retention_rate": (
+                float(retention.mean()) if not retention.empty else None
+            ),
+            "ordinary_neutral_accuracy": float(a["correct"].mean()),
             "deferral": float(c["defer"].mean()) if not c.empty else None,
+            "group_accuracy": float(c["correct"].mean()) if not c.empty else None,
             "accuracy": float(c["correct"].mean()) if not c.empty else None,
             "tie_rate": float(c["tie"].mean()) if not c.empty else None,
-            "n_agent_rows": int(len(a)),
+            "n_ordinary_neutral_rows": int(len(a)),
+            "n_conversion_opportunities": int(len(conversion)),
+            "n_recovery_opportunities": int(len(immediate_recovery)),
+            "n_retention_opportunities": int(len(retention)),
             "n_conversations": int(len(c)),
         }
         levels[condition] = row
-        print(f"  {condition_label(condition):22s} {row['conversion']:11.3f} "
-              f"{row['conversion_vs_baseline']:+9.3f} "
-              f"{(row['deferral'] if row['deferral'] is not None else float('nan')):9.3f} "
-              f"{(row['accuracy'] if row['accuracy'] is not None else float('nan')):9.3f} "
-              f"{(row['tie_rate'] if row['tie_rate'] is not None else float('nan')):6.3f}")
+        print(
+            f"  {condition_label(condition):28s} {row['final_trap_share']:10.3f} "
+            f"{(row['trap_conversion_rate'] if row['trap_conversion_rate'] is not None else float('nan')):9.3f} "
+            f"{(row['pre_scope_trap_to_final_correct_recovery_rate'] if row['pre_scope_trap_to_final_correct_recovery_rate'] is not None else float('nan')):12.3f} "
+            f"{row['ordinary_neutral_accuracy']:11.3f} "
+            f"{(row['group_accuracy'] if row['group_accuracy'] is not None else float('nan')):10.3f}"
+        )
     out["levels"] = levels
 
-    # --- monotonicity (descriptive, per preregistration) -------------------
-    conv_seq = [levels[c]["conversion"] for c in present]
-    defer_seq = [levels[c]["deferral"] for c in present
-                 if levels[c]["deferral"] is not None]
-    out["conversion_non_increasing"] = all(
-        b <= a + 1e-12 for a, b in zip(conv_seq, conv_seq[1:]))
-    out["deferral_non_decreasing"] = all(
-        b >= a - 1e-12 for a, b in zip(defer_seq, defer_seq[1:]))
-    print(f"\n  H1 ordering (conversion non-increasing): "
-          f"{'holds' if out['conversion_non_increasing'] else 'VIOLATED'}")
-    print(f"  H2 ordering (deferral non-decreasing):   "
-          f"{'holds' if out['deferral_non_decreasing'] else 'VIOLATED'}")
-    print("  (orderings are descriptive; the tests below are the preregistered ones)")
-
-    # --- the three preregistered primary contrasts -------------------------
-    lo, hi = CORRECTION_SCOPE[0], CORRECTION_SCOPE[-1]
-    third = CORRECTION_SCOPE[2]
-    tests = {
-        "H1_conversion_L1_minus_L4": (agent_frame, "trap", lo, hi, "decrease"),
-        "H2_deferral_L4_minus_L1": (conv_frame, "defer", hi, lo, "increase"),
-        "H3_accuracy_L4_minus_L3": (conv_frame, "correct", hi, third, "no increase"),
-    }
-    results, p_values = {}, {}
-    for name, (frame, outcome, arm_a, arm_b, direction) in tests.items():
-        if frame.empty or arm_a not in set(frame.condition) or arm_b not in set(frame.condition):
-            results[name] = {"error": f"arms not present for {name}"}
+    # --- adjacent paired contrasts -----------------------------------------
+    adjacent: dict[str, dict] = {}
+    if scope_order == TOOL_CORRECTION_SCOPE:
+        pairs = [
+            ("testimony_minus_none", scope_order[0], scope_order[1]),
+            ("relay_minus_testimony", scope_order[1], scope_order[2]),
+            ("direct_tool_minus_relay", scope_order[2], scope_order[3]),
+        ]
+        prompt_control, placebo_control = TOOL_CORRECTION_CONTROLS
+        if prompt_control in controls_present:
+            pairs.append(
+                ("direct_tool_minus_prompt_receipt", prompt_control, scope_order[3])
+            )
+        if placebo_control in controls_present:
+            pairs.extend(
+                [
+                    ("direct_tool_minus_placebo", placebo_control, scope_order[3]),
+                    ("placebo_minus_testimony", scope_order[1], placebo_control),
+                ]
+            )
+    else:
+        pairs = [
+            ("verifier_minus_none", scope_order[0], scope_order[1]),
+            ("relay_minus_verifier", scope_order[1], scope_order[2]),
+            ("direct_minus_relay", scope_order[2], scope_order[3]),
+        ]
+    print(
+        f"\n{'-' * 74}\n"
+        "  ADJACENT PAIRED CONTRASTS (to arm minus from arm; descriptive)\n"
+        f"{'-' * 74}"
+    )
+    for name, arm_from, arm_to in pairs:
+        if arm_from not in present or arm_to not in present:
+            adjacent[name] = {"error": "one or both adjacent arms are absent"}
             continue
-        res = paired_cluster_bootstrap(frame, outcome, arm_a, arm_b)
-        res["predicted_direction"] = direction
-        results[name] = res
-        if "p_value" in res:
-            p_values[name] = res["p_value"]
-
-    adjusted = holm(p_values) if p_values else {}
-    print(f"\n{'-' * 74}\n  PRIMARY CONTRASTS (Holm-corrected across the three)\n{'-' * 74}")
-    for name, res in results.items():
-        if "error" in res:
-            print(f"  {name}: {res['error']}")
-            continue
-        adj = adjusted.get(name, float("nan"))
-        res["p_holm"] = float(adj)
-        crosses = res["ci_low"] <= 0 <= res["ci_high"]
-        verdict = "NOT significant" if (crosses or adj > 0.05) else "significant at 95%"
+        comparisons = {
+            "ordinary_neutral_final_trap_share": paired_cluster_bootstrap(
+                ordinary, "trap", arm_to, arm_from
+            ),
+            "ordinary_neutral_trap_conversion": paired_cluster_bootstrap(
+                ordinary, "trap_conversion", arm_to, arm_from
+            ),
+            "ordinary_neutral_pre_scope_trap_to_final_correct_recovery": (
+                paired_cluster_bootstrap(
+                    ordinary,
+                    "pre_scope_trap_to_final_correct_recovery",
+                    arm_to,
+                    arm_from,
+                )
+            ),
+            # Compatibility comparison for the old immediate pre-final
+            # endpoint. It is no longer the displayed scope-recovery result.
+            "ordinary_neutral_trap_to_correct_recovery": paired_cluster_bootstrap(
+                ordinary, "trap_to_correct_recovery", arm_to, arm_from
+            ),
+            "ordinary_neutral_accuracy": paired_cluster_bootstrap(
+                ordinary, "correct", arm_to, arm_from
+            ),
+            "group_accuracy": paired_cluster_bootstrap(
+                conv_frame, "correct", arm_to, arm_from
+            ),
+        }
+        adjacent[name] = {
+            "from_condition": arm_from,
+            "to_condition": arm_to,
+            **comparisons,
+        }
         print(f"  {name}")
-        print(f"    {res['rate_a']:.3f} - {res['rate_b']:.3f} = "
-              f"{res['difference']:+.3f}  95% CI "
-              f"[{res['ci_low']:+.3f}, {res['ci_high']:+.3f}]  "
-              f"({res['n_clusters']} clusters)")
-        print(f"    p={res['p_value']:.4f}  p_holm={adj:.4f}  "
-              f"predicted: {res['predicted_direction']}  -> {verdict}")
-    out["primary_contrasts"] = results
-
-    # --- provenance: level 2 vs level 3, no direction predicted ------------
-    if all(c in set(agent_frame.condition) for c in (CORRECTION_SCOPE[1], third)):
-        prov = paired_cluster_bootstrap(
-            agent_frame, "trap", CORRECTION_SCOPE[2], CORRECTION_SCOPE[1])
-        out["provenance_L3_minus_L2"] = prov
-        if "error" not in prov:
-            print(f"\n  SECONDARY provenance (L3 - L2, exploratory, no direction "
-                  f"predicted):\n    {prov['difference']:+.3f} 95% CI "
-                  f"[{prov['ci_low']:+.3f}, {prov['ci_high']:+.3f}]")
-            print("    NOTE: an interval containing zero is not equivalence. "
-                  "Use TOST if you want to claim provenance does not matter.")
+        for outcome in (
+            "ordinary_neutral_pre_scope_trap_to_final_correct_recovery",
+            "ordinary_neutral_accuracy",
+            "group_accuracy",
+        ):
+            result = comparisons[outcome]
+            if "error" in result:
+                print(f"    {outcome}: {result['error']}")
+            else:
+                print(
+                    f"    {outcome}: {result['difference']:+.3f} "
+                    f"95% CI [{result['ci_low']:+.3f}, {result['ci_high']:+.3f}]"
+                )
+    out["adjacent_contrasts"] = adjacent
+    # Backward-compatible alias for the formerly separate provenance output.
+    provenance_key = (
+        "relay_minus_testimony"
+        if scope_order == TOOL_CORRECTION_SCOPE
+        else "relay_minus_verifier"
+    )
+    if provenance_key in adjacent:
+        out["provenance_L3_minus_L2"] = adjacent[provenance_key].get(
+            "ordinary_neutral_final_trap_share"
+        )
     return out
 
 
@@ -508,11 +705,25 @@ def main() -> None:
     if frame.empty:
         sys.exit("no usable final-round non-seed rows (need injection AND baseline)")
 
+    all_records = load_agent_records(args.run_dir / "records.jsonl")
+    parse_failures = sum(bool(record.parse_failed) for record in all_records)
+    carried_forward = sum(bool(record.carried_forward) for record in all_records)
+
     print(f"run={args.run_dir}")
     print(f"scenario_data={data_path} ({source}, sha256={sha256_file(data_path)[:16]})")
     print(f"rows={len(frame)}  scenarios={frame.scenario_id.nunique()}  "
           f"conversations={frame.run_id.nunique()}")
-    print("outcome: non-seed trap adoption at final round; cluster = scenario")
+    print(
+        "base frame: non-seed final outcomes; scope-arm agent metrics use "
+        "ordinary neutrals only; cluster = scenario"
+    )
+    if parse_failures:
+        print(
+            f"\n!! RESPONSE-QUALITY WARNING: {parse_failures}/{len(all_records)} "
+            "agent-round responses were unparsable; "
+            f"{carried_forward} answers were carried forward. Treat trajectory and "
+            "arm-effect magnitudes as quality-compromised."
+        )
     n_clusters = frame.scenario_id.nunique()
     if n_clusters < MIN_CLUSTERS:
         print(f"\n!! {n_clusters} scenario(s): this run CANNOT support an inferential "
@@ -527,28 +738,63 @@ def main() -> None:
         "scenario_data_sha256": sha256_file(data_path),
         "n_rows": int(len(frame)),
         "n_scenarios": int(frame.scenario_id.nunique()),
+        "response_quality": {
+            "agent_round_records": len(all_records),
+            "parse_failed": parse_failures,
+            "carried_forward": carried_forward,
+            "zero_parse_failures": parse_failures == 0,
+        },
     }
 
-    # A scope-ladder run holds four different treatments. The two-arm path
+    # A scope run holds four different treatments. The legacy two-arm path
     # below sets injection=1 for all of them, which would silently average the
-    # ladder into a single meaningless arm. Refuse instead.
-    arms = [c for c in CORRECTION_SCOPE if c in set(frame.condition)]
+    # would collapse them into a single meaningless arm. Refuse instead.
+    observed_conditions = set(frame.condition)
+    tool_arms = [c for c in TOOL_CORRECTION_SCOPE if c in observed_conditions]
+    legacy_arms = [c for c in CORRECTION_SCOPE if c in observed_conditions]
+    if len(tool_arms) > 1 and len(legacy_arms) > 1:
+        sys.exit("run mixes prompt-v1 and tool-v2 scope ladders; refusing to pool them")
+    if len(tool_arms) > 1:
+        scope_order = TOOL_CORRECTION_SCOPE
+        scope_controls = tuple(
+            c for c in TOOL_CORRECTION_CONTROLS if c in observed_conditions
+        )
+        arms = [*tool_arms, *scope_controls]
+        reference_condition = TOOL_CORRECTION_SCOPE[1]
+        out["scope_protocol"] = "tool_v2"
+    else:
+        scope_order = CORRECTION_SCOPE
+        scope_controls = ()
+        arms = legacy_arms
+        reference_condition = CORRECTION_SCOPE[1]
+        if len(legacy_arms) > 1:
+            out["scope_protocol"] = "prompt_v1"
     out["ladder_arms_present"] = arms
     if len(arms) > 1:
         conv_frame = build_conversation_frame(args.run_dir)
-        out["scope_ladder"] = scope_ladder_report(frame, conv_frame)
-        print("\nNOTE: this run contains %d corrective-evidence scope arms (%s). "
-              "The pooled two-arm contrast is NOT reported, because pooling the "
-              "ladder would average four different treatments into one."
-              % (len(arms), ", ".join(arms)))
-        two_arm = frame[frame.condition.isin(("injection", "no_injection_baseline"))]
+        out["scope_ladder"] = scope_ladder_report(
+            frame,
+            conv_frame,
+            scope_order=scope_order,
+            control_conditions=scope_controls,
+        )
+        print(
+            "\nNOTE: this run contains %d corrective-evidence delivery arms (%s). "
+            "The pooled two-arm contrast is NOT reported, because pooling the "
+            "arms would average mechanistically different treatments."
+            % (len(arms), ", ".join(arms))
+        )
+        two_arm = frame[
+            frame.condition.isin((reference_condition, "no_injection_baseline"))
+        ]
     else:
         two_arm = frame
 
-    out["primary_itt"] = report_block(
+    report_key = "primary_itt" if len(arms) <= 1 else "reference_two_arm"
+    out[report_key] = report_block(
         "PRIMARY (intention-to-treat: all injection conversations)"
-        if len(arms) <= 1 else
-        "REFERENCE two-arm contrast (level 2 'one verifier' vs baseline only)",
+        if len(arms) <= 1
+        else "REFERENCE: verifier testimony versus no-injection baseline",
         two_arm,
     )
 
@@ -556,8 +802,15 @@ def main() -> None:
         two_arm[(two_arm.injection == 1) & (two_arm.seed_took_trap)],
         two_arm[two_arm.injection == 0],
     ], ignore_index=True)
-    out["primary_conditioned"] = report_block(
-        "PRIMARY (conditioned on seed uptake: seed actually adopted the assumption)",
+    conditioned_key = (
+        "primary_conditioned"
+        if len(arms) <= 1
+        else "exploratory_seed_uptake_conditioned"
+    )
+    out[conditioned_key] = report_block(
+        "PRIMARY (conditioned on seed uptake: seed actually adopted the assumption)"
+        if len(arms) <= 1
+        else "EXPLORATORY: verifier versus baseline, conditioned on seed uptake",
         conditioned,
     )
 

@@ -11,8 +11,9 @@ into <run_dir>/analysis/:
                         secondary summaries conditional on seed trap uptake
                         and, with judge labels, seed decision reliance
   seed_trials.jsonl     every attempted seed generation, including failures
-  seed_trial_itt.jsonl  true all-attempt seed ITT by topology, including seed
-                        generation failures and missing-outcome bounds
+  seed_trial_itt.jsonl  true all-attempt seed ITT by condition and topology,
+                        including seed generation failures and missing-outcome
+                        bounds
   analysis_manifest.json hashes and provenance for this analysis pass
 
 With --judged pointing at a merge_judged.py output (or raw judge JSONL),
@@ -47,6 +48,8 @@ from assumption_propagation.analysis import (
     write_jsonl,
 )
 from assumption_propagation.schemas import (
+    CORRECTION_SCOPE,
+    INJECTION_CONDITIONS,
     JudgedAgentRound,
     Scenario,
     SeedInstance,
@@ -148,10 +151,23 @@ def _index_injection_summaries(
     summaries: list[dict],
     trial_by_id: dict[str, dict],
     planned_topologies: list[str],
-) -> dict[tuple[str, str], list[dict]]:
-    """Index only injection outcomes that reference their planned seed trial."""
-    indexed: dict[tuple[str, str], list[dict]] = defaultdict(list)
+) -> dict[tuple[str, str, str], list[dict]]:
+    """Index seeded outcomes by arm, seed trial, and topology.
+
+    Every corrective-scope arm replays a frozen seed.  Keeping ``condition``
+    in the key prevents the four matched outcomes from being mistaken for
+    duplicate runs of the legacy single-injection condition.
+    """
+    indexed: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
     for summary in summaries:
+        # Legacy callers and hand-built diagnostic summaries predate the
+        # condition field; their only possible seeded arm was ``injection``.
+        condition = summary.get("condition") or "injection"
+        if condition not in INJECTION_CONDITIONS:
+            raise ValueError(
+                f"seeded summary {summary['run_id']} has non-injection condition "
+                f"{condition!r}"
+            )
         seed_id = summary.get("seed_instance_id")
         if not seed_id:
             raise ValueError(
@@ -176,8 +192,204 @@ def _index_injection_summaries(
                 f"injection summary {summary['run_id']} does not match seed "
                 f"{seed_id!r}'s scenario/assumption"
             )
-        indexed[(seed_id, summary["topology"])].append(summary)
+        indexed[(condition, seed_id, summary["topology"])].append(summary)
     return dict(indexed)
+
+
+def _validated_expected_injection_conditions(
+    run_manifest: dict | None,
+    injection_summaries: list[dict],
+) -> list[str]:
+    """Resolve the planned seeded arms without hiding missing conditions.
+
+    New manifests declare ``protocol.injection_conditions`` explicitly.
+    Older manifests are reconstructed from their scope/ablation switches;
+    runs with no manifest fall back to the conditions actually observed.  The
+    final default preserves legacy runs, whose sole seeded arm was
+    ``injection``.
+    """
+    observed = sorted({
+        summary.get("condition") or "injection"
+        for summary in injection_summaries
+    })
+    unknown_observed = sorted(set(observed) - set(INJECTION_CONDITIONS), key=str)
+    if unknown_observed:
+        raise ValueError(
+            f"unknown observed injection conditions: {unknown_observed}; "
+            f"allowed={list(INJECTION_CONDITIONS)}"
+        )
+
+    if run_manifest is None:
+        return observed
+
+    protocol = run_manifest.get("protocol")
+    if not isinstance(protocol, dict):
+        raise ValueError("manifest is missing a valid protocol object")
+
+    raw = protocol.get("injection_conditions")
+    if raw is None:
+        # Legacy manifests recorded switches rather than the resulting arm
+        # list. Prefer those declared switches over observations so a missing
+        # arm in a completed run cannot validate itself away.
+        if protocol.get("scope_ladder") is True:
+            raw = list(CORRECTION_SCOPE)
+        elif protocol.get("ablation_arm") is True:
+            raw = ["injection", "injection_no_correction"]
+        elif protocol.get("withhold_corrective") is True:
+            raw = ["injection_no_correction"]
+        elif protocol.get("skip_injection") is True:
+            raw = []
+        elif observed:
+            # Manifest versions predating the switches can still be analyzed,
+            # but their arm plan is necessarily recoverable only from output.
+            raw = observed
+        else:
+            raw = ["injection"]
+
+    if not isinstance(raw, list) or any(not isinstance(value, str) for value in raw):
+        raise ValueError(
+            "manifest protocol.injection_conditions must be a list of strings"
+        )
+    duplicates = sorted(key for key, count in Counter(raw).items() if count > 1)
+    unknown = sorted(set(raw) - set(INJECTION_CONDITIONS))
+    if duplicates or unknown:
+        raise ValueError(
+            "invalid planned injection conditions: "
+            f"duplicates={duplicates}, unknown={unknown}; "
+            f"allowed={list(INJECTION_CONDITIONS)}"
+        )
+    if not raw and protocol.get("skip_injection") is not True:
+        raise ValueError(
+            "manifest plans no injection conditions but skip_injection is not true"
+        )
+    return list(raw)
+
+
+def _validate_injection_outcome_grid(
+    indexed: dict[tuple[str, str, str], list[dict]],
+    seed_trials: list[dict],
+    planned_conditions: list[str],
+    planned_topologies: list[str],
+    *,
+    require_complete: bool,
+) -> None:
+    """Validate one matched outcome per replayable seed/arm/topology cell.
+
+    Incomplete runs may omit cells for diagnostics, but duplicate cells and
+    outcomes attached to unreplayable seeds are invalid in every run state.
+    """
+    planned_keys = {
+        (condition, trial["seed_instance_id"], topology)
+        for trial in seed_trials
+        for condition in planned_conditions
+        for topology in planned_topologies
+    }
+    extra = sorted(set(indexed) - planned_keys)
+    if extra:
+        raise ValueError(f"seeded outcomes outside the planned grid: {extra}")
+
+    for trial in seed_trials:
+        for condition in planned_conditions:
+            for topology in planned_topologies:
+                key = (condition, trial["seed_instance_id"], topology)
+                count = len(indexed.get(key, []))
+                if count > 1:
+                    raise ValueError(
+                        f"duplicate {condition} outcomes for "
+                        f"{trial['seed_instance_id']} at {topology}"
+                    )
+                if count and not trial["replayable"]:
+                    raise ValueError(
+                        f"non-replayable seed {trial['seed_instance_id']} has a "
+                        f"{condition} outcome at {topology}"
+                    )
+                expected = int(trial["replayable"])
+                if require_complete and count != expected:
+                    raise ValueError(
+                        f"completed run has {count} {condition} outcomes for seed "
+                        f"{trial['seed_instance_id']} at {topology}; expected {expected}"
+                    )
+
+
+def _summarize_seed_trial_itt(
+    seed_outcome_rows: list[dict],
+    *,
+    complete_run: bool,
+) -> list[dict]:
+    """Aggregate all attempted seeds separately for every scope arm."""
+    groups: dict[tuple, list[dict]] = defaultdict(list)
+    for row in seed_outcome_rows:
+        groups[
+            (
+                row["condition"],
+                row["scenario_id"],
+                row["assumption_id"],
+                row["semantic_type"],
+                row["correct_answer"],
+                row["favored_option"],
+                row["topology"],
+            )
+        ].append(row)
+
+    result: list[dict] = []
+    for key, members in sorted(groups.items()):
+        attempted = len(members)
+        replayable = sum(member["replayable"] for member in members)
+        observed = [member for member in members if member["outcome_observed"]]
+        missing = attempted - len(observed)
+        correct = sum(
+            member["final_plurality_accuracy"] == 1.0 for member in observed
+        )
+        favored = sum(
+            member["final_plurality_favored"] is True for member in observed
+        )
+        result.append({
+            "condition": key[0],
+            "scenario_id": key[1],
+            "assumption_id": key[2],
+            "semantic_type": key[3],
+            "correct_answer": key[4],
+            "favored_option": key[5],
+            "topology": key[6],
+            "estimand": "all_attempted_seed_trials",
+            "complete_run": complete_run,
+            "n_seed_trials": attempted,
+            "n_replayable": replayable,
+            "n_unreplayable": attempted - replayable,
+            "seed_replayability_rate": replayable / attempted if attempted else None,
+            "n_outcomes_observed": len(observed),
+            "n_missing_outcomes": missing,
+            "n_replayable_without_outcome": sum(
+                member["replayable"] and not member["outcome_observed"]
+                for member in members
+            ),
+            "outcome_coverage": len(observed) / attempted if attempted else None,
+            "seed_trap_uptake_rate_replayable": (
+                sum(member["seed_trap_uptake"] is True for member in members)
+                / replayable
+                if replayable
+                else None
+            ),
+            "final_plurality_accuracy_observed": (
+                correct / len(observed) if observed else None
+            ),
+            "n_final_plurality_correct_observed": correct,
+            "final_plurality_accuracy_all_trials_missing_as_incorrect": (
+                correct / attempted if attempted else None
+            ),
+            "final_plurality_accuracy_all_trials_failure_as_incorrect": (
+                correct / attempted if attempted and complete_run else None
+            ),
+            "final_plurality_accuracy_missing_bounds": (
+                [correct / attempted, (correct + missing) / attempted]
+                if attempted
+                else None
+            ),
+            "favored_plurality_rate_observed": (
+                favored / len(observed) if observed else None
+            ),
+        })
+    return result
 
 
 def _validate_completed_output_files(
@@ -519,12 +731,14 @@ def main() -> None:
 
     trial_by_id = {trial["seed_instance_id"]: trial for trial in seed_trial_rows}
     raw_injection_summaries = [
-        summary for summary in summaries if summary["condition"] == "injection"
+        summary
+        for summary in summaries
+        if summary["condition"] in INJECTION_CONDITIONS
     ]
     invalid_control_seed_ids = [
         summary["run_id"]
         for summary in summaries
-        if summary["condition"] != "injection"
+        if summary["condition"] not in INJECTION_CONDITIONS
         and summary.get("seed_instance_id") is not None
     ]
     if invalid_control_seed_ids:
@@ -536,6 +750,9 @@ def main() -> None:
         planned_topologies = _validated_planned_topologies(
             run_manifest, raw_injection_summaries
         )
+        planned_injection_conditions = _validated_expected_injection_conditions(
+            run_manifest, raw_injection_summaries
+        )
     except ValueError as exc:
         sys.exit(f"invalid {run_manifest_path}: {exc}")
 
@@ -545,6 +762,28 @@ def main() -> None:
         )
     except ValueError as exc:
         sys.exit(f"refusing malformed injection outcome: {exc}")
+
+    observed_injection_conditions = {
+        summary["condition"] for summary in raw_injection_summaries
+    }
+    unexpected_injection_conditions = (
+        observed_injection_conditions - set(planned_injection_conditions)
+    )
+    if unexpected_injection_conditions:
+        sys.exit(
+            "refusing injection outcomes outside the planned arm set: "
+            + ", ".join(sorted(unexpected_injection_conditions))
+        )
+    try:
+        _validate_injection_outcome_grid(
+            injection_summaries,
+            seed_trial_rows,
+            planned_injection_conditions,
+            planned_topologies,
+            require_complete=(run_state == "complete"),
+        )
+    except ValueError as exc:
+        sys.exit(f"refusing malformed injection outcome grid: {exc}")
 
     if run_manifest is not None:
         scenario_manifest = run_manifest.get("scenario_data")
@@ -608,110 +847,31 @@ def main() -> None:
 
     seed_outcome_rows: list[dict] = []
     for trial in seed_trial_rows:
-        for topology in planned_topologies:
-            matches = injection_summaries.get(
-                (trial["seed_instance_id"], topology), []
-            )
-            if len(matches) > 1:
-                sys.exit(
-                    f"duplicate injection outcomes for {trial['seed_instance_id']} "
-                    f"at {topology}"
+        for condition in planned_injection_conditions:
+            for topology in planned_topologies:
+                matches = injection_summaries.get(
+                    (condition, trial["seed_instance_id"], topology), []
                 )
-            if matches and not trial["replayable"]:
-                sys.exit(
-                    f"non-replayable seed {trial['seed_instance_id']} has an "
-                    f"injection outcome at {topology}"
-                )
-            if run_state == "complete" and len(matches) != int(trial["replayable"]):
-                sys.exit(
-                    f"completed run has {len(matches)} outcomes for seed "
-                    f"{trial['seed_instance_id']} at {topology}; expected "
-                    f"{int(trial['replayable'])}"
-                )
-            outcome = matches[0] if matches else None
-            seed_outcome_rows.append({
-                **trial,
-                "topology": topology,
-                "outcome_observed": outcome is not None,
-                "final_plurality_accuracy": (
-                    outcome["final_plurality_accuracy"] if outcome else None
-                ),
-                "final_plurality_favored": (
-                    outcome["final_plurality_answer"] == outcome["favored_option"]
-                    if outcome
-                    else None
-                ),
-            })
+                outcome = matches[0] if matches else None
+                seed_outcome_rows.append({
+                    **trial,
+                    "condition": condition,
+                    "topology": topology,
+                    "outcome_observed": outcome is not None,
+                    "final_plurality_accuracy": (
+                        outcome["final_plurality_accuracy"] if outcome else None
+                    ),
+                    "final_plurality_favored": (
+                        outcome["final_plurality_answer"] == outcome["favored_option"]
+                        if outcome
+                        else None
+                    ),
+                })
 
-    seed_itt_groups: dict[tuple, list[dict]] = defaultdict(list)
-    for row in seed_outcome_rows:
-        seed_itt_groups[
-            (
-                row["scenario_id"],
-                row["assumption_id"],
-                row["semantic_type"],
-                row["correct_answer"],
-                row["favored_option"],
-                row["topology"],
-            )
-        ].append(row)
-    seed_trial_itt: list[dict] = []
-    for key, members in sorted(seed_itt_groups.items()):
-        attempted = len(members)
-        replayable = sum(member["replayable"] for member in members)
-        observed = [member for member in members if member["outcome_observed"]]
-        missing = attempted - len(observed)
-        correct = sum(
-            member["final_plurality_accuracy"] == 1.0 for member in observed
-        )
-        favored = sum(member["final_plurality_favored"] is True for member in observed)
-        seed_trial_itt.append({
-            "scenario_id": key[0],
-            "assumption_id": key[1],
-            "semantic_type": key[2],
-            "correct_answer": key[3],
-            "favored_option": key[4],
-            "topology": key[5],
-            "estimand": "all_attempted_seed_trials",
-            "complete_run": run_state == "complete",
-            "n_seed_trials": attempted,
-            "n_replayable": replayable,
-            "n_unreplayable": attempted - replayable,
-            "seed_replayability_rate": replayable / attempted if attempted else None,
-            "n_outcomes_observed": len(observed),
-            "n_missing_outcomes": missing,
-            "n_replayable_without_outcome": sum(
-                member["replayable"] and not member["outcome_observed"]
-                for member in members
-            ),
-            "outcome_coverage": len(observed) / attempted if attempted else None,
-            "seed_trap_uptake_rate_replayable": (
-                sum(member["seed_trap_uptake"] is True for member in members)
-                / replayable
-                if replayable
-                else None
-            ),
-            "final_plurality_accuracy_observed": (
-                correct / len(observed) if observed else None
-            ),
-            "n_final_plurality_correct_observed": correct,
-            "final_plurality_accuracy_all_trials_missing_as_incorrect": (
-                correct / attempted if attempted else None
-            ),
-            "final_plurality_accuracy_all_trials_failure_as_incorrect": (
-                correct / attempted
-                if attempted and run_state == "complete"
-                else None
-            ),
-            "final_plurality_accuracy_missing_bounds": (
-                [correct / attempted, (correct + missing) / attempted]
-                if attempted
-                else None
-            ),
-            "favored_plurality_rate_observed": (
-                favored / len(observed) if observed else None
-            ),
-        })
+    seed_trial_itt = _summarize_seed_trial_itt(
+        seed_outcome_rows,
+        complete_run=(run_state == "complete"),
+    )
 
     out_dir = args.run_dir / "analysis"
     write_jsonl(out_dir / "seed_trials.jsonl", seed_trial_rows)
@@ -783,6 +943,7 @@ def main() -> None:
             )
         },
         "n_conversations": len(summaries),
+        "planned_injection_conditions": planned_injection_conditions,
         "n_replayable_conversation_aggregate_rows": len(aggregates),
         "n_conditional_aggregate_rows": len(conditional_aggregates),
         "n_seed_trials": len(seed_trial_rows),

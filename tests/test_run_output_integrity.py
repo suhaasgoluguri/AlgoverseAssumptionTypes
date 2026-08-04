@@ -94,6 +94,53 @@ def test_completion_integrity_reconciles_a_minimal_run(tmp_path: Path):
         "agent_round_records": 4,
         "conversation_results": 1,
     }
+    assert summary["response_quality"] == {
+        "agent_round_records": 4,
+        "parse_failed": 0,
+        "parse_repaired": 0,
+        "generation_failed": 0,
+        "carried_forward": 0,
+        "tool_trace_records": 0,
+        "tool_calls_executed": 0,
+        "tool_traces_replayed": 0,
+        "tool_api_call_attempts": 0,
+        "zero_parse_failures": True,
+    }
+
+
+def test_completion_integrity_reports_parse_failures(tmp_path: Path):
+    paths, scenarios, assumption_id = _minimal_run_files(tmp_path)
+    rows = [
+        json.loads(line)
+        for line in paths["records"].read_text(encoding="utf-8").splitlines()
+    ]
+    rows[0].update(
+        {
+            "answer": None,
+            "rationale": None,
+            "raw_response": "unparseable response",
+            "parse_failed": True,
+            "carried_forward": False,
+        }
+    )
+    _write_jsonl(paths["records"], rows)
+
+    summary = _validate_run_outputs(
+        paths,
+        scenarios,
+        [assumption_id],
+        n_seeds=1,
+        topologies=["looped_chain"],
+        n_rounds=1,
+        baseline_reps=0,
+        skip_baselines=True,
+        independent_reps=0,
+        skip_independent=True,
+    )
+
+    assert summary["response_quality"]["parse_failed"] == 1
+    assert summary["response_quality"]["carried_forward"] == 0
+    assert summary["response_quality"]["zero_parse_failures"] is False
 
 
 def test_completion_integrity_rejects_duplicate_seed_ids(tmp_path: Path):
