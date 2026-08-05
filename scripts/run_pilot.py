@@ -132,6 +132,8 @@ def planned_injection_conditions(args) -> tuple[str, ...]:
             if args.scope_controls
             else TOOL_CORRECTION_SCOPE
         )
+    if args.arms:
+        return tuple(args.arms)
     if args.ablation_arm:
         return ("injection", "injection_no_correction")
     if args.withhold_corrective:
@@ -643,7 +645,18 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
     # both arms makes the comparison paired and within-run.
     modes = ("anonymous", "assigned") if args.attribution == "both" else (args.attribution,)
     arms = [("injection", False)]
-    if args.ablation_arm:
+    if args.arms:
+        # Explicit arm subset, run through the matched-triple path so every
+        # selected arm is collected in every requested topology. Intended for
+        # cross-topology work: pick arms whose delivery does not depend on who
+        # talks to whom (injection_no_correction delivers nothing;
+        # injection_broadcast writes into every dossier directly). The
+        # conversation-carried arms -- injection and injection_relay -- reach
+        # 3 of 3 peers in the mesh but 1 of 3 in the chain and star, so their
+        # coverage is confounded with topology and they belong in the
+        # mesh-only ladder instead.
+        arms = [(c, c == "injection_no_correction") for c in args.arms]
+    elif args.ablation_arm:
         arms.append(("injection_no_correction", True))
     elif args.withhold_corrective:
         arms = [("injection_no_correction", True)]
@@ -905,6 +918,19 @@ async def main() -> None:
              "blocks. 'both' crosses the two modes with every arm inside one run.",
     )
     parser.add_argument(
+        "--arms",
+        nargs="+",
+        default=None,
+        choices=CORRECTION_SCOPE,
+        help="explicit subset of prompt_v1 arms, collected in every requested "
+             "topology via the matched-triple path. Use for cross-topology work: "
+             "injection_no_correction and injection_broadcast deliver "
+             "identically regardless of communication structure, whereas "
+             "injection and injection_relay ride on the corrector's message and "
+             "reach 3 of 3 peers in the mesh but 1 of 3 in the chain and star. "
+             "Cannot be combined with --scope-ladder.",
+    )
+    parser.add_argument(
         "--scope-ladder",
         action="store_true",
         help="run a four-arm matched corrective-evidence scope protocol. The "
@@ -984,6 +1010,12 @@ async def main() -> None:
     ):
         parser.error(
             "--scope-ladder cannot be combined with --ablation-arm, "
+            "--withhold-corrective, or --skip-injection"
+        )
+    if args.arms and (args.scope_ladder or args.ablation_arm or args.withhold_corrective
+                      or args.skip_injection):
+        parser.error(
+            "--arms cannot be combined with --scope-ladder, --ablation-arm, "
             "--withhold-corrective, or --skip-injection"
         )
     if args.ablation_arm and args.withhold_corrective:
