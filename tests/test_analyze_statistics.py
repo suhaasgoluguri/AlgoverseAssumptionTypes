@@ -10,7 +10,7 @@ from assumption_propagation.schemas import (
     TOOL_CORRECTION_SCOPE,
     AgentRoundRecord,
 )
-from scripts.analyze_statistics import build_frame, scope_ladder_report
+from scripts.analyze_statistics import build_frame, holm, scope_ladder_report
 
 
 def _record(run_id, agent, round_index, answer, *, condition="injection"):
@@ -220,6 +220,28 @@ def test_tool_scope_report_keeps_controls_out_of_the_primary_order():
         "direct_tool_minus_placebo",
         "placebo_minus_testimony",
     }
+    primary = report["primary_inference"]
+    assert primary["family"] == [
+        "testimony_minus_none",
+        "relay_minus_testimony",
+        "direct_tool_minus_relay",
+    ]
+    assert primary["holm_adjusted_p_values"] == {
+        "testimony_minus_none": 1.0,
+        "relay_minus_testimony": 1.0,
+        "direct_tool_minus_relay": 1.0,
+    }
+    assert "direct_tool_minus_prompt_receipt" not in primary["raw_p_values"]
+    for name in primary["family"]:
+        result = report["adjacent_contrasts"][name]["ordinary_neutral_accuracy"]
+        assert result["p_value_holm"] == 1.0
+        assert result["holm_reject_alpha_0_05"] is False
+
+
+def test_holm_adjustment_is_monotone_in_ordered_primary_family():
+    adjusted = holm({"c1": 0.0426, "c2": 0.0272, "c3": 0.0})
+
+    assert adjusted == {"c3": 0.0, "c2": 0.0544, "c1": 0.0544}
 
 
 def test_scope_report_marks_absent_pre_scope_opportunities_as_ineligible():

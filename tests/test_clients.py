@@ -6,6 +6,7 @@ repair attempt, and no response is ever silently discarded.
 
 import json
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -99,6 +100,25 @@ def _azure_client(outcomes) -> tuple[AzureChatClient, _FakeCompletions]:
         chat=SimpleNamespace(completions=completions)
     )
     return client, completions
+
+
+def test_azure_client_has_one_bounded_visible_retry_layer(monkeypatch):
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://example.test/openai/v1")
+    monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini")
+
+    with patch("assumption_propagation.clients.AsyncOpenAI") as async_openai:
+        client = AzureChatClient(temperature=None)
+
+    assert client.request_timeout_seconds == 120.0
+    assert client.sdk_max_retries == 0
+    assert client.TENACITY_MAX_ATTEMPTS == 6
+    async_openai.assert_called_once_with(
+        api_key="test-key",
+        base_url="https://example.test/openai/v1",
+        timeout=120.0,
+        max_retries=0,
+    )
 
 
 def test_clean_json_parses():

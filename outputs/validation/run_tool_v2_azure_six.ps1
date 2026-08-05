@@ -18,7 +18,8 @@ if (-not (Test-Path -LiteralPath $scenarioSubset -PathType Leaf)) {
 }
 
 Set-Location -LiteralPath $repoRoot
-$subsetRows = @(Get-Content -Raw -LiteralPath $scenarioSubset | ConvertFrom-Json)
+$decodedSubset = Get-Content -Raw -LiteralPath $scenarioSubset | ConvertFrom-Json
+$subsetRows = @($decodedSubset)
 if ($subsetRows.Count -ne 6) {
     throw "Expected exactly six scenarios in $scenarioSubset; found $($subsetRows.Count)."
 }

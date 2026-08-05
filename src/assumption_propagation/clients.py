@@ -445,6 +445,9 @@ class AzureChatClient:
     """
 
     _retry_wait = wait_exponential(multiplier=2, min=2, max=60)
+    REQUEST_TIMEOUT_SECONDS = 120.0
+    SDK_MAX_RETRIES = 0
+    TENACITY_MAX_ATTEMPTS = 6
 
     def __init__(
         self,
@@ -455,9 +458,16 @@ class AzureChatClient:
         self.deployment = deployment or os.environ["AZURE_OPENAI_DEPLOYMENT"]
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.request_timeout_seconds = self.REQUEST_TIMEOUT_SECONDS
+        self.sdk_max_retries = self.SDK_MAX_RETRIES
         self._client = AsyncOpenAI(
             api_key=os.environ["AZURE_OPENAI_API_KEY"],
             base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+            timeout=self.request_timeout_seconds,
+            # Tenacity below is the single visible retry layer. Disabling the
+            # SDK's internal retries keeps attempt counts and wall-clock stalls
+            # auditable in long confirmatory runs.
+            max_retries=self.sdk_max_retries,
         )
 
     @property
@@ -471,7 +481,7 @@ class AzureChatClient:
         async for attempt in AsyncRetrying(
             retry=retry_if_exception_type(RETRYABLE),
             wait=self._retry_wait,
-            stop=stop_after_attempt(6),
+            stop=stop_after_attempt(self.TENACITY_MAX_ATTEMPTS),
             reraise=True,
         ):
             with attempt:

@@ -28,6 +28,7 @@ EXPECTED_VALIDITY = {
     "causal": "contradicted",
     "framing": "misaligned",
 }
+EXPECTED_SCENARIO_COUNT = 20
 
 WEAK_OR_SELF_UNDERMINING_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("likely", re.compile(r"\blikely\b", re.IGNORECASE)),
@@ -278,12 +279,13 @@ def audit_scenarios(data: object) -> list[AuditIssue]:
     if not isinstance(data, list):
         return [AuditIssue("$", "root.not_list", "top-level JSON value must be a list")]
 
-    if len(data) != 20:
+    if len(data) != EXPECTED_SCENARIO_COUNT:
         _issue(
             issues,
             "$",
             "scenario.count",
-            f"expected exactly 20 scenarios, found {len(data)}",
+            f"expected exactly {EXPECTED_SCENARIO_COUNT} archived scenarios, "
+            f"found {len(data)}",
         )
 
     scenario_ids: list[str] = []
@@ -843,7 +845,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         for finding in issues:
             print(f"- {finding}")
         return 1
-    print(f"Scenario audit PASSED: 20 scenarios / 60 variants in {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    variant_count = sum(
+        len(scenario.get("assumption_variants", []))
+        for scenario in payload
+        if isinstance(scenario, dict)
+    )
+    print(
+        "Archived scenario audit PASSED: "
+        f"{len(payload)} scenarios / {variant_count} variants in {path}"
+    )
     return 0
 
 

@@ -1078,6 +1078,13 @@ async def main() -> None:
             "deployment": getattr(client, "deployment", None),
             "temperature": getattr(client, "temperature", None),
             "max_tokens": getattr(client, "max_tokens", None),
+            "request_timeout_seconds": getattr(
+                client, "request_timeout_seconds", None
+            ),
+            "sdk_max_retries": getattr(client, "sdk_max_retries", None),
+            "tenacity_max_attempts": getattr(
+                client, "TENACITY_MAX_ATTEMPTS", None
+            ),
         },
         "protocol": {
             "n_rounds": args.rounds,

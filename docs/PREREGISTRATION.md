@@ -1,12 +1,11 @@
 # Preregistration — confirmatory run
 
-**Status:** DRAFT. Bracketed magnitudes marked `[ FILL FROM EXPLORATORY ]` are
-filled from the 2026-08-03 exploratory run, then this file is committed and the
-confirmatory run is started. The commit hash of this file must predate the
-confirmatory run timestamp.
+**Status:** READY TO FREEZE. All design and sample-size fields are resolved.
+Commit this file together with the frozen analysis code before starting the
+confirmatory run; that commit hash must predate the first confirmatory API call.
 
 **Written:** 2026-07-26 · **Rewritten for the scope ladder:** 2026-08-03 ·
-**Amended for genuine tool access (`tool_v2`):** 2026-08-04 ·
+**Finalized for `azure:gpt-5-mini` and `tool_v2`:** 2026-08-04 ·
 **Target venue deadline:** 2026-08-29
 
 ---
@@ -33,10 +32,12 @@ favours a wrong answer. Three other agents do not receive it. One agent (the
 verifier) receives an external record refuting the assumption at round 1,
 after one clean propagation round.
 
-**The independent variable is the delivery route and access scope of the same
-corrective record.** The question is whether ordinary team members recover
-because a verifier can testify, because a verbatim source survives the
-communication hop, or because they receive the source record directly.
+**The independent variable is the delivery route and recipient scope of the
+same corrective record.** The question is whether ordinary team members
+recover because a verifier can testify, because an exact source record
+survives the communication hop, or because the recipient receives that record
+directly rather than through another agent. The primary construct is direct
+recipient delivery, not the mechanical act of invoking a tool.
 
 ### The primary `tool_v2` arms
 
@@ -58,8 +59,11 @@ treatment.
 Arms 2 and 3 hold the verifier response fixed and vary whether the exact source
 payload travels with it. Arms 3 and 4 hold canonical payload bytes, record ID,
 record hash, and first ordinary-agent exposure round fixed and vary whether the
-recipient sees a copy inside peer communication or obtains a first-party tool
-result. Tool access is forced rather than optional.
+recipient sees a copy inside peer communication or receives the record directly
+as a first-party tool result. Tool access is forced rather than optional. The
+separately prespecified prompt-receipt control determines whether an Arm 4
+advantage is specific to the tool channel or instead follows from direct record
+presentation.
 
 The arms are **not treated as an ordinal dose**. Three adjacent comparisons
 identify different bottlenecks:
@@ -68,8 +72,9 @@ identify different bottlenecks:
    conversation help?
 2. verbatim relay minus verifier testimony: does preserving provenance help
    beyond the verifier's identical words?
-3. direct forced-tool result minus exact relay: does first-party tool access
-   help beyond receiving the identical record through another agent?
+3. direct recipient delivery minus exact relay: does bypassing the
+   agent-mediated carrier help beyond receiving identical record bytes through
+   another agent?
 
 Held constant across all four arms: scenario, injected assessment, canonical
 corrective record wherever it is delivered, timing, frozen seed, and
@@ -87,15 +92,15 @@ change relay coverage and are excluded. Measured arm execution order is
 rotated by a stable assumption/seed hash. All four arms are collected within
 one run (`--scope-ladder --scope-protocol tool_v2`).
 
-### Optional mechanism controls
+### Prespecified mechanism controls
 
-The following conditions are added only with `--scope-controls`. They are not
-fifth and sixth levels of an ordinal ladder and are not included in the three
-primary contrasts.
+The confirmatory run includes the following conditions via `--scope-controls`.
+They are not fifth and sixth levels of an ordinal ladder and are not included
+in the three primary contrasts.
 
 | control | condition | ordinary-agent treatment from round 2 onward | purpose |
 |---|---|---|---|
-| prompt receipt | `injection_prompt_receipt_control` | exact canonical payload inserted as neutral user-prompt text; no peer tool call | compares identical content presentation with genuine direct tool access |
+| prompt receipt | `injection_prompt_receipt_control` | exact canonical payload inserted as neutral user-prompt text; no peer tool call | tests whether the direct arm requires a personal tool exchange or follows from direct matched presentation |
 | tool placebo | `injection_tool_placebo` | forced `read_case_record` interaction returning a canonical non-diagnostic payload; matched verifier testimony is still visible | tests whether an extra forced tool turn changes behavior without corrective content |
 
 The prompt-receipt payload is content-matched to the direct tool result. The
@@ -130,22 +135,23 @@ The primary report gives three paired adjacent-arm contrasts rather than one
   `injection_tool_none`.
 - **C2 — exact-relay effect:** `injection_tool_relay` minus
   `injection_tool_testimony`.
-- **C3 — direct-tool effect:** `injection_tool_direct` minus
+- **C3 — direct-recipient-delivery effect:** `injection_tool_direct` minus
   `injection_tool_relay`.
 
 Each contrast is estimated for ordinary-neutral final accuracy and group
-accuracy. C3 is the main direct-access test. C1 and C2 explain *why* C3 is or is
-not different: a C1 effect localizes benefit to testimony, a C2 effect to
+accuracy. C3 is the main direct-delivery test. C1 and C2 explain *why* C3 is or
+is not different: a C1 effect localizes benefit to testimony, a C2 effect to
 source preservation, and a C3 effect to bypassing the conversational carrier.
 A null C3 with a positive C2 would mean provenance survives relay adequately;
 a positive C3 after a null C2 would identify the agent-mediated channel as the
-bottleneck.
+bottleneck. C3 alone is not interpreted as evidence that tool invocation is
+causal; that narrower claim requires the prompt-receipt control.
 
-When optional controls are collected, three additional contrasts are
-mechanism checks rather than primary tests: direct tool minus prompt receipt,
+Three additional prespecified contrasts are mechanism checks rather than
+primary tests: direct tool minus prompt receipt,
 placebo tool minus testimony, and direct tool minus placebo tool. Respectively,
-they probe tool access beyond matched prompt presentation, tool-turn mechanics
-without evidence, and diagnostic versus non-diagnostic tool output.
+they probe the tool channel beyond matched direct presentation, tool-turn
+mechanics without evidence, and diagnostic versus non-diagnostic tool output.
 
 The directional expectation is non-negative accuracy change for each adjacent
 contrast, but no monotonic ordering is required and any inversion is reported.
@@ -183,10 +189,11 @@ record in round 1; peers first respond to the resulting testimony, relay, or
 direct tool result in round 2 and receive the assigned route again in round 3.
 
 Conditions, all collected within the same run: the four primary `tool_v2`
-delivery arms above, with the two mechanism controls only when explicitly
-enabled. `no_injection_baseline` (seed receives a neutral note instead of the
-injection) and `independent_control` (baseline information, 1 round, no
-messages) are reference conditions, not scope arms.
+delivery arms and both mechanism controls above. `no_injection_baseline` (seed
+receives a neutral note instead of the injection and the verifier receives the
+standard corroborating record) is an uncorrupted reference condition, not a
+scope arm and not a pure no-record control. `independent_control` is omitted
+from the confirmatory run.
 
 Primary topology: `fully_connected_mesh` only.
 
@@ -202,15 +209,43 @@ agent and only pooling identifies the compliant option.
   `scripts/build_hidden_profile_scenarios.py`. Lone-agent accuracy is 10%,
   below the 25% chance rate.
 
-**Models.** Two families, same tier, to prevent a single-model result:
-`azure:gpt-5.4-mini` and `claude-haiku-4-5-20251001`. The semantic judge is
-`claude-sonnet-5` and is deliberately a different model from either subject, so
-that no subject model judges its own output.
+**Subject model.** One frozen Azure deployment, recorded in the run manifest as
+`azure:gpt-5-mini`. The request omits a custom temperature
+(`--temperature none`) because the deployment rejects it. No second subject
+model is part of the confirmatory claim. A separately labelled replication on
+another model may be reported later but is never pooled with this run. A
+semantic judge, if used, is post-hoc and cannot affect any primary outcome.
 
 **Sample size.** 33 scenarios × 2 primary semantic types (factual and causal)
-× 1 topology × 3 seed instances × 4 primary delivery arms, plus any explicitly
-declared reference conditions and optional mechanism controls, per model
-family. Scenario is the unit of generalization; 33 clusters.
+× 1 topology × 3 frozen seed instances × 6 collected injection conditions
+(4 primary arms + 2 mechanism controls), plus 1 uncorrupted reference
+conversation per scenario/type. This gives 198 seed generations, 1,188
+injection conversations, 66 reference conversations, 1,254 conversations in
+total, and 20,064 planned agent-round records. Scenario is the unit of
+generalization; there are 33 clusters. Framing and independent controls are
+not collected.
+
+**Frozen collection command.** The run starts from a clean committed worktree
+with the deployment environment variable set to `gpt-5-mini`:
+
+```powershell
+uv run python scripts/run_pilot.py `
+  --client azure `
+  --data data/scenarios_hidden_profile_candidates.json `
+  --variants factual causal `
+  --scope-ladder `
+  --scope-protocol tool_v2 `
+  --scope-controls `
+  --topologies fully_connected_mesh `
+  --n-seeds 3 `
+  --baseline-reps 1 `
+  --skip-independent `
+  --rounds 4 `
+  --temperature none `
+  --max-completion-tokens 8000 `
+  --verbose `
+  --tag confirmatory_scope33_gpt5mini
+```
 
 ---
 
@@ -225,8 +260,17 @@ The three primary estimates are C1, C2, and C3 above, each expressed as the
 paired difference in ordinary-neutral final accuracy (to arm minus from arm).
 Group accuracy is the key team-level secondary endpoint.
 
-**Power.** `[ RECOMPUTE FOR 33 scenario clusters, three paired adjacent-arm
-contrasts, and the exploratory intracluster correlation before committing. ]`
+**Sample-size justification.** The 33 scenarios are the complete fixed corpus
+that passed the oracle and no-pooling gates, so the number of independent
+clusters is a corpus census rather than an effect-size-optimized choice. The
+8-scenario `tool_v2` mechanism pilot estimated ordinary-neutral differences of
++0.156 for C1, +0.219 for C2, and +0.562 for C3. Under the prespecified Holm
+family, the corresponding exploratory bootstrap p-values imply approximately
+0.0544, 0.0544, and <0.0001 after adjustment. Those tuned-pilot values are not
+treated as prospective power guarantees. Expanding to all 33 scenario clusters
+and three seed instances is intended to improve cluster-level precision and
+stability; inference is based on the confirmatory effect estimates and
+intervals, not on post-hoc observed power.
 
 Fixed choices, made before seeing confirmatory data:
 
@@ -248,13 +292,16 @@ where arms share scenarios. Supporting model: GEE logistic regression,
 exchangeable working correlation within scenario, robust standard errors.
 
 **Multiplicity.** Holm correction across C1, C2, and C3 for the primary
-ordinary-neutral accuracy endpoint. No endpoint is interpreted through a
-single assumed monotonic trend.
+ordinary-neutral accuracy endpoint. Raw bootstrap p-values, Holm-adjusted
+p-values, and unadjusted 95% cluster-bootstrap intervals are all reported. No
+endpoint is interpreted through a single assumed monotonic trend.
 
-**Decision rule.** An adjacent-route benefit is supported only if its 95% CI
-excludes zero in the positive direction after Holm correction. Null and
-negative contrasts are retained and interpreted as evidence about where the
-delivery bottleneck is not located.
+**Decision rule.** An adjacent-route benefit is supported only when its point
+estimate is positive and its Holm-adjusted two-sided bootstrap p-value is below
+0.05. The accompanying 95% intervals are unadjusted and descriptive of
+precision; Holm is applied to p-values, not retroactively to those intervals.
+Null and negative contrasts are retained and interpreted as evidence about
+where the delivery bottleneck is not located.
 
 ---
 
@@ -272,7 +319,9 @@ Reported with CIs, **unadjusted for multiplicity, and labelled exploratory**:
    whose seed adopted the assumption at round 0. This is a post-randomisation
    conditioning and is **not** causal; it is reported because a conversation
    whose seed never adopted cannot show propagation.
-6. No-consensus, deferral, and uncertainty-language rates by arm.
+6. No-consensus, explicit option-E deferral, and uncertainty-language rates by
+   arm, reported separately. A tie is not relabelled as deferral, and no
+   combined `defer_or_tie` endpoint is confirmatory.
 7. Resistance by ordinary-neutral role: correct-option clearance holder versus
    other-disqualification holder.
 8. Trap-adoption trajectory across rounds 0–3.
@@ -323,21 +372,22 @@ it is designed to be robust to it.
 
 Consequences, fixed in advance:
 
-1. **Every delivery contrast is within-run.** All four delivery arms are
-   collected inside one run against the same frozen seed instances. Baseline
-   and independent controls are collected in that run as reference conditions
-   but do not replay an injected seed. Delivery route is a condition, not a
-   run-level flag, so all four primary arms share run-level state.
+1. **Every delivery contrast is within-run.** All four delivery arms and both
+   mechanism controls are collected inside one run against the same frozen
+   seed instances. The uncorrupted reference is collected in that run but does
+   not replay an injected seed. Delivery route is a condition, not a run-level
+   flag, so all primary arms share run-level state.
 2. **No cross-run contrast is reported as a result.** A control collected in a
-   different run — including the same day — is not a valid comparison. This
-   applies to the two model families: they are reported as two separate
-   within-run arm contrasts, never as a cross-run difference.
+   different run — including the same day — is not a valid comparison. Any
+   later model replication is reported separately and never pooled with the
+   `gpt-5-mini` confirmatory run.
 3. **Absolute rates are not claimed to generalize.** Claims are restricted to
    paired within-run contrasts.
 4. **Round-0 probe accompanies every run**, checked with
    `scripts/check_drift.py` (joint homogeneity test as the headline statistic;
    pairwise comparisons are exploratory and unadjusted).
-5. Model identifier and temperature recorded in every row are reported.
+5. Model identifier, omitted custom temperature, completion-token limit, SDK
+   timeout, and retry policy are frozen in the run provenance and reported.
 
 **Implication for prior work.** With single-run 95% CIs spanning 15–20
 percentage points, the roughly twenty calibration pilots could not resolve
@@ -354,32 +404,32 @@ motivation for §0.
 scripts/run_pilot.py            # data collection
 scripts/propagation_report.py   # role x round diagnostics
 scripts/analyze_run.py          # per-conversation summaries and aggregates
-scripts/analyze_statistics.py   # primary outcomes, CIs, GEE
+scripts/analyze_statistics.py   # primary outcomes, CIs, Holm p-values, GEE
 scripts/check_drift.py          # round-0 comparability
 ```
 
 The confirmatory run is analysed once with this pipeline. Any change to the
 analysis after seeing confirmatory data is logged in §9.
 
-**Measurement validity precondition.** The answer/rationale incoherence rate
-must be established by hand-labelling before this file is committed. Two
-regexes disagree (5% vs 30%) and neither is trusted. A hand-labelled sample of
-~100 verifier rationales at the round-1 release goes in `data/human_labels/`,
-labelled by someone not working on the analysis code. If the rate is high, the
-coding of
-the primary outcome is in question and that must be known in advance, not
-discovered afterwards.
+**Answer/rationale scope.** The primary outcome is the parsed answer letter,
+not a rationale-derived label. Answer/rationale consistency flags and any
+judge-derived evidence-use labels are secondary quality diagnostics. They are
+reported with coverage and uncertainty and cannot override or exclude a valid
+primary answer. Any hand-labelled rationale sample is therefore useful
+measurement validation for qualitative claims, but is not a precondition for
+the answer-based confirmatory analysis.
 
 ---
 
 ## 8. What is explicitly NOT confirmatory
 
-- All runs before this file's commit date, including the 2026-08-03 exploratory
-  prompt-v1 scope-ladder run used to motivate the mechanism in §1.
+- All runs before this file's commit date, including the 2026-08-03 prompt-v1
+  scope run and the 2026-08-04 eight-scenario `tool_v2` mechanism run used to
+  choose controls and finalize the estimands.
 - The entire scenario-calibration history (`docs/scenario_design_and_calibration.md`).
-- The crowding-out account in §1 — generated from two seeds of one scenario
-  (`vendor_001`) and then widened by an exploratory run. It is the hypothesis
-  under test here, not a finding.
+- All exploratory magnitudes used in the sample-size justification, including
+  the observed equality of direct tool and prompt receipt. Those observations
+  motivated the mechanism controls but are not confirmatory findings.
 - **The speaker-standing dissociation**, which was the previous version's H1. It
   is not tested and cannot be tested with this corpus: the builder *enforces*
   that the seed owns the trap option, so every scenario is standing-high by
@@ -387,8 +437,9 @@ discovered afterwards.
 - The between-run instability in §6 — discovered post hoc, from three runs of a
   single scenario. It is reported as an observation motivating the within-run
   design, not as a tested hypothesis, and no causal account of it is claimed.
-- The observation that recovery proceeds without corrective evidence, which
-  motivated the ablation arm but was itself observed exploratorily.
+- Any prompt-v1 crowding-out, deferral, or no-decision account. Those historical
+  observations use a different delivery protocol and are not pooled with
+  `tool_v2`.
 
 ---
 
@@ -401,4 +452,7 @@ the paper is submitted.
 |------|-----------|--------|
 | 2026-08-03 | Primary hypothesis replaced. The previous H1 (speaker-standing dissociation) is dropped and replaced by the three-part scope-ladder prediction. | The standing manipulation is not implemented and is blocked by a corpus invariant (§8). The scope ladder is the design that was actually built. |
 | 2026-08-03 | Primary evidence-scope runs drop the `framing` semantic type (`--variants factual causal`); framing is retained only for separately labelled follow-up work. | Framing asks the agent to override a hard constraint and has a different uptake precondition, so pooling it with factual and causal variants would confound evidence delivery with manipulation validity. |
-| 2026-08-04 | The current primary scope implementation changes from prompt-rendered receipts (`prompt_v1`) to genuine forced function calls (`tool_v2`), with new condition IDs. Prompt receipt and tool placebo are optional mechanism controls, not primary arms. | A prompt block labelled as a service receipt measures presentation and source labelling, not actual backend evidence access. The v2 flow isolates testimony, exact relay, and first-party tool access while preserving legacy runs as a separate protocol. |
+| 2026-08-04 | The current primary scope implementation changes from prompt-rendered receipts (`prompt_v1`) to forced function calls (`tool_v2`), with new condition IDs. | The v2 flow separately identifies testimony, exact relay, direct recipient delivery, and tool mechanics while preserving legacy runs as a separate protocol. |
+| 2026-08-04 | Prompt receipt and tool placebo are included as prespecified mechanism controls across the full corpus. | The exploratory eight-scenario run found direct tool and matched prompt receipt both at ceiling while placebo remained near no correction. Full-corpus controls are necessary to distinguish evidence content and delivery from tool-turn mechanics; they remain outside the Holm-adjusted primary family. |
+| 2026-08-04 | The confirmatory subject model is the single Azure deployment `azure:gpt-5-mini`; the earlier two-family plan is removed. | The implemented runner and completed compatibility gates use this deployment. A hypothetical unimplemented model family cannot be preregistered as collected data. |
+| 2026-08-04 | C3 is interpreted as direct recipient delivery minus agent-mediated relay, not as a tool-invocation effect. | The prompt-receipt control gives recipients identical evidence without their own tool call, so tool-specific attribution requires that separate control contrast. |

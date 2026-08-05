@@ -165,10 +165,10 @@ CONDITION_LABELS = {
     "injection_tool_none": "1T no corrective tool",
     "injection_tool_testimony": "2T verifier tool + testimony",
     "injection_tool_relay": "3T verifier tool + record relay",
-    "injection_tool_direct": "4T direct corrective tool",
+    "injection_tool_direct": "4T direct recipient tool result",
     "injection_prompt_receipt_control": "CT prompt receipt control",
     "injection_tool_placebo": "CT non-diagnostic tool placebo",
-    "no_injection_baseline":   "-  honest baseline",
+    "no_injection_baseline":   "-  uncorrupted reference",
     "independent_control":     "-  no communication",
 }
 
