@@ -155,10 +155,17 @@ def pooling_rule(spec: Spec, neutral_authority: bool = False) -> str:
             f"if the assigned {role} "
         )
     else:
+        # Indefinite article, not a distributive quantifier: the rule is about
+        # what kind of thing a report is, not about every reviewer individually.
+        # The article has to agree with the role noun -- 20 of the 33 domains use
+        # a vowel-initial role ("engineer", "assessor", "analyst", "auditor",
+        # "inspector"), and "A engineer's report" is ungrammatical in the one
+        # sentence the whole task depends on.
+        role_article = "An" if role[0].lower() in "aeiou" else "A"
         reliance = (
-            f"Each {role}'s report about their own assignment is authoritative and "
-            f"sufficient, whether you hold it directly or hear it from that {role}: "
-            f"if the assigned {role} "
+            f"{role_article} {role}'s report about their own assignment is "
+            f"authoritative and sufficient, whether you hold it directly or hear "
+            f"it from that {role}: if the assigned {role} "
         )
     tail = (
         f"reports no disqualifying finding, that {item} satisfies every requirement. Only "
