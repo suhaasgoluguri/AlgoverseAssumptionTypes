@@ -31,6 +31,8 @@ from .clients import (
 )
 from .evidence import CorrectiveRecordStore, sha256_text
 from .prompts import (
+    ATTRIBUTION_MODES,
+    assignment_for_agent,
     build_private_dossier,
     build_round0_prompt,
     build_seed_generation_system_prompt,
@@ -287,6 +289,7 @@ async def run_conversation(
     corrector_agent_id: Optional[int] = None,
     n_rounds: int = N_ROUNDS,
     withhold_corrective: bool = False,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
     replay_outputs: Optional[dict[tuple[int, int], ParsedResponse]] = None,
     replay_source_conditions: Optional[dict[tuple[int, int], str]] = None,
@@ -373,6 +376,32 @@ async def run_conversation(
 
     def neutral_ordinal_of(agent_id: int) -> Optional[int]:
         return neutral_ids.index(agent_id) if agent_id in neutral_ids else None
+
+    # Speaker attribution. Orthogonal to record provenance: this names WHO is
+    # speaking, the case-record blocks name WHERE the evidence came from.
+    if attribution not in ATTRIBUTION_MODES:
+        raise ValueError(
+            f"unknown attribution mode {attribution!r}; expected one of "
+            f"{ATTRIBUTION_MODES}"
+        )
+    assignments: dict[int, Optional[str]] = {}
+    if attribution == "assigned":
+        for a in AGENT_IDS:
+            assignments[a] = assignment_for_agent(
+                scenario,
+                is_seed=(a == seed_agent_id),
+                is_corrector=(a == corrector_agent_id),
+                neutral_ordinal=neutral_ordinal_of(a),
+            )
+        # Track B only. Failing loudly beats rendering "Agent 2 ()" for half the
+        # group, which would make the factor mean different things per scenario.
+        missing = [a for a, label in assignments.items() if not label]
+        if missing:
+            raise ValueError(
+                f"attribution='assigned' but {scenario.scenario_id} has no parsable "
+                f"assignment for agent(s) {missing}; hidden-profile briefs must open "
+                f"'Your <role> assignment was <Entity>.'"
+            )
 
     run_id = new_run_id()
     outputs: dict[tuple[int, int], ParsedResponse] = {}
@@ -483,6 +512,7 @@ async def run_conversation(
             corrector_agent_id=corrector_agent_id,
             agent_id=agent_id,
             round=round_index,
+            attribution=attribution,
             injection_visible=injection_visible,
             neutral_control_visible=neutral_control_visible,
             corrective_visible=corrective_visible,
@@ -675,6 +705,7 @@ async def run_conversation(
                             )
                             else None
                         ),
+                        assignment=assignments.get(sender),
                     )
                     for sender in received_from
                 ]
@@ -895,6 +926,7 @@ async def run_correction_scope_ladder(
     *,
     topology_name: str = "fully_connected_mesh",
     n_rounds: int = N_ROUNDS,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
 ) -> dict[str, ConversationOutputs]:
     """Run four matched correction-scope arms with a shared prefix.
@@ -932,6 +964,7 @@ async def run_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=available,
             withhold_corrective=True,
+            attribution=attribution,
         )
         prefix_outputs = {
             key: value
@@ -973,6 +1006,7 @@ async def run_correction_scope_ladder(
             withhold_corrective=(arm == "injection_no_correction"),
             replay_outputs=replay,
             replay_source_conditions=sources,
+            attribution=attribution,
         )
 
     # Rotate all four measured arms, rather than always collecting the wider
@@ -1008,6 +1042,7 @@ async def run_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=n_rounds,
             withhold_corrective=(arm == "injection_no_correction"),
+            attribution=attribution,
             log_path=log_path,
             replay_outputs=replay,
             replay_source_conditions=sources,
@@ -1025,6 +1060,7 @@ async def run_tool_correction_scope_ladder(
     *,
     topology_name: str = "fully_connected_mesh",
     n_rounds: int = N_ROUNDS,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
     include_controls: bool = False,
 ) -> dict[str, ConversationOutputs]:
@@ -1072,6 +1108,7 @@ async def run_tool_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=available,
             withhold_corrective=True,
+            attribution=attribution,
         )
         prefix_outputs = {
             key: value
@@ -1111,6 +1148,7 @@ async def run_tool_correction_scope_ladder(
             withhold_corrective=(arm == "injection_tool_none"),
             replay_outputs=replay,
             replay_source_conditions=sources,
+            attribution=attribution,
         )
 
     base_order = list(TOOL_CORRECTION_SCOPE)
@@ -1152,6 +1190,7 @@ async def run_tool_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=n_rounds,
             withhold_corrective=(arm == "injection_tool_none"),
+            attribution=attribution,
             log_path=log_path,
             replay_outputs=replay,
             replay_source_conditions=sources,
@@ -1176,6 +1215,7 @@ async def run_matched_triple(
     n_rounds: int = N_ROUNDS,
     condition: str = "injection",
     withhold_corrective: bool = False,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
 ) -> dict[str, ConversationOutputs]:
     """Replay ONE frozen seed across all three topologies (the matched triple).
@@ -1197,6 +1237,7 @@ async def run_matched_triple(
             frozen_seed=frozen_seed,
             n_rounds=n_rounds,
             withhold_corrective=withhold_corrective,
+            attribution=attribution,
             log_path=log_path,
         )
     return results

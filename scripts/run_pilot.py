@@ -170,6 +170,7 @@ def _validate_run_outputs(
     independent_reps: int,
     skip_independent: bool,
     injection_conditions: tuple[str, ...] = ("injection",),
+    attribution_modes: tuple[str, ...] = ("anonymous",),
 ) -> dict[str, object]:
     """Fail closed before a raw run is marked complete.
 
@@ -248,7 +249,7 @@ def _validate_run_outputs(
 
     # Keyed by condition: the injection and ablation arms each form their own
     # complete (seed x topology) grid when both are collected in one run.
-    injection_coordinates: dict[str, list[tuple[str, str]]] = defaultdict(list)
+    injection_coordinates: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
     baseline_coordinates: Counter = Counter()
     independent_coordinates: Counter = Counter()
     result_by_run: dict[str, dict] = {}
@@ -276,11 +277,17 @@ def _validate_run_outputs(
                     f"injection result {run_id!r} does not match frozen seed "
                     f"{seed_id!r}'s scenario/assumption"
                 )
-            injection_coordinates[condition].append((seed_id, topology))
+            # Attribution is crossed with every arm, so it belongs in the
+            # coordinate; without it a both-modes run reads as duplicates.
+            injection_coordinates[condition].append(
+                (seed_id, topology, row.get("attribution") or "anonymous")
+            )
         elif condition == "no_injection_baseline":
             if seed_id is not None or topology not in topologies:
                 raise ValueError(f"baseline result {run_id!r} has invalid metadata")
-            baseline_coordinates[(assumption_id, topology)] += 1
+            baseline_coordinates[
+                (assumption_id, topology, row.get("attribution") or "anonymous")
+            ] += 1
         elif condition == "independent_control":
             if seed_id is not None or topology != "independent":
                 raise ValueError(
@@ -291,9 +298,10 @@ def _validate_run_outputs(
             raise ValueError(f"result {run_id!r} has unknown condition {condition!r}")
 
     expected_injection_coordinates = {
-        (seed_id, topology)
+        (seed_id, topology, attribution)
         for seed_id in replayable_seed_ids
         for topology in topologies
+        for attribution in attribution_modes
     }
     expected_arms = set() if skip_injection else set(injection_conditions)
     observed_arms = set(injection_coordinates)
@@ -312,7 +320,10 @@ def _validate_run_outputs(
     if not skip_baselines:
         for assumption_id in selected_assumption_ids:
             for topology in topologies:
-                expected_baseline_coordinates[(assumption_id, topology)] = baseline_reps
+                for attribution in attribution_modes:
+                    expected_baseline_coordinates[
+                        (assumption_id, topology, attribution)
+                    ] = baseline_reps
     if baseline_coordinates != expected_baseline_coordinates:
         raise ValueError("baseline result grid differs from the replicate plan")
     expected_independent_coordinates = Counter()
@@ -387,7 +398,11 @@ def _validate_run_outputs(
             result = result_by_run[run_id]
             if result["condition"] not in scope_conditions:
                 continue
-            scope_groups[(result["seed_instance_id"], result["topology"])][
+            scope_groups[(
+                result["seed_instance_id"],
+                result["topology"],
+                result.get("attribution") or "anonymous",
+            )][
                 result["condition"]
             ] = conversation
 
@@ -403,8 +418,8 @@ def _validate_run_outputs(
             )
 
         for coordinate in expected_injection_coordinates:
-            seed_id, topology = coordinate
-            arms = scope_groups.get((seed_id, topology), {})
+            seed_id, topology, attribution = coordinate
+            arms = scope_groups.get((seed_id, topology, attribution), {})
             if set(arms) != set(scope_conditions):
                 raise ValueError(f"scope group {coordinate!r} is incomplete")
             by_arm = {
@@ -626,6 +641,7 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
     # seed inside this run. Round-0 behaviour varies enough between runs that a
     # between-run ablation contrast is not identifiable; replaying one seed into
     # both arms makes the comparison paired and within-run.
+    modes = ("anonymous", "assigned") if args.attribution == "both" else (args.attribution,)
     arms = [("injection", False)]
     if args.ablation_arm:
         arms.append(("injection_no_correction", True))
@@ -635,50 +651,55 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
     for seed in seeds:
         if not seed.answer:
             continue  # nothing to replay; the failure is already logged
+        # Attribution is crossed INSIDE the run. An attributed run compared
+        # against an anonymous one would be a cross-run contrast, which the
+        # between-run instability protocol rules out.
         conversations = []
-        if args.scope_ladder:
-            if args.scope_protocol == "tool_v2":
-                ladder = await run_tool_correction_scope_ladder(
-                    scenario,
-                    variant,
-                    seed,
-                    client,
-                    topology_name=args.topologies[0],
-                    n_rounds=args.rounds,
-                    log_path=paths["records"],
-                    include_controls=args.scope_controls,
-                )
-            else:
-                ladder = await run_correction_scope_ladder(
-                    scenario,
-                    variant,
-                    seed,
-                    client,
-                    topology_name=args.topologies[0],
-                    n_rounds=args.rounds,
-                    log_path=paths["records"],
-                )
-            conversations.extend(
-                (arm_condition, args.topologies[0], result)
-                for arm_condition, result in ladder.items()
-            )
-        else:
-            for arm_condition, arm_withhold in arms:
-                triple = await run_matched_triple(
-                    scenario,
-                    variant,
-                    seed,
-                    client,
-                    topologies=tuple(args.topologies),
-                    n_rounds=args.rounds,
-                    condition=arm_condition,
-                    withhold_corrective=arm_withhold,
-                    log_path=paths["records"],
-                )
-                conversations.extend(
-                    (arm_condition, topology_name, result)
-                    for topology_name, result in triple.items()
-                )
+        for attribution in modes:
+          if args.scope_ladder:
+              if args.scope_protocol == "tool_v2":
+                  ladder = await run_tool_correction_scope_ladder(
+                      scenario,
+                      variant,
+                      seed,
+                      client,
+                      topology_name=args.topologies[0],
+                      n_rounds=args.rounds,
+                      log_path=paths["records"],
+                      include_controls=args.scope_controls,
+                        attribution=attribution,
+                  )
+              else:
+                  ladder = await run_correction_scope_ladder(
+                      scenario,
+                      variant,
+                      seed,
+                      client,
+                      topology_name=args.topologies[0],
+                      n_rounds=args.rounds,
+                      log_path=paths["records"],
+                  )
+              conversations.extend(
+                  (arm_condition, args.topologies[0], result)
+                  for arm_condition, result in ladder.items()
+              )
+          else:
+              for arm_condition, arm_withhold in arms:
+                  triple = await run_matched_triple(
+                      scenario,
+                      variant,
+                      seed,
+                      client,
+                      topologies=tuple(args.topologies),
+                      n_rounds=args.rounds,
+                      condition=arm_condition,
+                      withhold_corrective=arm_withhold,
+                      log_path=paths["records"],
+                  )
+                  conversations.extend(
+                      (arm_condition, topology_name, result)
+                      for topology_name, result in triple.items()
+                  )
 
         for arm_condition, topology_name, result in conversations:
             summary = summarize_final_round(
@@ -692,6 +713,7 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                 "assumption_id": variant.assumption_id,
                 "seed_instance_id": seed.seed_instance_id,
                 "condition": arm_condition,
+                "attribution": result.records[0].attribution,
                 "topology": topology_name,
                 "arm_sequence_position": result.records[0].arm_sequence_position,
                 **summary,
@@ -773,6 +795,9 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                 "assumption_id": variant.assumption_id,
                 "seed_instance_id": None,
                 "condition": "independent_control",
+                # No peer messages are sent here, so a speaker label cannot
+                # apply. Recorded as n/a rather than null.
+                "attribution": "n/a",
                 "topology": "independent",
                 **summary,
             }
@@ -782,15 +807,19 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                   f" votes={summary['final_votes']}"
                   f" -> {summary['plurality_answer'] or 'TIE'}")
 
-    # Topology-matched no-injection baselines.
+    # Topology-matched no-injection baselines. Crossed with attribution for the
+    # same reason the arms are: the baseline is what every injected arm is read
+    # against, so it must exist in whichever regime that arm was collected in.
     if not args.skip_baselines:
         for topology_name in args.topologies:
+          for attribution in modes:
             for rep in range(args.baseline_reps):
                 result = await run_conversation(
                     scenario, client=client, topology_name=topology_name,
                     condition="no_injection_baseline", variant=variant,
                     n_rounds=args.rounds,
                     withhold_corrective=args.withhold_corrective,
+                    attribution=attribution,
                     log_path=paths["records"],
                 )
                 summary = summarize_final_round(
@@ -804,6 +833,7 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                     "assumption_id": variant.assumption_id,
                     "seed_instance_id": None,
                     "condition": "no_injection_baseline",
+                    "attribution": attribution,
                     "topology": topology_name,
                     **summary,
                 }
@@ -849,6 +879,18 @@ async def main() -> None:
         help="collect no seeds and no injection arm. The pooling-gap contrast "
              "(oracle ceiling vs distributed group) needs only baselines, so this "
              "runs the primary outcome at a fraction of the cost.",
+    )
+    parser.add_argument(
+        "--attribution",
+        choices=("anonymous", "assigned", "both"),
+        default="anonymous",
+        help="whether a peer message names what its sender was assigned. "
+             "'anonymous' (default) renders 'Agent 3'; 'assigned' renders "
+             "'Agent 3 (assigned: Borealis)'. The pooling rule credits a report "
+             "heard FROM the assigned reviewer, so under 'anonymous' a reader "
+             "cannot tell whether a speaker had standing. This is SPEAKER "
+             "provenance, orthogonal to the RECORD provenance in the case-record "
+             "blocks. 'both' crosses the two modes with every arm inside one run.",
     )
     parser.add_argument(
         "--scope-ladder",
@@ -1084,6 +1126,7 @@ async def main() -> None:
             "withhold_corrective": args.withhold_corrective,
             "ablation_arm": args.ablation_arm,
             "scope_ladder": args.scope_ladder,
+            "attribution": args.attribution,
             "scope_protocol": args.scope_protocol if args.scope_ladder else None,
             "scope_controls": args.scope_controls if args.scope_ladder else False,
             "injection_conditions": list(injection_conditions),
@@ -1160,6 +1203,10 @@ async def main() -> None:
             independent_reps=args.independent_reps,
             skip_independent=args.skip_independent,
             injection_conditions=injection_conditions,
+            attribution_modes=(
+                ("anonymous", "assigned") if args.attribution == "both"
+                else (args.attribution,)
+            ),
         )
     except (OSError, UnicodeError, ValueError) as exc:
         sys.exit(
