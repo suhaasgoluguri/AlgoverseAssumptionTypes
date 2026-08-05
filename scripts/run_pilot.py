@@ -667,7 +667,7 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                       n_rounds=args.rounds,
                       log_path=paths["records"],
                       include_controls=args.scope_controls,
-                        attribution=attribution,
+                      attribution=attribution,
                   )
               else:
                   ladder = await run_correction_scope_ladder(
@@ -678,6 +678,10 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                       topology_name=args.topologies[0],
                       n_rounds=args.rounds,
                       log_path=paths["records"],
+                      # Was missing: a prompt_v1 ladder run with --attribution
+                      # both would have collected two arms that were both
+                      # anonymous, with no error.
+                      attribution=attribution,
                   )
               conversations.extend(
                   (arm_condition, args.topologies[0], result)
@@ -694,6 +698,10 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                       n_rounds=args.rounds,
                       condition=arm_condition,
                       withhold_corrective=arm_withhold,
+                      # Without this the arm loop runs once per attribution mode
+                      # and produces anonymous conversations both times, with no
+                      # error until the completion-integrity check.
+                      attribution=attribution,
                       log_path=paths["records"],
                   )
                   conversations.extend(
@@ -782,6 +790,10 @@ async def run_one_variant(scenario, variant, client, args, paths) -> None:
                 scenario, client=client, topology_name="independent",
                 condition="independent_control", variant=variant,
                 n_rounds=1, withhold_corrective=args.withhold_corrective,
+                # No peer messages are sent in this control, so a speaker label
+                # cannot apply. Recorded as n/a so records.jsonl and
+                # results.jsonl agree instead of one saying "anonymous".
+                attribution="n/a",
                 log_path=paths["records"],
             )
             summary = summarize_final_round(
