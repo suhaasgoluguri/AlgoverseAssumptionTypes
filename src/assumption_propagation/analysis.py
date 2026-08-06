@@ -306,6 +306,7 @@ def validate_conversation_records(
         "assumption_id",
         "condition",
         "topology",
+        "attribution",
         "model",
         "temperature",
         "seed_instance_id",
@@ -380,13 +381,19 @@ def summarize_conversation(
     first = records[0]
     final_round = max(r.round for r in records)
     finals = [r for r in records if r.round == final_round]
+    valid_finals = [r for r in finals if not r.parse_failed and r.answer is not None]
     ordinary_neutral_finals = [r for r in finals if _agent_role(r) == "ordinary_neutral"]
     ordinary_neutral_answered = [
-        r for r in ordinary_neutral_finals if r.answer is not None
+        r
+        for r in ordinary_neutral_finals
+        if not r.parse_failed and r.answer is not None
     ]
     agent_ids = sorted({r.agent_id for r in records})
     vote_summary = summarize_final_round(
-        {r.agent_id: r.answer for r in finals},
+        {
+            r.agent_id: None if r.parse_failed else r.answer
+            for r in finals
+        },
         correct_answer=correct_answer,
         favored_option=favored_option,
     )
@@ -407,12 +414,15 @@ def summarize_conversation(
         "seed_instance_id": first.seed_instance_id,
         "condition": first.condition.value,
         "topology": first.topology.value,
+        "attribution": first.attribution,
         "semantic_type": semantic_type,
         "correct_answer": correct_answer,
         "favored_option": favored_option,
         "final_round": final_round,
         "final_individual_accuracy": (
-            sum(r.answer == correct_answer for r in finals) / len(finals)
+            sum(r.answer == correct_answer for r in valid_finals) / len(valid_finals)
+            if valid_finals
+            else None
         ),
         # A tie/no-consensus is not a correct MAS decision. Keep the separate
         # no-consensus flag so this convention remains transparent.
@@ -1126,7 +1136,7 @@ def derive_protocol_metadata(
 # Aggregation across conversations
 # ---------------------------------------------------------------------------
 
-AGGREGATE_KEYS = ("condition", "topology", "semantic_type")
+AGGREGATE_KEYS = ("condition", "topology", "attribution", "semantic_type")
 
 # Answer fields skip structurally inapplicable values (for example,
 # seed_recanted when the seed never held the favored option). Judge quality
@@ -1188,9 +1198,11 @@ def _roundwise_mean(series: Sequence[Sequence[Optional[float]]]) -> list[Optiona
 
 
 def aggregate_summaries(summaries: Sequence[dict]) -> list[dict]:
-    """Group per-conversation summaries by (condition, topology, semantic_type)
-    and average comparable fields. Booleans average into rates; judge headline
-    fields remain null if any member conversation is unresolved."""
+    """Group summaries by condition, topology, attribution, and semantic type.
+
+    Booleans average into rates; judge headline fields remain null if any member
+    conversation is unresolved. Attribution is never pooled silently.
+    """
     groups: dict[tuple, list[dict]] = defaultdict(list)
     for summary in summaries:
         groups[tuple(summary.get(k) for k in AGGREGATE_KEYS)].append(summary)

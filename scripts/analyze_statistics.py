@@ -13,15 +13,18 @@ support a published claim here for two reasons:
    conditions, and the run-to-run drift documented in this project means
    overlapping intervals are the norm rather than the exception.
 
-PRIMARY OUTCOME (preregister before running):
-  Non-seed trap adoption at the final round, injection vs matched
-  no-injection baseline, with scenario as the cluster.
+PRIMARY OUTCOME (frozen before the confirmatory run):
+  Ordinary-neutral final accuracy for three paired adjacent delivery-route
+  contrasts: testimony minus none, exact relay minus testimony, and direct
+  recipient delivery minus exact relay, restricted to the fully connected mesh
+  with assigned speaker attribution. Scenario is the cluster. Raw bootstrap
+  p-values for these three tests receive Holm correction.
 
-The seed is excluded from the outcome: seed adoption is the treatment being
-delivered, not propagation. A conversation whose seed never adopted the
-assumption cannot exhibit propagation, so the seed-uptake-conditioned
-estimate is reported alongside the intention-to-treat estimate; they answer
-different questions and both belong in the paper.
+The seed and designated verifier are excluded from the primary population:
+seed adoption is treatment delivery and verifier behavior is mechanically
+affected by holding the corrective record. Group accuracy, trap outcomes,
+seed-uptake-conditioned estimates, semantic-type splits, and mechanism-control
+contrasts are secondary or exploratory.
 
 Usage:
   uv run python scripts/analyze_statistics.py outputs/raw/<stamp>
@@ -75,6 +78,16 @@ DEFER_OPTION = "E"  # same meaning in every scenario by construction
 # the script refuses rather than emitting a publishable-looking number.
 MIN_CLUSTERS = 3
 ADVISORY_CLUSTERS = 8
+PRIMARY_TOPOLOGY = "fully_connected_mesh"
+PRIMARY_ATTRIBUTION = "assigned"
+EXPOSURE_COLUMNS = (
+    "heard_record_backed_corrector_by_final",
+    "exact_relay_received_by_final",
+    "direct_tool_record_received_by_final",
+    "prompt_record_received_by_final",
+    "correction_reached_by_final",
+    "correction_unreached_by_final",
+)
 
 
 def load_keys(
@@ -122,9 +135,11 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
 
     final_round = {}
     answer_at: dict[tuple[str, int, int], str | None] = {}
+    records_by_agent: dict[tuple[str, int], list] = {}
     for r in records:
         final_round[r.run_id] = max(final_round.get(r.run_id, 0), r.round)
         answer_at[(r.run_id, r.agent_id, r.round)] = r.answer
+        records_by_agent.setdefault((r.run_id, r.agent_id), []).append(r)
 
     rows = []
     for r in records:
@@ -134,6 +149,8 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
             continue
         if r.seed_agent_id is not None and r.agent_id == r.seed_agent_id:
             continue  # seed delivers the treatment; it is not the outcome
+        if r.parse_failed:
+            continue  # carried-forward text is not a newly observed final answer
         fav = favored.get(r.assumption_id)
         if fav is None or r.answer is None:
             continue
@@ -155,6 +172,31 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
             and final_round[r.run_id] > pre_scope_round
             else None
         )
+        agent_history = records_by_agent[(r.run_id, r.agent_id)]
+        heard_record_backed_corrector = any(
+            record.corrector_held_record_when_speaking is True
+            for record in agent_history
+        )
+        exact_relay_received = any(
+            record.corrective_record_in_peer_message is True
+            for record in agent_history
+        )
+        direct_tool_received = any(
+            getattr(record.corrective_record_delivery, "value", None)
+            == "direct_tool_record"
+            for record in agent_history
+        )
+        prompt_record_received = any(
+            getattr(record.corrective_record_delivery, "value", None)
+            in ("prompt_receipt_control", "direct_system_record")
+            for record in agent_history
+        )
+        correction_reached = (
+            heard_record_backed_corrector
+            or exact_relay_received
+            or direct_tool_received
+            or prompt_record_received
+        )
         rows.append({
             "run_id": r.run_id,
             "scenario_id": r.scenario_id,
@@ -162,6 +204,7 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
             "semantic_type": (r.assumption_id or "").split("_")[-2]
                              if r.assumption_id else None,
             "topology": r.topology.value,
+            "attribution": r.attribution or "anonymous",
             "condition": r.condition.value,
             "scope_level": SCOPE_LEVEL.get(r.condition.value, 0),
             # `injection` is the two-arm contrast indicator. On a scope-ladder
@@ -176,6 +219,14 @@ def build_frame(run_dir: Path, data_path: Path) -> pd.DataFrame:
             "pre_scope_answer": pre_scope_answer,
             "trap": int(r.answer == fav),
             "correct": int(r.answer == correct_answer),
+            "heard_record_backed_corrector_by_final": int(
+                heard_record_backed_corrector
+            ),
+            "exact_relay_received_by_final": int(exact_relay_received),
+            "direct_tool_record_received_by_final": int(direct_tool_received),
+            "prompt_record_received_by_final": int(prompt_record_received),
+            "correction_reached_by_final": int(correction_reached),
+            "correction_unreached_by_final": int(not correction_reached),
             # True conversion requires a valid non-trap starting answer. Final
             # trap share remains a separate descriptive endpoint.
             "trap_conversion": (
@@ -343,7 +394,13 @@ def build_conversation_frame(run_dir: Path) -> pd.DataFrame:
             "run_id": r.get("run_id"),
             "scenario_id": r.get("scenario_id"),
             "assumption_id": r.get("assumption_id"),
+            "semantic_type": (
+                (r.get("assumption_id") or "").split("_")[-2]
+                if r.get("assumption_id")
+                else ""
+            ),
             "topology": r.get("topology"),
+            "attribution": r.get("attribution") or "anonymous",
             "condition": condition,
             "scope_level": SCOPE_LEVEL.get(condition, 0),
             # A tie has no plurality answer. It is neither correct nor a
@@ -445,6 +502,7 @@ def scope_ladder_report(
     *,
     scope_order: tuple[str, ...] = CORRECTION_SCOPE,
     control_conditions: tuple[str, ...] = (),
+    apply_primary_holm: bool = True,
 ) -> dict:
     """Descriptive arm rates and paired adjacent contrasts.
 
@@ -493,7 +551,7 @@ def scope_ladder_report(
         if not baseline_conversion_rows.empty
         else float("nan")
     )
-    print(f"  matched no-injection baseline trap conversion: {base_conversion:.3f}")
+    print(f"  matched uncorrupted-reference trap conversion: {base_conversion:.3f}")
     print(
         f"\n  {'arm':28s} {'final trap':>10s} {'new trap':>9s} "
         f"{'scope->final':>12s} {'neutral acc':>11s} {'group acc':>10s}"
@@ -549,6 +607,11 @@ def scope_ladder_report(
             "n_retention_opportunities": int(len(retention)),
             "n_conversations": int(len(c)),
         }
+        for exposure_column in EXPOSURE_COLUMNS:
+            if exposure_column in a:
+                row[f"{exposure_column}_rate"] = float(
+                    a[exposure_column].mean()
+                )
         levels[condition] = row
         print(
             f"  {condition_label(condition):28s} {row['final_trap_share']:10.3f} "
@@ -562,11 +625,12 @@ def scope_ladder_report(
     # --- adjacent paired contrasts -----------------------------------------
     adjacent: dict[str, dict] = {}
     if scope_order == TOOL_CORRECTION_SCOPE:
-        pairs = [
+        primary_pairs = [
             ("testimony_minus_none", scope_order[0], scope_order[1]),
             ("relay_minus_testimony", scope_order[1], scope_order[2]),
             ("direct_tool_minus_relay", scope_order[2], scope_order[3]),
         ]
+        pairs = list(primary_pairs)
         prompt_control, placebo_control = TOOL_CORRECTION_CONTROLS
         if prompt_control in controls_present:
             pairs.append(
@@ -580,11 +644,12 @@ def scope_ladder_report(
                 ]
             )
     else:
-        pairs = [
+        primary_pairs = [
             ("verifier_minus_none", scope_order[0], scope_order[1]),
             ("relay_minus_verifier", scope_order[1], scope_order[2]),
             ("direct_minus_relay", scope_order[2], scope_order[3]),
         ]
+        pairs = list(primary_pairs)
     print(
         f"\n{'-' * 74}\n"
         "  ADJACENT PAIRED CONTRASTS (to arm minus from arm; descriptive)\n"
@@ -641,6 +706,65 @@ def scope_ladder_report(
                     f"95% CI [{result['ci_low']:+.3f}, {result['ci_high']:+.3f}]"
                 )
     out["adjacent_contrasts"] = adjacent
+
+    # Holm correction is applied only to the three preregistered adjacent-arm
+    # tests for ordinary-neutral final accuracy. Mechanism controls, group
+    # accuracy, and mechanism outcomes stay outside this family. The 95%
+    # bootstrap intervals above remain unadjusted and are labelled as such in
+    # the preregistration.
+    primary_names = [name for name, _arm_from, _arm_to in primary_pairs]
+    if not apply_primary_holm:
+        out["primary_inference"] = {
+            "applied": False,
+            "reason": "secondary/exploratory subgroup; outside primary Holm family",
+            "family": primary_names,
+        }
+        return out
+
+    raw_p_values: dict[str, float] = {}
+    inference_errors: dict[str, str] = {}
+    for name in primary_names:
+        result = adjacent.get(name, {}).get("ordinary_neutral_accuracy", {})
+        if "error" in result:
+            inference_errors[name] = str(result["error"])
+            continue
+        p_value = result.get("p_value")
+        if p_value is None or not np.isfinite(p_value):
+            inference_errors[name] = "finite bootstrap p-value unavailable"
+            continue
+        raw_p_values[name] = float(p_value)
+
+    primary_inference: dict[str, object] = {
+        "outcome": "ordinary_neutral_accuracy",
+        "family": primary_names,
+        "method": "Holm-Bonferroni across the three primary paired contrasts",
+        "alpha": 0.05,
+        "raw_p_values": raw_p_values,
+    }
+    if inference_errors:
+        primary_inference["errors"] = inference_errors
+        primary_inference["holm_adjusted_p_values"] = None
+        print("\n  PRIMARY HOLM INFERENCE: unavailable")
+        for name, error in inference_errors.items():
+            print(f"    {name}: {error}")
+    else:
+        adjusted = holm(raw_p_values)
+        primary_inference["holm_adjusted_p_values"] = adjusted
+        primary_inference["reject_at_alpha_0_05"] = {
+            name: bool(adjusted[name] < 0.05) for name in primary_names
+        }
+        print("\n  PRIMARY HOLM INFERENCE (ordinary-neutral final accuracy)")
+        for name in primary_names:
+            result = adjacent[name]["ordinary_neutral_accuracy"]
+            result["p_value_holm"] = adjusted[name]
+            result["holm_reject_alpha_0_05"] = bool(adjusted[name] < 0.05)
+            print(
+                f"    {name}: raw p={raw_p_values[name]:.4g}, "
+                f"Holm p={adjusted[name]:.4g}, "
+                f"reject={adjusted[name] < 0.05}"
+            )
+    out["primary_inference"] = primary_inference
+
     # Backward-compatible alias for the formerly separate provenance output.
     provenance_key = (
         "relay_minus_testimony"
@@ -652,6 +776,189 @@ def scope_ladder_report(
             "ordinary_neutral_final_trap_share"
         )
     return out
+
+
+def attribution_effect_report(
+    agent_frame: pd.DataFrame,
+    conv_frame: pd.DataFrame,
+    conditions: list[str],
+) -> dict:
+    """Assigned-minus-anonymous effects within mesh, separately by arm."""
+    ordinary = agent_frame[agent_frame.role == "ordinary_neutral"].copy()
+    out: dict[str, object] = {
+        "population": "ordinary_neutral",
+        "topology": PRIMARY_TOPOLOGY,
+        "comparison": "assigned_minus_anonymous",
+        "contrasts": {},
+    }
+    for condition in conditions:
+        agent_cell = ordinary[ordinary.condition == condition].copy()
+        conv_cell = conv_frame[conv_frame.condition == condition].copy()
+        if agent_cell.empty or conv_cell.empty:
+            continue
+        agent_cell["condition"] = agent_cell["attribution"]
+        conv_cell["condition"] = conv_cell["attribution"]
+        out["contrasts"][condition] = {
+            "label": condition_label(condition),
+            "ordinary_neutral_accuracy": paired_cluster_bootstrap(
+                agent_cell, "correct", "assigned", "anonymous"
+            ),
+            "ordinary_neutral_final_trap_share": paired_cluster_bootstrap(
+                agent_cell, "trap", "assigned", "anonymous"
+            ),
+            "group_accuracy": paired_cluster_bootstrap(
+                conv_cell, "correct", "assigned", "anonymous"
+            ),
+        }
+    return out
+
+
+def factorial_cell_report(
+    agent_frame: pd.DataFrame,
+    conv_frame: pd.DataFrame,
+) -> list[dict]:
+    """Descriptive cells that never average topology or attribution together."""
+    ordinary = agent_frame[agent_frame.role == "ordinary_neutral"]
+    keys = ["condition", "topology", "attribution"]
+    rows: list[dict] = []
+    for key, agents in ordinary.groupby(keys, dropna=False):
+        condition, topology, attribution = key
+        conversations = conv_frame[
+            (conv_frame.condition == condition)
+            & (conv_frame.topology == topology)
+            & (conv_frame.attribution == attribution)
+        ]
+        row = {
+            "condition": condition,
+            "topology": topology,
+            "attribution": attribution,
+            "n_scenarios": int(agents.scenario_id.nunique()),
+            "n_ordinary_neutral_rows": int(len(agents)),
+            "n_conversations": int(len(conversations)),
+            "ordinary_neutral_accuracy": float(agents.correct.mean()),
+            "ordinary_neutral_final_trap_share": float(agents.trap.mean()),
+            "group_accuracy": (
+                float(conversations.correct.mean())
+                if not conversations.empty
+                else None
+            ),
+            "group_deferral_rate": (
+                float(conversations.defer.mean())
+                if not conversations.empty
+                else None
+            ),
+            "group_tie_rate": (
+                float(conversations.tie.mean())
+                if not conversations.empty
+                else None
+            ),
+        }
+        for exposure_column in EXPOSURE_COLUMNS:
+            if exposure_column in agents:
+                row[f"{exposure_column}_rate"] = float(
+                    agents[exposure_column].mean()
+                )
+        rows.append(row)
+    return rows
+
+
+def factorial_interaction_report(
+    agent_frame: pd.DataFrame,
+    conv_frame: pd.DataFrame,
+    scope_order: tuple[str, ...],
+) -> dict:
+    """Descriptive arm x topology x attribution interaction decomposition.
+
+    These are transparent difference-in-differences, not additional
+    confirmatory tests. Inferential claims remain restricted to the primary
+    mesh/assigned family.
+    """
+    ordinary = agent_frame[agent_frame.role == "ordinary_neutral"]
+    if scope_order == TOOL_CORRECTION_SCOPE:
+        pairs = (
+            ("testimony_minus_none", scope_order[0], scope_order[1]),
+            ("relay_minus_testimony", scope_order[1], scope_order[2]),
+            ("direct_tool_minus_relay", scope_order[2], scope_order[3]),
+        )
+    else:
+        pairs = (
+            ("verifier_minus_none", scope_order[0], scope_order[1]),
+            ("relay_minus_verifier", scope_order[1], scope_order[2]),
+            ("direct_minus_relay", scope_order[2], scope_order[3]),
+        )
+
+    def rates(frame: pd.DataFrame, outcome: str) -> dict[tuple[str, str, str], float]:
+        return {
+            tuple(key): float(value)
+            for key, value in frame.groupby(
+                ["condition", "topology", "attribution"]
+            )[outcome].mean().items()
+        }
+
+    outcomes = {
+        "ordinary_neutral_accuracy": rates(ordinary, "correct"),
+        "group_accuracy": rates(conv_frame, "correct"),
+    }
+    report: dict[str, object] = {
+        "status": "exploratory_descriptive",
+        "primary_reference_cell": {
+            "topology": PRIMARY_TOPOLOGY,
+            "attribution": PRIMARY_ATTRIBUTION,
+        },
+        "outcomes": {},
+    }
+    for outcome_name, rate_map in outcomes.items():
+        outcome_report: dict[str, object] = {}
+        for contrast_name, arm_from, arm_to in pairs:
+            effects: dict[tuple[str, str], float] = {}
+            for topology in sorted(agent_frame.topology.unique()):
+                for attribution in sorted(agent_frame.attribution.unique()):
+                    from_key = (arm_from, topology, attribution)
+                    to_key = (arm_to, topology, attribution)
+                    if from_key in rate_map and to_key in rate_map:
+                        effects[(topology, attribution)] = (
+                            rate_map[to_key] - rate_map[from_key]
+                        )
+            attribution_modification = {}
+            for topology in sorted(agent_frame.topology.unique()):
+                assigned = effects.get((topology, "assigned"))
+                anonymous = effects.get((topology, "anonymous"))
+                if assigned is not None and anonymous is not None:
+                    attribution_modification[topology] = assigned - anonymous
+            topology_modification = {}
+            for attribution in ("anonymous", "assigned"):
+                mesh = effects.get((PRIMARY_TOPOLOGY, attribution))
+                if mesh is None:
+                    continue
+                topology_modification[attribution] = {
+                    topology: effect - mesh
+                    for (topology, active_attribution), effect in effects.items()
+                    if active_attribution == attribution
+                    and topology != PRIMARY_TOPOLOGY
+                }
+            mesh_attr_modification = attribution_modification.get(PRIMARY_TOPOLOGY)
+            three_way = (
+                {
+                    topology: value - mesh_attr_modification
+                    for topology, value in attribution_modification.items()
+                    if topology != PRIMARY_TOPOLOGY
+                }
+                if mesh_attr_modification is not None
+                else {}
+            )
+            outcome_report[contrast_name] = {
+                "from_condition": arm_from,
+                "to_condition": arm_to,
+                "scope_effect_by_cell": {
+                    f"{topology}|{attribution}": effect
+                    for (topology, attribution), effect in sorted(effects.items())
+                },
+                "attribution_modification_by_topology": attribution_modification,
+                "topology_modification_vs_mesh_by_attribution": topology_modification,
+                "three_way_modification_vs_mesh": three_way,
+            }
+        report["outcomes"][outcome_name] = outcome_report
+    return report
 
 
 def report_block(title: str, frame: pd.DataFrame) -> dict:
@@ -673,7 +980,10 @@ def report_block(title: str, frame: pd.DataFrame) -> dict:
           f"95% CI [{boot['ci_low']:+.3f}, {boot['ci_high']:+.3f}]  "
           f"({boot['n_clusters']} scenario clusters)")
     crosses = boot["ci_low"] <= 0 <= boot["ci_high"]
-    print(f"  -> {'NOT significant (CI includes 0)' if crosses else 'significant at 95%'}")
+    print(
+        "  -> unadjusted 95% interval "
+        f"{'includes' if crosses else 'excludes'} 0"
+    )
 
     model = gee_logistic(frame)
     if "error" in model:
@@ -690,7 +1000,13 @@ def main() -> None:
     parser.add_argument("run_dir", type=Path)
     parser.add_argument("--data", type=Path, default=None)
     parser.add_argument("--by-topology", action="store_true")
+    parser.add_argument("--by-attribution", action="store_true")
     parser.add_argument("--by-semantic-type", action="store_true")
+    parser.add_argument(
+        "--factorial",
+        action="store_true",
+        help="emit every arm/topology/attribution cell and descriptive interactions",
+    )
     parser.add_argument("--json", type=Path, default=None)
     args = parser.parse_args()
 
@@ -744,6 +1060,21 @@ def main() -> None:
             "carried_forward": carried_forward,
             "zero_parse_failures": parse_failures == 0,
         },
+        "analysis_hierarchy": {
+            "primary": {
+                "topology": PRIMARY_TOPOLOGY,
+                "attribution": PRIMARY_ATTRIBUTION,
+                "family": "three adjacent correction-scope contrasts",
+            },
+            "secondary": [
+                "topology within assigned attribution",
+                "attribution within fully connected mesh",
+            ],
+            "exploratory": [
+                "semantic-type subgroups",
+                "arm x topology x attribution interactions",
+            ],
+        },
     }
 
     # A scope run holds four different treatments. The legacy two-arm path
@@ -770,11 +1101,40 @@ def main() -> None:
         if len(legacy_arms) > 1:
             out["scope_protocol"] = "prompt_v1"
     out["ladder_arms_present"] = arms
+    conv_frame = build_conversation_frame(args.run_dir)
     if len(arms) > 1:
-        conv_frame = build_conversation_frame(args.run_dir)
+        primary_frame = frame[
+            (frame.topology == PRIMARY_TOPOLOGY)
+            & (frame.attribution == PRIMARY_ATTRIBUTION)
+        ]
+        primary_conv_frame = conv_frame[
+            (conv_frame.topology == PRIMARY_TOPOLOGY)
+            & (conv_frame.attribution == PRIMARY_ATTRIBUTION)
+        ]
+        if primary_frame.empty or primary_conv_frame.empty:
+            if frame.topology.nunique() == 1 and frame.attribution.nunique() == 1:
+                # Historical single-cell runs remain analyzable, but are never
+                # mislabeled as the new confirmatory cell.
+                primary_frame = frame
+                primary_conv_frame = conv_frame
+                out["analysis_hierarchy"]["primary"]["status"] = (
+                    "historical_single_cell_fallback"
+                )
+                out["analysis_hierarchy"]["primary"]["observed_topology"] = str(
+                    frame.topology.iloc[0]
+                )
+                out["analysis_hierarchy"]["primary"]["observed_attribution"] = str(
+                    frame.attribution.iloc[0]
+                )
+            else:
+                sys.exit(
+                    "factorial run lacks the preregistered primary mesh/assigned cell"
+                )
+        else:
+            out["analysis_hierarchy"]["primary"]["status"] = "exact_cell"
         out["scope_ladder"] = scope_ladder_report(
-            frame,
-            conv_frame,
+            primary_frame,
+            primary_conv_frame,
             scope_order=scope_order,
             control_conditions=scope_controls,
         )
@@ -784,17 +1144,24 @@ def main() -> None:
             "arms would average mechanistically different treatments."
             % (len(arms), ", ".join(arms))
         )
-        two_arm = frame[
-            frame.condition.isin((reference_condition, "no_injection_baseline"))
+        two_arm = primary_frame[
+            primary_frame.condition.isin(
+                (reference_condition, "no_injection_baseline")
+            )
         ]
     else:
+        primary_frame = frame
+        primary_conv_frame = conv_frame
         two_arm = frame
 
     report_key = "primary_itt" if len(arms) <= 1 else "reference_two_arm"
     out[report_key] = report_block(
         "PRIMARY (intention-to-treat: all injection conversations)"
         if len(arms) <= 1
-        else "REFERENCE: verifier testimony versus no-injection baseline",
+        else (
+            "REFERENCE (non-primary; all non-seed agents): verifier-testimony "
+            "arm versus uncorrupted reference"
+        ),
         two_arm,
     )
 
@@ -810,27 +1177,110 @@ def main() -> None:
     out[conditioned_key] = report_block(
         "PRIMARY (conditioned on seed uptake: seed actually adopted the assumption)"
         if len(arms) <= 1
-        else "EXPLORATORY: verifier versus baseline, conditioned on seed uptake",
+        else (
+            "EXPLORATORY REFERENCE (all non-seed agents): verifier testimony "
+            "versus uncorrupted reference, conditioned on seed uptake"
+        ),
         conditioned,
     )
 
     if args.by_topology:
         out["by_topology"] = {}
         for topology in sorted(frame.topology.unique()):
-            out["by_topology"][topology] = report_block(
-                f"SECONDARY by topology: {topology}",
-                frame[frame.topology == topology],
+            topology_frame = frame[
+                (frame.topology == topology)
+                & (frame.attribution == PRIMARY_ATTRIBUTION)
+            ]
+            topology_conv = conv_frame[
+                (conv_frame.topology == topology)
+                & (conv_frame.attribution == PRIMARY_ATTRIBUTION)
+            ]
+            if topology_frame.empty:
+                continue
+            if len(arms) > 1:
+                print(
+                    f"\n{'=' * 74}\n"
+                    f"SECONDARY SCOPE ANALYSIS by topology: {topology}\n"
+                    f"{'=' * 74}"
+                )
+                out["by_topology"][topology] = scope_ladder_report(
+                    topology_frame,
+                    topology_conv,
+                    scope_order=scope_order,
+                    control_conditions=scope_controls,
+                    apply_primary_holm=False,
+                )
+            else:
+                out["by_topology"][topology] = report_block(
+                    f"SECONDARY by topology: {topology}",
+                    topology_frame,
+                )
+
+    if args.by_attribution:
+        mesh_frame = frame[frame.topology == PRIMARY_TOPOLOGY]
+        mesh_conv = conv_frame[conv_frame.topology == PRIMARY_TOPOLOGY]
+        out["by_attribution"] = {}
+        for attribution in sorted(mesh_frame.attribution.unique()):
+            attribution_frame = mesh_frame[
+                mesh_frame.attribution == attribution
+            ]
+            attribution_conv = mesh_conv[
+                mesh_conv.attribution == attribution
+            ]
+            if len(arms) > 1:
+                out["by_attribution"][attribution] = scope_ladder_report(
+                    attribution_frame,
+                    attribution_conv,
+                    scope_order=scope_order,
+                    control_conditions=scope_controls,
+                    apply_primary_holm=False,
+                )
+            else:
+                out["by_attribution"][attribution] = report_block(
+                    f"SECONDARY by attribution: {attribution}",
+                    attribution_frame,
+                )
+        if len(arms) > 1:
+            out["attribution_effects_within_mesh"] = attribution_effect_report(
+                mesh_frame,
+                mesh_conv,
+                arms,
             )
 
     if args.by_semantic_type:
         out["by_semantic_type"] = {}
-        for semantic in sorted(t for t in frame.semantic_type.unique() if t):
-            out["by_semantic_type"][semantic] = report_block(
-                f"SECONDARY by semantic type: {semantic}",
-                frame[frame.semantic_type == semantic],
+        for semantic in sorted(t for t in primary_frame.semantic_type.unique() if t):
+            if len(arms) > 1:
+                print(
+                    f"\n{'=' * 74}\n"
+                    f"SECONDARY SCOPE ANALYSIS by semantic type: {semantic}\n"
+                    f"{'=' * 74}"
+                )
+                out["by_semantic_type"][semantic] = scope_ladder_report(
+                    primary_frame[primary_frame.semantic_type == semantic],
+                    primary_conv_frame[
+                        primary_conv_frame.semantic_type == semantic
+                    ],
+                    scope_order=scope_order,
+                    control_conditions=scope_controls,
+                    apply_primary_holm=False,
+                )
+            else:
+                out["by_semantic_type"][semantic] = report_block(
+                    f"SECONDARY by semantic type: {semantic}",
+                    primary_frame[primary_frame.semantic_type == semantic],
+                )
+
+    if args.factorial:
+        out["factorial_cells"] = factorial_cell_report(frame, conv_frame)
+        if len(arms) > 1:
+            out["factorial_interactions"] = factorial_interaction_report(
+                frame,
+                conv_frame,
+                scope_order,
             )
 
-    if args.by_topology or args.by_semantic_type:
+    if args.by_topology or args.by_attribution or args.by_semantic_type or args.factorial:
         print("\nNOTE: secondary contrasts are exploratory and unadjusted for "
               "multiplicity. Report them as such.")
 

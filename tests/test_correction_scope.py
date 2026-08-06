@@ -355,6 +355,51 @@ async def test_tool_ladder_delivery_routes_are_persistent_and_operational(scenar
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("topology_name", ["looped_chain", "neutral_star"])
+async def test_sparse_tool_ladder_tracks_network_limited_relay_coverage(
+    scenario, topology_name
+):
+    outputs = await run_tool_correction_scope_ladder(
+        scenario,
+        scenario.assumption_variants[0],
+        _frozen_seed(scenario),
+        MockClient(),
+        topology_name=topology_name,
+        include_controls=True,
+    )
+    available = scenario.assumption_variants[0].corrective_evidence.available_round
+    first_peer_round = available + 1
+    corrector_id = outputs["injection_tool_relay"].records[0].corrector_agent_id
+
+    for agent_id in range(4):
+        if agent_id == corrector_id:
+            continue
+        relay = next(
+            record
+            for record in outputs["injection_tool_relay"].records
+            if record.agent_id == agent_id and record.round == first_peer_round
+        )
+        testimony = next(
+            record
+            for record in outputs["injection_tool_testimony"].records
+            if record.agent_id == agent_id and record.round == first_peer_round
+        )
+        direct = next(
+            record
+            for record in outputs["injection_tool_direct"].records
+            if record.agent_id == agent_id and record.round == first_peer_round
+        )
+        hears_corrector = corrector_id in relay.received_from
+        assert relay.corrective_record_delivery == (
+            CorrectionDelivery.RELAYED_RECORD
+            if hears_corrector
+            else CorrectionDelivery.NONE
+        )
+        assert testimony.corrector_message_received is hears_corrector
+        assert direct.corrective_record_delivery == CorrectionDelivery.DIRECT_TOOL_RECORD
+
+
+@pytest.mark.asyncio
 async def test_tool_relay_direct_and_placebo_use_canonical_payload_bytes(scenario):
     _, client = await _tool_ladder(scenario)
     record = CorrectiveRecord.from_variant(scenario.assumption_variants[0])

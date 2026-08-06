@@ -6,7 +6,7 @@ into <run_dir>/analysis/:
 
   conversations.jsonl   one summary per conversation (run_id)
   aggregates.jsonl      complete/replayable-conversation means grouped by
-                        condition x topology x semantic type
+                        condition x topology x attribution x semantic type
   conditional_aggregates.jsonl
                         secondary summaries conditional on seed trap uptake
                         and, with judge labels, seed decision reliance
@@ -147,18 +147,48 @@ def _validated_planned_topologies(
     return list(raw)
 
 
+def _validated_planned_attributions(
+    run_manifest: dict | None,
+    injection_summaries: list[dict],
+) -> list[str]:
+    """Resolve the planned speaker-attribution cells for seeded outcomes."""
+    if run_manifest is None:
+        raw = sorted({
+            summary.get("attribution") or "anonymous"
+            for summary in injection_summaries
+        })
+        return raw
+
+    try:
+        declared = run_manifest["protocol"]["attribution"]
+    except (KeyError, TypeError) as exc:
+        # Manifests before the attribution factor used anonymous peer headers.
+        if not _manifest_version_at_least(run_manifest, (1, 4)):
+            return ["anonymous"]
+        raise ValueError("manifest is missing protocol.attribution") from exc
+    if declared == "both":
+        return ["anonymous", "assigned"]
+    if declared in ("anonymous", "assigned"):
+        return [declared]
+    raise ValueError(
+        "manifest protocol.attribution must be anonymous, assigned, or both; "
+        f"found {declared!r}"
+    )
+
+
 def _index_injection_summaries(
     summaries: list[dict],
     trial_by_id: dict[str, dict],
     planned_topologies: list[str],
-) -> dict[tuple[str, str, str], list[dict]]:
-    """Index seeded outcomes by arm, seed trial, and topology.
+    planned_attributions: list[str],
+) -> dict[tuple[str, str, str, str], list[dict]]:
+    """Index seeded outcomes by arm, seed, topology, and attribution.
 
     Every corrective-scope arm replays a frozen seed.  Keeping ``condition``
     in the key prevents the four matched outcomes from being mistaken for
     duplicate runs of the legacy single-injection condition.
     """
-    indexed: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
+    indexed: dict[tuple[str, str, str, str], list[dict]] = defaultdict(list)
     for summary in summaries:
         # Legacy callers and hand-built diagnostic summaries predate the
         # condition field; their only possible seeded arm was ``injection``.
@@ -192,7 +222,13 @@ def _index_injection_summaries(
                 f"injection summary {summary['run_id']} does not match seed "
                 f"{seed_id!r}'s scenario/assumption"
             )
-        indexed[(condition, seed_id, summary["topology"])].append(summary)
+        attribution = summary.get("attribution") or "anonymous"
+        if attribution not in planned_attributions:
+            raise ValueError(
+                f"injection summary {summary['run_id']} uses attribution "
+                f"{attribution!r}, which was not in the run plan"
+            )
+        indexed[(condition, seed_id, summary["topology"], attribution)].append(summary)
     return dict(indexed)
 
 
@@ -266,23 +302,25 @@ def _validated_expected_injection_conditions(
 
 
 def _validate_injection_outcome_grid(
-    indexed: dict[tuple[str, str, str], list[dict]],
+    indexed: dict[tuple[str, str, str, str], list[dict]],
     seed_trials: list[dict],
     planned_conditions: list[str],
     planned_topologies: list[str],
+    planned_attributions: list[str],
     *,
     require_complete: bool,
 ) -> None:
-    """Validate one matched outcome per replayable seed/arm/topology cell.
+    """Validate one outcome per replayable seed/arm/topology/attribution cell.
 
     Incomplete runs may omit cells for diagnostics, but duplicate cells and
     outcomes attached to unreplayable seeds are invalid in every run state.
     """
     planned_keys = {
-        (condition, trial["seed_instance_id"], topology)
+        (condition, trial["seed_instance_id"], topology, attribution)
         for trial in seed_trials
         for condition in planned_conditions
         for topology in planned_topologies
+        for attribution in planned_attributions
     }
     extra = sorted(set(indexed) - planned_keys)
     if extra:
@@ -291,24 +329,31 @@ def _validate_injection_outcome_grid(
     for trial in seed_trials:
         for condition in planned_conditions:
             for topology in planned_topologies:
-                key = (condition, trial["seed_instance_id"], topology)
-                count = len(indexed.get(key, []))
-                if count > 1:
-                    raise ValueError(
-                        f"duplicate {condition} outcomes for "
-                        f"{trial['seed_instance_id']} at {topology}"
+                for attribution in planned_attributions:
+                    key = (
+                        condition,
+                        trial["seed_instance_id"],
+                        topology,
+                        attribution,
                     )
-                if count and not trial["replayable"]:
-                    raise ValueError(
-                        f"non-replayable seed {trial['seed_instance_id']} has a "
-                        f"{condition} outcome at {topology}"
-                    )
-                expected = int(trial["replayable"])
-                if require_complete and count != expected:
-                    raise ValueError(
-                        f"completed run has {count} {condition} outcomes for seed "
-                        f"{trial['seed_instance_id']} at {topology}; expected {expected}"
-                    )
+                    count = len(indexed.get(key, []))
+                    if count > 1:
+                        raise ValueError(
+                            f"duplicate {condition} outcomes for "
+                            f"{trial['seed_instance_id']} at {topology}/{attribution}"
+                        )
+                    if count and not trial["replayable"]:
+                        raise ValueError(
+                            f"non-replayable seed {trial['seed_instance_id']} has a "
+                            f"{condition} outcome at {topology}/{attribution}"
+                        )
+                    expected = int(trial["replayable"])
+                    if require_complete and count != expected:
+                        raise ValueError(
+                            f"completed run has {count} {condition} outcomes for seed "
+                            f"{trial['seed_instance_id']} at {topology}/{attribution}; "
+                            f"expected {expected}"
+                        )
 
 
 def _summarize_seed_trial_itt(
@@ -328,6 +373,7 @@ def _summarize_seed_trial_itt(
                 row["correct_answer"],
                 row["favored_option"],
                 row["topology"],
+                row.get("attribution") or "anonymous",
             )
         ].append(row)
 
@@ -351,6 +397,7 @@ def _summarize_seed_trial_itt(
             "correct_answer": key[4],
             "favored_option": key[5],
             "topology": key[6],
+            "attribution": key[7],
             "estimand": "all_attempted_seed_trials",
             "complete_run": complete_run,
             "n_seed_trials": attempted,
@@ -750,6 +797,9 @@ def main() -> None:
         planned_topologies = _validated_planned_topologies(
             run_manifest, raw_injection_summaries
         )
+        planned_attributions = _validated_planned_attributions(
+            run_manifest, raw_injection_summaries
+        )
         planned_injection_conditions = _validated_expected_injection_conditions(
             run_manifest, raw_injection_summaries
         )
@@ -758,7 +808,10 @@ def main() -> None:
 
     try:
         injection_summaries = _index_injection_summaries(
-            raw_injection_summaries, trial_by_id, planned_topologies
+            raw_injection_summaries,
+            trial_by_id,
+            planned_topologies,
+            planned_attributions,
         )
     except ValueError as exc:
         sys.exit(f"refusing malformed injection outcome: {exc}")
@@ -780,6 +833,7 @@ def main() -> None:
             seed_trial_rows,
             planned_injection_conditions,
             planned_topologies,
+            planned_attributions,
             require_complete=(run_state == "complete"),
         )
     except ValueError as exc:
@@ -849,24 +903,33 @@ def main() -> None:
     for trial in seed_trial_rows:
         for condition in planned_injection_conditions:
             for topology in planned_topologies:
-                matches = injection_summaries.get(
-                    (condition, trial["seed_instance_id"], topology), []
-                )
-                outcome = matches[0] if matches else None
-                seed_outcome_rows.append({
-                    **trial,
-                    "condition": condition,
-                    "topology": topology,
-                    "outcome_observed": outcome is not None,
-                    "final_plurality_accuracy": (
-                        outcome["final_plurality_accuracy"] if outcome else None
-                    ),
-                    "final_plurality_favored": (
-                        outcome["final_plurality_answer"] == outcome["favored_option"]
-                        if outcome
-                        else None
-                    ),
-                })
+                for attribution in planned_attributions:
+                    matches = injection_summaries.get(
+                        (
+                            condition,
+                            trial["seed_instance_id"],
+                            topology,
+                            attribution,
+                        ),
+                        [],
+                    )
+                    outcome = matches[0] if matches else None
+                    seed_outcome_rows.append({
+                        **trial,
+                        "condition": condition,
+                        "topology": topology,
+                        "attribution": attribution,
+                        "outcome_observed": outcome is not None,
+                        "final_plurality_accuracy": (
+                            outcome["final_plurality_accuracy"] if outcome else None
+                        ),
+                        "final_plurality_favored": (
+                            outcome["final_plurality_answer"]
+                            == outcome["favored_option"]
+                            if outcome
+                            else None
+                        ),
+                    })
 
     seed_trial_itt = _summarize_seed_trial_itt(
         seed_outcome_rows,
@@ -882,7 +945,7 @@ def main() -> None:
     conditional_aggregates = aggregate_conditional_summaries(summaries)
     write_jsonl(out_dir / "conditional_aggregates.jsonl", conditional_aggregates)
     analysis_manifest = {
-        "analysis_manifest_version": "1.1",
+        "analysis_manifest_version": "1.2",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "command_argv": sys.argv,
         "records": {
@@ -959,7 +1022,8 @@ def main() -> None:
         f"(scenario_data={data_path}, source={data_source})\n"
     )
     header = (
-        f"{'condition':26s} {'topology':22s} {'semantic':9s} {'n':>3s} "
+        f"{'condition':26s} {'topology':22s} {'attribution':11s} "
+        f"{'semantic':9s} {'n':>3s} "
         f"{'ind':>6s} {'MAS':>6s} {'favored':>8s}"
     )
     print(header)
@@ -969,6 +1033,7 @@ def main() -> None:
         mas_acc = row["final_plurality_accuracy"]
         fav = row["favored_adoption_final"]
         print(f"{row['condition'] or '-':26s} {row['topology'] or '-':22s} "
+              f"{row['attribution'] or '-':11s} "
               f"{row['semantic_type'] or '-':9s} {row['n_conversations']:>3d} "
               f"{acc:>6.2f} {mas_acc:>6.2f} "
               f"{'-' if fav is None else format(fav, '>8.2f')}")

@@ -6,7 +6,7 @@ this agent receives in each update round. Round 0 is always independent
 (no agent receives peer messages in round 0).
 
 Role placement policy (the seed's private assessment persists from round 0;
-the corrector's decisive private record is released at round 2 and persists):
+the corrector's decisive private record is released at round 1 and persists):
 - looped_chain (ring 0->1->2->3->0): rotationally symmetric, so position is
   arbitrary; the design constant is the offset: corrector immediately
   downstream of the seed (gatekeeper configuration).
@@ -15,14 +15,11 @@ the corrector's decisive private record is released at round 2 and persists):
 - fully_connected_mesh: structurally symmetric; placement arbitrary.
 - independent: control condition; no communication at all.
 
-With four total rounds (0-3), the corrector can first communicate its newly
-released record in its round-2 response, and recipients can first see that
-response in round 3. Thus the mesh exposes every peer by round 3, the star hub
-sees it by round 3, and the ring's next downstream agent sees it by round 3.
-The seed would not mechanically receive the correction within this endpoint
-in the ring or star; later seed recovery there can only arise indirectly from
-information already available before release. This topology-dependent timing
-is part of the staged-correction design.
+With four total rounds (0-3), the corrector first uses its newly released record
+in its round-1 response, and recipients first see that response in round 2.
+Thus the mesh exposes every peer by round 2; sparse-topology coverage and later
+retransmission depend on the communication path. The confirmatory scope design
+uses only the mesh so evidence route is not confounded with recipient coverage.
 """
 
 from __future__ import annotations

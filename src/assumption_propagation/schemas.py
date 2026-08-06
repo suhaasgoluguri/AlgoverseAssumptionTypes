@@ -165,10 +165,10 @@ CONDITION_LABELS = {
     "injection_tool_none": "1T no corrective tool",
     "injection_tool_testimony": "2T verifier tool + testimony",
     "injection_tool_relay": "3T verifier tool + record relay",
-    "injection_tool_direct": "4T direct corrective tool",
+    "injection_tool_direct": "4T direct recipient tool result",
     "injection_prompt_receipt_control": "CT prompt receipt control",
     "injection_tool_placebo": "CT non-diagnostic tool placebo",
-    "no_injection_baseline":   "-  honest baseline",
+    "no_injection_baseline":   "-  uncorrupted reference",
     "independent_control":     "-  no communication",
 }
 
@@ -584,6 +584,11 @@ class AgentRoundRecord(BaseModel):
     corrector_agent_id: Optional[int] = None
     agent_id: int = Field(ge=0, le=3)
     round: int = Field(ge=0, le=3)
+    # Speaker-attribution regime for this conversation: "anonymous" (bare agent
+    # id), "assigned" (header names the sender's assignment), or "n/a" (no peer
+    # messages exist). Nullable: runs before 2026-08-03 predate the factor, and
+    # missing means unknown rather than "anonymous".
+    attribution: Optional[str] = None
     injection_visible: bool = False
     # Nullable because this protocol flag was added after the first runs.
     # Missing legacy values are unknown, not evidence that no dossier was

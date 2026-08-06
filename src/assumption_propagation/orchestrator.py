@@ -31,6 +31,8 @@ from .clients import (
 )
 from .evidence import CorrectiveRecordStore, sha256_text
 from .prompts import (
+    ATTRIBUTION_MODES,
+    assignment_for_agent,
     build_private_dossier,
     build_round0_prompt,
     build_seed_generation_system_prompt,
@@ -195,7 +197,19 @@ class ConversationOutputs:
 
     def final_answers(self) -> dict[int, Optional[str]]:
         final_round = self.n_rounds - 1
-        return {a: self.outputs[(a, final_round)].answer for a in AGENT_IDS}
+        final_records = {
+            record.agent_id: record
+            for record in self.records
+            if record.round == final_round
+        }
+        return {
+            agent_id: (
+                None
+                if final_records[agent_id].parse_failed
+                else self.outputs[(agent_id, final_round)].answer
+            )
+            for agent_id in AGENT_IDS
+        }
 
 
 def _optional_sum(*values: Optional[int]) -> Optional[int]:
@@ -287,6 +301,7 @@ async def run_conversation(
     corrector_agent_id: Optional[int] = None,
     n_rounds: int = N_ROUNDS,
     withhold_corrective: bool = False,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
     replay_outputs: Optional[dict[tuple[int, int], ParsedResponse]] = None,
     replay_source_conditions: Optional[dict[tuple[int, int], str]] = None,
@@ -373,6 +388,32 @@ async def run_conversation(
 
     def neutral_ordinal_of(agent_id: int) -> Optional[int]:
         return neutral_ids.index(agent_id) if agent_id in neutral_ids else None
+
+    # Speaker attribution. Orthogonal to record provenance: this names WHO is
+    # speaking, the case-record blocks name WHERE the evidence came from.
+    if attribution not in ATTRIBUTION_MODES:
+        raise ValueError(
+            f"unknown attribution mode {attribution!r}; expected one of "
+            f"{ATTRIBUTION_MODES}"
+        )
+    assignments: dict[int, Optional[str]] = {}
+    if attribution == "assigned":
+        for a in AGENT_IDS:
+            assignments[a] = assignment_for_agent(
+                scenario,
+                is_seed=(a == seed_agent_id),
+                is_corrector=(a == corrector_agent_id),
+                neutral_ordinal=neutral_ordinal_of(a),
+            )
+        # Track B only. Failing loudly beats rendering "Agent 2 ()" for half the
+        # group, which would make the factor mean different things per scenario.
+        missing = [a for a, label in assignments.items() if not label]
+        if missing:
+            raise ValueError(
+                f"attribution='assigned' but {scenario.scenario_id} has no parsable "
+                f"assignment for agent(s) {missing}; hidden-profile briefs must open "
+                f"'Your <role> assignment was <Entity>.'"
+            )
 
     run_id = new_run_id()
     outputs: dict[tuple[int, int], ParsedResponse] = {}
@@ -483,6 +524,7 @@ async def run_conversation(
             corrector_agent_id=corrector_agent_id,
             agent_id=agent_id,
             round=round_index,
+            attribution=attribution,
             injection_visible=injection_visible,
             neutral_control_visible=neutral_control_visible,
             corrective_visible=corrective_visible,
@@ -675,6 +717,7 @@ async def run_conversation(
                             )
                             else None
                         ),
+                        assignment=assignments.get(sender),
                     )
                     for sender in received_from
                 ]
@@ -895,23 +938,22 @@ async def run_correction_scope_ladder(
     *,
     topology_name: str = "fully_connected_mesh",
     n_rounds: int = N_ROUNDS,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
 ) -> dict[str, ConversationOutputs]:
     """Run four matched correction-scope arms with a shared prefix.
 
-    The primary scope contrast is mesh-only. A common pre-correction history is
-    sampled once and replayed into every arm. At the correction-release round,
+    A common pre-correction history is sampled once and replayed into every arm
+    within one topology/attribution coordinate. At the correction-release round,
     every non-corrector response is also replayed because those agents have
     identical prompts. Hidden matched anchors sample the verifier once with and
     once without the record; measured arms replay those anchors and may run in
     rotated order. Thus the first point at which arms can differ is the intended
-    evidence-delivery channel.
+    evidence-delivery channel. Sparse topologies intentionally limit which
+    recipients hear conversation-carried testimony or relay payloads; direct
+    delivery remains topology-independent.
     """
-    if topology_name != "fully_connected_mesh":
-        raise ValueError(
-            "the correction-scope ladder is mesh-only; non-mesh routing changes "
-            "which peers receive a relay and confounds route with coverage"
-        )
+    validate_topology(topology_name)
     available = variant.corrective_evidence.available_round
     if n_rounds < available + 3:
         raise ValueError(
@@ -932,6 +974,7 @@ async def run_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=available,
             withhold_corrective=True,
+            attribution=attribution,
         )
         prefix_outputs = {
             key: value
@@ -943,7 +986,11 @@ async def run_correction_scope_ladder(
     # record and once with it, while replaying every unaffected release-round
     # response. Actual measured arms branch from these anchors, so none of the
     # four must run first merely to supply history to another.
-    parity = frozen_seed.seed_trial_index % 2
+    anchor_key = (
+        f"prompt-v1-anchor:{variant.assumption_id}:"
+        f"{frozen_seed.seed_trial_index}:{topology_name}:{attribution}"
+    )
+    parity = int(sha256_text(anchor_key)[:8], 16) % 2
     anchor_order = (
         ["injection_no_correction", "injection"]
         if parity == 0
@@ -973,13 +1020,17 @@ async def run_correction_scope_ladder(
             withhold_corrective=(arm == "injection_no_correction"),
             replay_outputs=replay,
             replay_source_conditions=sources,
+            attribution=attribution,
         )
 
     # Rotate all four measured arms, rather than always collecting the wider
     # routes last. The stable assumption/seed hash spreads rotations across the
     # corpus while preserving exact reproducibility.
     base_order = list(CORRECTION_SCOPE)
-    rotation_key = f"{variant.assumption_id}:{frozen_seed.seed_trial_index}"
+    rotation_key = (
+        f"prompt-v1:{variant.assumption_id}:{frozen_seed.seed_trial_index}:"
+        f"{topology_name}:{attribution}"
+    )
     rotation = int(sha256_text(rotation_key)[:8], 16) % len(base_order)
     execution_order = base_order[rotation:] + base_order[:rotation]
     results: dict[str, ConversationOutputs] = {}
@@ -1008,6 +1059,7 @@ async def run_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=n_rounds,
             withhold_corrective=(arm == "injection_no_correction"),
+            attribution=attribution,
             log_path=log_path,
             replay_outputs=replay,
             replay_source_conditions=sources,
@@ -1025,6 +1077,7 @@ async def run_tool_correction_scope_ladder(
     *,
     topology_name: str = "fully_connected_mesh",
     n_rounds: int = N_ROUNDS,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
     include_controls: bool = False,
 ) -> dict[str, ConversationOutputs]:
@@ -1040,13 +1093,11 @@ async def run_tool_correction_scope_ladder(
     follows: no corrective tool; matched natural testimony; that testimony plus
     the exact canonical tool-result bytes; or a forced direct tool exchange for
     each recipient. Optional controls add the canonical payload as ordinary
-    prompt text or make the same tool turn with a non-diagnostic result.
+    prompt text or make the same tool turn with a non-diagnostic result. In
+    sparse topologies, testimony and exact relay follow graph edges; direct
+    recipient delivery and its controls remain available to every non-verifier.
     """
-    if topology_name != "fully_connected_mesh":
-        raise ValueError(
-            "the tool correction-scope ladder is mesh-only; non-mesh routing "
-            "confounds delivery mode with coverage"
-        )
+    validate_topology(topology_name)
     if not callable(getattr(client, "generate_with_forced_tool", None)):
         raise TypeError(
             "tool correction-scope ladder requires "
@@ -1072,6 +1123,7 @@ async def run_tool_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=available,
             withhold_corrective=True,
+            attribution=attribution,
         )
         prefix_outputs = {
             key: value
@@ -1081,7 +1133,11 @@ async def run_tool_correction_scope_ladder(
 
     # Counterbalance which hidden anchor samples first. Every unaffected
     # release-round response is copied from the first anchor to the second.
-    parity = frozen_seed.seed_trial_index % 2
+    anchor_key = (
+        f"tool-v2-anchor:{variant.assumption_id}:"
+        f"{frozen_seed.seed_trial_index}:{topology_name}:{attribution}"
+    )
+    parity = int(sha256_text(anchor_key)[:8], 16) % 2
     anchor_order = (
         ["injection_tool_none", "injection_tool_testimony"]
         if parity == 0
@@ -1111,6 +1167,7 @@ async def run_tool_correction_scope_ladder(
             withhold_corrective=(arm == "injection_tool_none"),
             replay_outputs=replay,
             replay_source_conditions=sources,
+            attribution=attribution,
         )
 
     base_order = list(TOOL_CORRECTION_SCOPE)
@@ -1118,7 +1175,7 @@ async def run_tool_correction_scope_ladder(
         base_order.extend(TOOL_CORRECTION_CONTROLS)
     rotation_key = (
         f"tool-v2:{variant.assumption_id}:{frozen_seed.seed_trial_index}:"
-        f"controls={include_controls}"
+        f"{topology_name}:{attribution}:controls={include_controls}"
     )
     rotation = int(sha256_text(rotation_key)[:8], 16) % len(base_order)
     execution_order = base_order[rotation:] + base_order[:rotation]
@@ -1152,6 +1209,7 @@ async def run_tool_correction_scope_ladder(
             frozen_seed=frozen_seed,
             n_rounds=n_rounds,
             withhold_corrective=(arm == "injection_tool_none"),
+            attribution=attribution,
             log_path=log_path,
             replay_outputs=replay,
             replay_source_conditions=sources,
@@ -1176,6 +1234,7 @@ async def run_matched_triple(
     n_rounds: int = N_ROUNDS,
     condition: str = "injection",
     withhold_corrective: bool = False,
+    attribution: str = "anonymous",
     log_path: Optional[str | Path] = None,
 ) -> dict[str, ConversationOutputs]:
     """Replay ONE frozen seed across all three topologies (the matched triple).
@@ -1197,6 +1256,7 @@ async def run_matched_triple(
             frozen_seed=frozen_seed,
             n_rounds=n_rounds,
             withhold_corrective=withhold_corrective,
+            attribution=attribution,
             log_path=log_path,
         )
     return results

@@ -23,9 +23,9 @@ Reported, with a flag when the distribution is lopsided:
 5. whether the trap is the optimum on the public metric. This is the property
    that makes the injection *sufficient* to license choosing the trap; if it
    ever fails, the seed rationally defers and the scenario is dead weight.
-   Parsed from the first number in each display value, so it is advisory:
-   scenarios whose display values mix units are reported as unparsed rather
-   than as failures.
+   Parsed from the first number in each display value, with hours/minutes
+   normalized to minutes. Other mixed-unit scenarios are reported as unparsed
+   rather than as failures.
 
 Advisory by design — it prints and returns 0 unless --strict is passed. Use it
 to steer authoring, not to gate the build.
@@ -98,12 +98,35 @@ def first_number(value: str) -> float | None:
     return float(match.group().replace(",", ""))
 
 
+def duration_minutes(value: str) -> float | None:
+    """Normalize a displayed hours/minutes duration, or return None."""
+    lowered = value.lower()
+    if "hour" not in lowered and "minute" not in lowered:
+        return None
+    hours = re.search(r"(\d+(?:\.\d+)?)\s*hours?", lowered)
+    minutes = re.search(r"(\d+(?:\.\d+)?)\s*minutes?", lowered)
+    if hours is None and minutes is None:
+        return None
+    return (
+        (float(hours.group(1)) * 60 if hours else 0.0)
+        + (float(minutes.group(1)) if minutes else 0.0)
+    )
+
+
 def trap_is_metric_optimum(spec, trap_entity: str) -> bool | None:
     """True/False if the public values parse, None if they do not.
 
     None is not a pass. It means the check could not be run on that scenario
     and a human has to confirm it by reading.
     """
+    duration_values = {
+        entity: duration_minutes(display) for entity, display in spec.public_list
+    }
+    if all(value is not None for value in duration_values.values()):
+        return duration_values[trap_entity] == min(duration_values.values())
+    if any(value is not None for value in duration_values.values()):
+        return None
+
     values = {}
     for entity, display in spec.public_list:
         number = first_number(display)

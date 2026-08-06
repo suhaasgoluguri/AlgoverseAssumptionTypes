@@ -23,6 +23,7 @@ def _summary(condition: str, *, run_id: str | None = None) -> dict:
         "assumption_id": "vendor_001_factual_negative",
         "seed_instance_id": "seed-00",
         "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
     }
 
 
@@ -104,11 +105,11 @@ def test_scope_outcomes_are_indexed_separately_by_condition():
     summaries = [_summary(condition) for condition in CORRECTION_SCOPE]
 
     indexed = _index_injection_summaries(
-        summaries, trial_by_id, ["fully_connected_mesh"]
+        summaries, trial_by_id, ["fully_connected_mesh"], ["anonymous"]
     )
 
     assert set(indexed) == {
-        (condition, "seed-00", "fully_connected_mesh")
+        (condition, "seed-00", "fully_connected_mesh", "anonymous")
         for condition in CORRECTION_SCOPE
     }
     assert all(len(rows) == 1 for rows in indexed.values())
@@ -123,7 +124,7 @@ def test_complete_scope_grid_rejects_one_missing_arm():
         if condition != "injection_broadcast"
     ]
     indexed = _index_injection_summaries(
-        summaries, trial_by_id, ["fully_connected_mesh"]
+        summaries, trial_by_id, ["fully_connected_mesh"], ["anonymous"]
     )
 
     with pytest.raises(ValueError, match="0 injection_broadcast outcomes"):
@@ -132,6 +133,7 @@ def test_complete_scope_grid_rejects_one_missing_arm():
             [trial],
             list(CORRECTION_SCOPE),
             ["fully_connected_mesh"],
+            ["anonymous"],
             require_complete=True,
         )
 
@@ -141,6 +143,7 @@ def test_complete_scope_grid_rejects_one_missing_arm():
         [trial],
         list(CORRECTION_SCOPE),
         ["fully_connected_mesh"],
+        ["anonymous"],
         require_complete=False,
     )
 
@@ -153,6 +156,7 @@ def test_seed_trial_itt_keeps_scope_arms_in_separate_rows():
             **trial,
             "condition": condition,
             "topology": "fully_connected_mesh",
+            "attribution": "anonymous",
             "outcome_observed": True,
             "final_plurality_accuracy": float(index >= 2),
             "final_plurality_favored": index < 2,

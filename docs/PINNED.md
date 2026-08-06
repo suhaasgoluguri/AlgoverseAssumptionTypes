@@ -8,7 +8,14 @@ resolution line so the reasoning stays readable later.
 
 ## 2026-08-03 — Should H2's outcome be `no_decision` (defer OR tie) instead of deferral alone?
 
-**Status:** OPEN
+**Status:** RESOLVED — historical `prompt_v1` question; not a `tool_v2`
+primary endpoint.
+
+**Resolution (2026-08-04).** Explicit option-E deferral and 2–2 ties remain
+separate secondary outcomes. The combined post-hoc `defer_or_tie` measure is
+not confirmatory. In the eight-scenario `tool_v2` pilot, explicit deferral was
+0% in every arm while relay produced a 50% tie rate, confirming that the two
+events should not be silently merged.
 
 **What prompted it.** The exploratory scope-ladder run (10 of 33 scenarios in at
 the time) showed deferral *falling* at level 4, contradicting the predicted
@@ -54,7 +61,13 @@ interpretation problem raised in the next entry.
 
 ## 2026-08-03 — The honest baseline has the HIGHEST no-decision rate, which inverts the account
 
-**Status:** OPEN — this is the most consequential open question of the three.
+**Status:** RESOLVED — historical `prompt_v1` baseline account; superseded by
+the direct-delivery question.
+
+**Resolution (2026-08-04).** The uncorrupted condition is a reference, not a
+scope arm or primary contrast. It receives one repetition per scenario/type
+and is described precisely as an uncorrupted team with the standard
+corroborating verifier record. No crowding-out claim is based on it.
 
 **What prompted it.** Defer-or-tie by arm, 11/33 scenarios:
 
@@ -87,7 +100,14 @@ sample size, §3.
 
 ## 2026-08-03 — Should group accuracy stay a primary hypothesis given the floor effect?
 
-**Status:** OPEN
+**Status:** RESOLVED — group accuracy is secondary.
+
+**Resolution (2026-08-04).** Ordinary-neutral final accuracy is the primary
+outcome because it measures downstream recovery without mechanically including
+the treated seed or evidence-holding verifier. Group accuracy, trap wins, and
+ties remain key secondary outcomes. The eight-scenario `tool_v2` pilot showed
+why: relay reached 43.8% ordinary-neutral accuracy but only 18.8% group accuracy
+because half of groups tied.
 
 **What prompted it.** Accuracy is 20% at baseline and 22–36% across all four
 ladder arms, against a 25% chance rate and a 99.4% oracle ceiling. H3 is stated
@@ -115,7 +135,14 @@ multiplicity correction (Holm is currently across three tests).
 
 ## 2026-08-03 — Corrector answer/rationale incoherence: hand-labelling still needed?
 
-**Status:** OPEN, but lower priority than previously assessed.
+**Status:** RESOLVED for primary analysis; rationale validation remains
+secondary quality assurance.
+
+**Resolution (2026-08-04).** The primary outcome is the parsed answer letter.
+Rationale consistency flags and judge labels cannot override or exclude a
+valid primary answer. Human rationale labels are still useful before making
+qualitative evidence-use claims, but they are no longer a blocker for the
+answer-based confirmatory run.
 
 **What prompted it.** Two regexes disagreed on the incoherence rate (5% vs 30%)
 and neither was trusted. On this run the flag fires at **3.1% for correctors at
@@ -137,7 +164,9 @@ looks like a confirmation step rather than a possible show-stopper.
 
 ## 2026-08-03 — `AsyncOpenAI` has no timeout, so a wedged request stalls the run silently
 
-**Status:** OPEN — fix before the confirmatory run.
+**Status:** RESOLVED — the Azure client uses an explicit 120-second SDK timeout
+and disables hidden SDK retries; the existing six-attempt tenacity policy is
+the only retry layer. Confirmatory runners set `PYTHONUNBUFFERED=1`.
 
 **What prompted it.** The exploratory run froze for ~11 minutes with no output
 and no writes to `records.jsonl`. The process was alive with flat CPU, blocked

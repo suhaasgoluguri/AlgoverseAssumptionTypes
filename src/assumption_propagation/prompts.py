@@ -17,7 +17,9 @@ Design rules encoded here:
   neutral_control_note instead of the private assessment, so both conditions
   have *a* private note and differ only in its content. The corrector
   keeps its corrective note in the baseline (only the injection differs).
-- Peer messages are labeled anonymously ("Agent N") with no authority cues.
+- Peer-message attribution is explicit and versioned. Confirmatory collection
+  crosses anonymous "Agent N" headers with assigned "Agent N (assigned:
+  candidate)" headers. The primary correction-scope cell uses assigned headers.
 
 The builders are duck-typed: they accept any objects exposing the needed
 attributes (pydantic models from schemas.py in production, simple
@@ -26,6 +28,8 @@ namespaces in tests).
 
 from __future__ import annotations
 
+import re
+
 from .evidence import CorrectiveRecord, DirectRecordReceipt, canonical_placebo_json
 from .schemas import (
     INJECTION_CONDITIONS,
@@ -33,9 +37,59 @@ from .schemas import (
     TOOL_CORRECTION_SCOPE,
 )
 
-PROMPT_VERSION = "v3.0"
+PROMPT_VERSION = "v3.1"
 
 RATIONALE_WORD_LIMIT = 90
+
+# ---------------------------------------------------------------------------
+# Speaker attribution
+#
+# The pooling rule credits a report heard "from that reviewer", so acting on a
+# peer's clearance requires knowing WHICH candidate that peer was assigned.
+# Anonymous headers delete exactly that identity, and agents rarely volunteer
+# their own assignment in rationales, so the rule is unusable as written. Under
+# "assigned" the header carries it. The full factorial crosses both modes
+# inside one run; the primary correction-scope claim is restricted to assigned
+# attribution, while the attribution comparison is prespecified secondary.
+#
+# Note this is SPEAKER provenance, distinct from the RECORD provenance carried
+# by the case-record blocks. The full factorial crosses speaker provenance while
+# preserving record provenance as the correction-scope manipulation.
+# ---------------------------------------------------------------------------
+
+ATTRIBUTION_MODES = ("anonymous", "assigned", "n/a")
+
+_ASSIGNMENT_PATTERN = re.compile(
+    r"^Your(?: [a-z]+)? assignment (?:was|is) (?:the )?(.+?)(?: path| option| route)?[.,:]"
+)
+
+
+def assignment_label(brief: str | None) -> str | None:
+    """The candidate a role was assigned, read from the opening of its brief.
+
+    Parsed rather than stored so the committed scenario bytes -- and therefore
+    the preregistered sha256 -- stay unchanged. Returns None when the brief does
+    not follow that form, so callers fail loudly instead of rendering an empty
+    label for half the group.
+    """
+    if not brief:
+        return None
+    match = _ASSIGNMENT_PATTERN.match(brief.strip())
+    return match.group(1).strip() if match else None
+
+
+def assignment_for_agent(
+    scenario, *, is_seed: bool, is_corrector: bool, neutral_ordinal: int | None
+) -> str | None:
+    """The assignment label for one agent, or None outside Track B."""
+    return assignment_label(
+        hidden_profile_brief(
+            scenario,
+            is_seed=is_seed,
+            is_corrector=is_corrector,
+            neutral_ordinal=neutral_ordinal,
+        )
+    )
 
 # The v2 access protocol exposes the same zero-argument tool in every actual
 # and placebo tool arm.  The caller, rather than the model, scopes the active
@@ -350,15 +404,19 @@ def format_peer_message(
     *,
     relayed_record: CorrectiveRecord | None = None,
     relayed_tool_payload: str | None = None,
+    assignment: str | None = None,
 ) -> str:
-    """Anonymous, authority-free rendering of one peer's previous output.
+    """Render one peer's previous output with optional assignment attribution.
 
-    ``relayed_record`` implements the relay arm. Normally a peer message carries
-    only the sender's words, so a reader cannot distinguish record-backed
-    testimony from judgement. Attaching the canonical record makes provenance
-    survive the hop: same sender response and timing, differing only in whether
-    the source travels with the claim. ``relayed_source`` remains as a legacy
-    text-only input for callers outside the scope protocol.
+    Supplying ``assignment`` identifies the candidate the speaker was assigned
+    to review; it does not expose that speaker's private finding. This makes the
+    public pooling rule usable without changing record access. ``relayed_record``
+    implements the relay arm. Normally a peer message carries only the sender's
+    words, so a reader cannot distinguish record-backed testimony from judgement.
+    Attaching the canonical record makes provenance survive the hop: same sender
+    response and timing, differing only in whether the source travels with the
+    claim. ``relayed_source`` remains as a legacy text-only input for callers
+    outside the scope protocol.
     """
     relay_inputs = sum(
         value is not None and value != ""
@@ -370,16 +428,21 @@ def format_peer_message(
             "relayed_tool_payload"
         )
 
+    # Speaker label. Under "assigned" it names what the sender was assigned, so
+    # a reader can tell whether the sender had standing to report on it.
+    label = f"Agent {agent_id}"
+    if assignment:
+        label = f"Agent {agent_id} (assigned: {assignment})"
     message = (
-        f'Agent {agent_id} — answer: {answer}\n'
-        f'Agent {agent_id} — rationale: "{rationale}"'
+        f'{label} — answer: {answer}\n'
+        f'{label} — rationale: "{rationale}"'
     )
     if relayed_tool_payload:
         # Delimiters describe transport only.  The exact canonical bytes occur
         # unchanged between them; no claim about whether the recipient should
         # trust, discount, or act on the payload is added here.
         message += (
-            f"\n\nAgent {agent_id} — relayed tool output (exact payload)\n"
+            f"\n\n{label} — relayed tool output (exact payload)\n"
             "BEGIN TOOL OUTPUT\n"
             f"{relayed_tool_payload}\n"
             "END TOOL OUTPUT"
@@ -387,7 +450,7 @@ def format_peer_message(
     elif relayed_record:
         message += (
             "\n\nFORWARDED CASE-RECORD COPY\n"
-            f"forwarded by: Agent {agent_id}\n"
+            f"forwarded by: {label}\n"
             f"claimed source: {relayed_record.source}\n"
             f"record id: {relayed_record.record_id}\n"
             f"record sha256: {relayed_record.sha256}\n"
@@ -398,7 +461,7 @@ def format_peer_message(
     elif relayed_source:
         # Backward-compatible rendering for callers outside the scope ladder.
         message += (
-            f"\nAgent {agent_id} — relays this record verbatim: "
+            f"\n{label} — relays this record verbatim: "
             f'"{relayed_source}"'
         )
     return message

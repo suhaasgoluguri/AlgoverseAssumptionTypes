@@ -245,6 +245,24 @@ def test_update_prompt_shows_own_and_peer_outputs(scenario):
     assert "Agent 2" in p and "H3 is confirmed accessible." in p
 
 
+def test_assigned_peer_message_identifies_speaker_assignment():
+    message = format_peer_message(
+        2,
+        "B",
+        "H3 is confirmed accessible.",
+        assignment="H3",
+    )
+
+    assert message.count("Agent 2 (assigned: H3)") == 2
+
+
+def test_anonymous_peer_message_omits_assignment():
+    message = format_peer_message(2, "B", "H3 is confirmed accessible.")
+
+    assert "Agent 2" in message
+    assert "assigned:" not in message
+
+
 def test_tool_record_payload_delegates_to_evidence_canonical_json(variant):
     record = CorrectiveRecord.from_variant(variant)
     payload = canonical_tool_record_payload(record)
@@ -335,4 +353,4 @@ def test_all_options_and_constraints_rendered(scenario, variant):
 
 
 def test_prompt_version_defined():
-    assert PROMPT_VERSION == "v3.0"
+    assert PROMPT_VERSION == "v3.1"
