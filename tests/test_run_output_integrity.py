@@ -143,6 +143,30 @@ def test_completion_integrity_reports_parse_failures(tmp_path: Path):
     assert summary["response_quality"]["zero_parse_failures"] is False
 
 
+def test_completion_integrity_rejects_record_result_attribution_mismatch(
+    tmp_path: Path,
+):
+    paths, scenarios, assumption_id = _minimal_run_files(tmp_path)
+    result = json.loads(paths["results"].read_text(encoding="utf-8"))
+    result["attribution"] = "assigned"
+    _write_jsonl(paths["results"], [result])
+
+    with pytest.raises(ValueError, match="disagrees with its result metadata"):
+        _validate_run_outputs(
+            paths,
+            scenarios,
+            [assumption_id],
+            n_seeds=1,
+            topologies=["looped_chain"],
+            n_rounds=1,
+            baseline_reps=0,
+            skip_baselines=True,
+            independent_reps=0,
+            skip_independent=True,
+            attribution_modes=("assigned",),
+        )
+
+
 def test_completion_integrity_rejects_duplicate_seed_ids(tmp_path: Path):
     paths, scenarios, assumption_id = _minimal_run_files(tmp_path)
     seed_row = json.loads(paths["seeds"].read_text(encoding="utf-8").splitlines()[0])
@@ -257,7 +281,9 @@ def test_analysis_rejects_injection_outcome_for_unknown_seed():
     }
 
     with pytest.raises(ValueError, match="unknown seed_instance_id"):
-        _index_injection_summaries([summary], {}, ["looped_chain"])
+        _index_injection_summaries(
+            [summary], {}, ["looped_chain"], ["anonymous"]
+        )
 
 
 def test_complete_manifest_requires_all_observed_file_entries(tmp_path: Path):

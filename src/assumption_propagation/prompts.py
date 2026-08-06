@@ -17,7 +17,9 @@ Design rules encoded here:
   neutral_control_note instead of the private assessment, so both conditions
   have *a* private note and differ only in its content. The corrector
   keeps its corrective note in the baseline (only the injection differs).
-- Peer messages are labeled anonymously ("Agent N") with no authority cues.
+- Peer-message attribution is explicit and versioned. Confirmatory collection
+  crosses anonymous "Agent N" headers with assigned "Agent N (assigned:
+  candidate)" headers. The primary correction-scope cell uses assigned headers.
 
 The builders are duck-typed: they accept any objects exposing the needed
 attributes (pydantic models from schemas.py in production, simple
@@ -35,7 +37,7 @@ from .schemas import (
     TOOL_CORRECTION_SCOPE,
 )
 
-PROMPT_VERSION = "v3.0"
+PROMPT_VERSION = "v3.1"
 
 RATIONALE_WORD_LIMIT = 90
 
@@ -44,14 +46,15 @@ RATIONALE_WORD_LIMIT = 90
 #
 # The pooling rule credits a report heard "from that reviewer", so acting on a
 # peer's clearance requires knowing WHICH candidate that peer was assigned.
-# Anonymous headers delete exactly that identity, and agents volunteer their own
-# assignment in ~3% of rationales, so the rule is unusable as written. Under
-# "assigned" the header carries it. Anonymous stays the default: this is an
-# experimental factor, not a fix applied silently.
+# Anonymous headers delete exactly that identity, and agents rarely volunteer
+# their own assignment in rationales, so the rule is unusable as written. Under
+# "assigned" the header carries it. The full factorial crosses both modes
+# inside one run; the primary correction-scope claim is restricted to assigned
+# attribution, while the attribution comparison is prespecified secondary.
 #
-# Note this is SPEAKER provenance, orthogonal to the RECORD provenance carried
-# by the case-record blocks. Crossing the two is the point: they may be the same
-# mechanism reached two ways, or they may be additive.
+# Note this is SPEAKER provenance, distinct from the RECORD provenance carried
+# by the case-record blocks. The full factorial crosses speaker provenance while
+# preserving record provenance as the correction-scope manipulation.
 # ---------------------------------------------------------------------------
 
 ATTRIBUTION_MODES = ("anonymous", "assigned", "n/a")
@@ -403,14 +406,17 @@ def format_peer_message(
     relayed_tool_payload: str | None = None,
     assignment: str | None = None,
 ) -> str:
-    """Anonymous, authority-free rendering of one peer's previous output.
+    """Render one peer's previous output with optional assignment attribution.
 
-    ``relayed_record`` implements the relay arm. Normally a peer message carries
-    only the sender's words, so a reader cannot distinguish record-backed
-    testimony from judgement. Attaching the canonical record makes provenance
-    survive the hop: same sender response and timing, differing only in whether
-    the source travels with the claim. ``relayed_source`` remains as a legacy
-    text-only input for callers outside the scope protocol.
+    Supplying ``assignment`` identifies the candidate the speaker was assigned
+    to review; it does not expose that speaker's private finding. This makes the
+    public pooling rule usable without changing record access. ``relayed_record``
+    implements the relay arm. Normally a peer message carries only the sender's
+    words, so a reader cannot distinguish record-backed testimony from judgement.
+    Attaching the canonical record makes provenance survive the hop: same sender
+    response and timing, differing only in whether the source travels with the
+    claim. ``relayed_source`` remains as a legacy text-only input for callers
+    outside the scope protocol.
     """
     relay_inputs = sum(
         value is not None and value != ""

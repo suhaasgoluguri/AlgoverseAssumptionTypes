@@ -5,7 +5,7 @@ Commit this file together with the frozen analysis code before starting the
 confirmatory run; that commit hash must predate the first confirmatory API call.
 
 **Written:** 2026-07-26 · **Rewritten for the scope ladder:** 2026-08-03 ·
-**Finalized for `azure:gpt-5-mini` and `tool_v2`:** 2026-08-04 ·
+**Finalized for `azure:gpt-5.4-mini`, `tool_v2`, and the factorial design:** 2026-08-05 ·
 **Target venue deadline:** 2026-08-29
 
 ---
@@ -76,9 +76,14 @@ identify different bottlenecks:
    agent-mediated carrier help beyond receiving identical record bytes through
    another agent?
 
-Held constant across all four arms: scenario, injected assessment, canonical
-corrective record wherever it is delivered, timing, frozen seed, and
-pre-correction conversation. A hidden no-correction anchor and a hidden
+Held constant within every arm/topology/attribution coordinate: scenario,
+injected assessment, canonical corrective record wherever it is delivered,
+timing, frozen seed, and pre-correction conversation. Speaker attribution is
+crossed within-run: anonymous headers identify only `Agent 2`, while assigned
+headers identify `Agent 2 (assigned: Borealis)`. Assignment labels reveal the
+reviewer-to-candidate mapping but not the reviewer's private finding. The
+primary correction-scope estimates use mesh + assigned attribution; attribution
+itself is a prespecified secondary comparison. A hidden no-correction anchor and a hidden
 corrected anchor sample the release history. Every corrected measured arm
 replays the same verifier response at the release round and the following
 round, while unaffected pre-release cells are also matched. Replayed tool
@@ -87,10 +92,13 @@ API calls and token use; `tool_call_executed=false` and
 `tool_trace_replayed=true` distinguish them from genuine measured-arm tool
 executions. This matching is part of the protocol, not an outcome exclusion.
 
-The primary topology is the fully connected mesh; sparse topologies would
-change relay coverage and are excluded. Measured arm execution order is
-rotated by a stable assumption/seed hash. All four arms are collected within
-one run (`--scope-ladder --scope-protocol tool_v2`).
+All three topologies are collected. The fully connected mesh is the primary
+topology because every ordinary agent receives the verifier's next message.
+Chain and star are prespecified secondary finite-horizon conditions: testimony
+and exact relay follow graph edges, whereas direct recipient delivery bypasses
+the graph. Measured coordinate and arm execution orders are counterbalanced by
+stable hashes. All arms, topologies, and attribution modes are collected within
+one run (`--scope-ladder --scope-protocol tool_v2 --attribution both`).
 
 ### Prespecified mechanism controls
 
@@ -173,8 +181,9 @@ primary endpoints.
   is excluded from the primary scope analysis; any framing run is a separately
   labelled follow-up and is not pooled with the primary estimand.
 - Seed uptake is a manipulation check, not a propagation outcome.
-- Sparse topologies may be run only as a separately labelled follow-up; they
-  are not pooled with the primary mesh estimand.
+- Sparse topologies are collected in the same factorial run but reported only
+  as prespecified secondary finite-horizon system-effectiveness analyses. They
+  are never pooled with the primary mesh estimand.
 
 ---
 
@@ -195,13 +204,15 @@ standard corroborating record) is an uncorrupted reference condition, not a
 scope arm and not a pure no-record control. `independent_control` is omitted
 from the confirmatory run.
 
-Primary topology: `fully_connected_mesh` only.
+Collected topologies: `looped_chain`, `neutral_star`, and
+`fully_connected_mesh`. Primary analysis cell: `fully_connected_mesh` with
+`assigned` attribution.
 
 **Track.** Track B (hidden profile) — resolved. Findings are distributed one per
 agent and only pooling identifies the compliant option.
 
 - Corpus: `data/scenarios_hidden_profile_candidates.json`,
-  sha256 `75ef2813c34036419c50b0ddab75d7ada2422145cb4c5fdf68ec0c1d11049f19`
+  sha256 `7f0f31556b2b9543815eac77272ab00f91804deb3128d33b5c7c12d48ac07fbf`
 - 33 scenarios (34 authored, `custodian_001` excluded — see §5)
 - Oracle validity: 164/165 = 99.4% with full information
 - No-pooling gate: 0/33 scenarios are solvable by dropping the trap and taking
@@ -210,23 +221,26 @@ agent and only pooling identifies the compliant option.
   below the 25% chance rate.
 
 **Subject model.** One frozen Azure deployment, recorded in the run manifest as
-`azure:gpt-5-mini`. The request omits a custom temperature
+`azure:gpt-5.4-mini`. The request omits a custom temperature
 (`--temperature none`) because the deployment rejects it. No second subject
 model is part of the confirmatory claim. A separately labelled replication on
 another model may be reported later but is never pooled with this run. A
 semantic judge, if used, is post-hoc and cannot affect any primary outcome.
 
-**Sample size.** 33 scenarios × 2 primary semantic types (factual and causal)
-× 1 topology × 3 frozen seed instances × 6 collected injection conditions
-(4 primary arms + 2 mechanism controls), plus 1 uncorrupted reference
-conversation per scenario/type. This gives 198 seed generations, 1,188
-injection conversations, 66 reference conversations, 1,254 conversations in
-total, and 20,064 planned agent-round records. Scenario is the unit of
-generalization; there are 33 clusters. Framing and independent controls are
-not collected.
+**Maximum planned sample size.** 33 scenarios × 2 primary semantic types
+(factual and causal) × 3 topologies × 2 attribution modes × 3 frozen seed
+instances × 6 collected
+injection conditions (4 primary arms + 2 mechanism controls), plus one
+uncorrupted reference conversation per scenario/type/topology/attribution
+coordinate. This gives 198 seed generations shared across the factorial grid,
+up to 7,128 injection conversations, 396 reference conversations, 7,524
+conversations in total, and 120,384 planned agent-round records when every seed
+is replayable. Scenario remains the unit of
+generalization; there are 33 clusters, not 120,384 independent observations.
+Framing and independent controls are not collected.
 
 **Frozen collection command.** The run starts from a clean committed worktree
-with the deployment environment variable set to `gpt-5-mini`:
+with the deployment environment variable set to `gpt-5.4-mini`:
 
 ```powershell
 uv run python scripts/run_pilot.py `
@@ -236,7 +250,8 @@ uv run python scripts/run_pilot.py `
   --scope-ladder `
   --scope-protocol tool_v2 `
   --scope-controls `
-  --topologies fully_connected_mesh `
+  --topologies looped_chain neutral_star fully_connected_mesh `
+  --attribution both `
   --n-seeds 3 `
   --baseline-reps 1 `
   --skip-independent `
@@ -244,15 +259,16 @@ uv run python scripts/run_pilot.py `
   --temperature none `
   --max-completion-tokens 8000 `
   --verbose `
-  --tag confirmatory_scope33_gpt5mini
+  --tag confirmatory_scope33_gpt54mini
 ```
 
 ---
 
 ## 3. Primary outcomes
 
-> **Primary outcome: ordinary-neutral final accuracy.** The proportion of the
-> two ordinary agents' round-3 answers equal to `correct_answer`. The seed is
+> **Primary outcome: ordinary-neutral final accuracy in the mesh + assigned
+> attribution cell.** The proportion of the two ordinary agents' round-3
+> answers equal to `correct_answer`. The seed is
 > the treatment recipient and the verifier is the correction carrier; including
 > either would mechanically contaminate the estimate of downstream recovery.
 
@@ -313,8 +329,7 @@ Reported with CIs, **unadjusted for multiplicity, and labelled exploratory**:
 2. Final trap share and true non-trap-at-round-0 to trap-at-round-3 conversion.
 3. Trap-to-correct recovery and correct-answer retention. These condition on a
    prior answer state and are mechanism descriptions, not causal endpoints.
-4. Outcomes by semantic type. Sparse-topology results, if collected, are a
-   separate follow-up and are never pooled with the mesh protocol.
+4. Outcomes by semantic type within the primary mesh + assigned cell.
 5. Seed-uptake-conditioned estimate: injection conversations restricted to those
    whose seed adopted the assumption at round 0. This is a post-randomisation
    conditioning and is **not** causal; it is reported because a conversation
@@ -327,6 +342,18 @@ Reported with CIs, **unadjusted for multiplicity, and labelled exploratory**:
 8. Trap-adoption trajectory across rounds 0–3.
 9. Judge-derived evidence citation/use and assumption-state measures **only if** the
    judge is available; no primary result depends on it.
+10. **Topology analysis under assigned attribution:** the four scope arms are
+    reported separately for mesh, chain, and star. Sparse results measure
+    four-round system effectiveness, including limited network reach; they are
+    not relabelled as pure evidence-format effects.
+11. **Attribution analysis within mesh:** assigned-minus-anonymous differences
+    are reported separately for each arm. Anonymous and assigned rows are never
+    pooled into one arm rate.
+12. **Exposure diagnostics:** whether an ordinary agent heard a record-backed
+    verifier message, received the exact relay, received a direct tool record,
+    or remained unreached by the final round.
+13. Arm × topology × attribution difference-in-differences are descriptive and
+    explicitly exploratory.
 
 ---
 
@@ -340,7 +367,13 @@ Decided in advance:
   in `EXCLUDED` in `scripts/build_hidden_profile_scenarios.py` with this reason.
 - Conversations with a failed seed generation are excluded from the outcome and
   reported in an all-attempt table (`seed_trial_itt.jsonl`).
-- Agent-rounds with an unparseable answer are excluded; count reported.
+- Agent-rounds with an unparseable answer are flagged and counted. A failed
+  final response contributes no individual vote and is excluded from the
+  corresponding agent-level denominator; it is never silently replaced by the
+  carried-forward answer for scoring. Intermediate failures may carry prior
+  text forward so later rounds can continue, but the failure remains logged.
+  Parse or non-tool generation failures do not invalidate an otherwise complete
+  run; required tool-delivery failures still fail the protocol-integrity gate.
 - No scenario is dropped after seeing outcomes. If a scenario must be dropped
   for a defect discovered post hoc, it is reported as a deviation with the
   analysis repeated both with and without it.
@@ -380,7 +413,7 @@ Consequences, fixed in advance:
 2. **No cross-run contrast is reported as a result.** A control collected in a
    different run — including the same day — is not a valid comparison. Any
    later model replication is reported separately and never pooled with the
-   `gpt-5-mini` confirmatory run.
+   `gpt-5.4-mini` confirmatory run.
 3. **Absolute rates are not claimed to generalize.** Claims are restricted to
    paired within-run contrasts.
 4. **Round-0 probe accompanies every run**, checked with
@@ -407,6 +440,12 @@ scripts/analyze_run.py          # per-conversation summaries and aggregates
 scripts/analyze_statistics.py   # primary outcomes, CIs, Holm p-values, GEE
 scripts/check_drift.py          # round-0 comparability
 ```
+
+The statistics command uses `--by-topology --by-attribution
+--by-semantic-type --factorial`. The primary Holm family is computed only from
+the mesh + assigned cell. Secondary topology reports use assigned attribution;
+secondary attribution reports use mesh. Factorial cells and three-way
+interactions are never silently pooled and remain exploratory.
 
 The confirmatory run is analysed once with this pipeline. Any change to the
 analysis after seeing confirmatory data is logged in §9.
@@ -456,3 +495,6 @@ the paper is submitted.
 | 2026-08-04 | Prompt receipt and tool placebo are included as prespecified mechanism controls across the full corpus. | The exploratory eight-scenario run found direct tool and matched prompt receipt both at ceiling while placebo remained near no correction. Full-corpus controls are necessary to distinguish evidence content and delivery from tool-turn mechanics; they remain outside the Holm-adjusted primary family. |
 | 2026-08-04 | The confirmatory subject model is the single Azure deployment `azure:gpt-5-mini`; the earlier two-family plan is removed. | The implemented runner and completed compatibility gates use this deployment. A hypothetical unimplemented model family cannot be preregistered as collected data. |
 | 2026-08-04 | C3 is interpreted as direct recipient delivery minus agent-mediated relay, not as a tool-invocation effect. | The prompt-receipt control gives recipients identical evidence without their own tool call, so tool-specific attribution requires that separate control contrast. |
+| 2026-08-05 | Speaker attribution is fixed to `assigned` in every confirmatory condition rather than crossed as a second factor. | The pooling rule credits a report from a candidate's assigned reviewer. Anonymous headers make that standing unverifiable, introducing an avoidable authentication failure unrelated to corrective-evidence scope. Fixing attribution preserves the scope contrast and sample size. |
+| 2026-08-05 | Before any confirmatory API call, collection was expanded to the complete 4-arm × 3-topology × 2-attribution factorial, with both mechanism controls in every coordinate. The primary scope claim remains mesh + assigned. | Complete cells prevent selective topology omission and allow prespecified secondary network and attribution analyses. Sparse testimony/relay coverage is treated as part of finite-horizon system effectiveness, not pooled into the primary delivery-format contrast. This supersedes the same-day fixed-attribution collection decision above. |
+| 2026-08-05 | Before any confirmatory API call, the frozen subject deployment was changed from `azure:gpt-5-mini` to `azure:gpt-5.4-mini`. | The team selected the stronger deployment for the final confirmatory study. The deployment is pinned in the launcher and manifest and no results are pooled across models. This supersedes the 2026-08-04 model-selection row above. |

@@ -10,10 +10,26 @@ from assumption_propagation.schemas import (
     TOOL_CORRECTION_SCOPE,
     AgentRoundRecord,
 )
-from scripts.analyze_statistics import build_frame, holm, scope_ladder_report
+from scripts.analyze_statistics import (
+    attribution_effect_report,
+    build_frame,
+    factorial_cell_report,
+    factorial_interaction_report,
+    holm,
+    scope_ladder_report,
+)
 
 
-def _record(run_id, agent, round_index, answer, *, condition="injection"):
+def _record(
+    run_id,
+    agent,
+    round_index,
+    answer,
+    *,
+    condition="injection",
+    attribution=None,
+    **updates,
+):
     return AgentRoundRecord(
         run_id=run_id,
         scenario_id="s1",
@@ -26,10 +42,12 @@ def _record(run_id, agent, round_index, answer, *, condition="injection"):
         corrector_agent_id=1,
         agent_id=agent,
         round=round_index,
+        attribution=attribution,
         answer=answer,
         rationale="test",
         received_from=[] if round_index == 0 else [other for other in range(4) if other != agent],
         messages_received=0 if round_index == 0 else 3,
+        **updates,
     )
 
 
@@ -103,6 +121,44 @@ def test_pre_scope_recovery_retains_early_correction_through_final_round():
     assert pd.isna(
         neutral.loc[3, "pre_scope_trap_to_final_correct_recovery"]
     )
+
+
+def test_build_frame_preserves_attribution_and_finite_horizon_exposure():
+    records = []
+    for agent in range(4):
+        records.append(
+            _record("run-exposure", agent, 0, "A", attribution="assigned")
+        )
+        records.append(
+            _record(
+                "run-exposure",
+                agent,
+                1,
+                "D",
+                attribution="assigned",
+                corrector_message_received=(agent == 2),
+                corrector_held_record_when_speaking=(agent == 2),
+            )
+        )
+    with (
+        patch("scripts.analyze_statistics.load_agent_records", return_value=records),
+        patch(
+            "scripts.analyze_statistics.load_keys",
+            return_value=(
+                {"s1": "D"},
+                {"s1_factual_negative": "A"},
+                {"s1_factual_negative": 0},
+            ),
+        ),
+    ):
+        frame = build_frame(Path("unused-run"), Path("unused-data"))
+
+    assert set(frame.attribution) == {"assigned"}
+    neutral = frame[frame.role == "ordinary_neutral"].set_index("agent_id")
+    assert neutral.loc[2, "heard_record_backed_corrector_by_final"] == 1
+    assert neutral.loc[2, "correction_unreached_by_final"] == 0
+    assert neutral.loc[3, "heard_record_backed_corrector_by_final"] == 0
+    assert neutral.loc[3, "correction_unreached_by_final"] == 1
 
 
 def test_scope_report_excludes_corrector_and_uses_adjacent_contrasts():
@@ -289,3 +345,64 @@ def test_scope_report_marks_absent_pre_scope_opportunities_as_ineligible():
     assert "error" in result[
         "ordinary_neutral_pre_scope_trap_to_final_correct_recovery"
     ]
+
+
+def test_factorial_reports_never_pool_attribution_cells():
+    agent_rows = []
+    conversation_rows = []
+    for scenario in ("s1", "s2", "s3"):
+        for condition in TOOL_CORRECTION_SCOPE:
+            for topology in ("fully_connected_mesh", "looped_chain"):
+                for attribution in ("anonymous", "assigned"):
+                    correct = int(attribution == "assigned")
+                    agent_rows.extend([
+                        {
+                            "scenario_id": scenario,
+                            "condition": condition,
+                            "topology": topology,
+                            "attribution": attribution,
+                            "role": "ordinary_neutral",
+                            "correct": correct,
+                            "trap": 1 - correct,
+                            "correction_reached_by_final": correct,
+                        }
+                        for _ in range(2)
+                    ])
+                    conversation_rows.append({
+                        "scenario_id": scenario,
+                        "condition": condition,
+                        "topology": topology,
+                        "attribution": attribution,
+                        "correct": correct,
+                        "defer": 0,
+                        "tie": 0,
+                    })
+    agents = pd.DataFrame(agent_rows)
+    conversations = pd.DataFrame(conversation_rows)
+
+    cells = factorial_cell_report(agents, conversations)
+    assert len(cells) == len(TOOL_CORRECTION_SCOPE) * 2 * 2
+    assert {
+        (row["topology"], row["attribution"])
+        for row in cells
+    } == {
+        ("fully_connected_mesh", "anonymous"),
+        ("fully_connected_mesh", "assigned"),
+        ("looped_chain", "anonymous"),
+        ("looped_chain", "assigned"),
+    }
+
+    attribution = attribution_effect_report(
+        agents[agents.topology == "fully_connected_mesh"],
+        conversations[conversations.topology == "fully_connected_mesh"],
+        list(TOOL_CORRECTION_SCOPE),
+    )
+    for contrast in attribution["contrasts"].values():
+        assert contrast["ordinary_neutral_accuracy"]["difference"] == 1.0
+
+    interactions = factorial_interaction_report(
+        agents,
+        conversations,
+        TOOL_CORRECTION_SCOPE,
+    )
+    assert interactions["status"] == "exploratory_descriptive"

@@ -28,10 +28,8 @@ clearance-holder sits at ~95–100% throughout and dominates any average.
 |---|---|---|
 | `attribution` | `f3ccba9` | our code — 4 prompt-based arms + attribution factor. **Produced the 33-scenario run.** Tagged `full-exploratory-2026-08-04`. |
 | `hidden-profile-v2` | `da4a3b2` | Richard's — tool-call protocol, `evidence.py`, placebo + prompt-receipt controls |
-| `merged-design` | `9271c31`+ | both, plus corpus article fix. **Current working branch.** 365 tests pass. |
-
-Local `hidden-profile-v2` is stale at `f3ccba9` and never received his work —
-harmless, but the name lies.
+| `merged-design` | `9271c31`+ | both, plus corpus article fix |
+| `hidden-profile-v2` | `c987054`+ | **current working branch**; merged design plus the frozen full-factorial protocol |
 
 ## Corpus lineage
 
@@ -95,16 +93,16 @@ corrector's outgoing message, so it reaches only that agent's direct listeners:
 | chain | +0.010 | +0.016 |
 | star | −0.007 | −0.007 |
 
-So relay works only where it reaches the group, and only under attribution. Any
-pooled relay number (e.g. the old `L3 − L2 = −0.017` "provenance null") averages
-one working cell with two broken ones and should not be reported. **Report relay
-from mesh only.** The other three arms are clean across topologies — broadcast
-delivers via dossier regardless of topology, and testimony's treatment is
-constant even though its diffusion varies.
+Relay exposure is topology-dependent by design: the record travels only with the
+corrector's outgoing message. Never pool these topology cells. The confirmatory
+scope contrast is estimated in mesh + assigned attribution, where all three
+peers receive the corrector's message. Chain and star are collected as
+prespecified secondary finite-horizon system-effectiveness analyses; their
+partial relay reach is measured explicitly rather than treated as missing data.
 
-This is why `--scope-ladder` on `merged-design` refuses non-mesh topologies, and
-why it forces `--variants factual causal`. Both guards are correct; don't route
-around them.
+The official run therefore crosses all six arms with all three topologies and
+both attribution modes while restricting variants to factual and causal. The
+analysis must retain the hierarchy above rather than combine all cells.
 
 **Corpus grammar.** The main run used `c0dc5ac5`, which has "A engineer's" /
 "A analyst's" in 20 of 33 scenarios, in the pooling rule itself. Fixed in
@@ -121,20 +119,25 @@ out. Cause unknown; needs his `run_manifest.json`.
 - **Scenario is the bootstrap cluster.** 33 clusters sets interval width; seeds
   add within-cluster precision only. 2 seeds is fine for exploratory work.
 - **All condition contrasts must be within-run** (prereg §6). Run-to-run drift
-  has spanned 42 points. Attribution is crossed *inside* a run for this reason.
-- **Ladder runs are single-topology** by design (see the relay confound above).
+  has spanned 42 points. The confirmatory run crosses topology and attribution
+  inside one run; the primary scope claim is restricted to mesh + assigned.
+- **Sparse ladder cells measure finite-horizon system effectiveness.** Relay and
+  testimony follow graph edges, whereas direct delivery bypasses the graph.
 
-## Open — none of these have moved
+## Remaining follow-up work
 
 1. **Second model family.** `clients.py` is still Azure + Mock only. Single-model
    is the exact criticism we levelled at Becker et al.
-2. **Preregistration.** `docs/PREREGISTRATION.md` is stale — H2 predicts rising
-   deferral, which the data contradicts; magnitudes are `[FILL]`; power assumed
-   10 clusters and a two-arm contrast.
-3. **Hand-labelling** ~100 corrector rationales (`data/human_labels/` is empty)
-   and the 15-minute conversion spot-check. Both need someone outside the
-   analysis code. Both gate the prereg freeze.
-4. **Which corpus is confirmatory**, and whether the tool arms are in the paper.
+2. **Human rationale validation.** A hand-labelled rationale sample would
+   strengthen qualitative mechanism claims, but it does not gate the frozen
+   answer-based confirmatory outcomes.
+3. **Optional replication.** A second model family would test generality, but it
+   must remain separately labelled and cannot be pooled with the confirmatory
+   `azure:gpt-5.4-mini` run.
+
+The confirmatory corpus, six arms, three topologies, two attribution modes,
+primary cell, contrasts, and failure policy are frozen in
+`docs/PREREGISTRATION.md` and enforced by the official launcher.
 
 ## Practical notes
 

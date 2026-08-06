@@ -6,7 +6,14 @@ current primary protocol is `tool_v2`: no correction, verifier testimony,
 the verifier's testimony plus an exact relay of the tool result, or direct
 recipient delivery operationalized as a forced tool result for each
 non-verifier. The confirmatory subject model is the frozen Azure deployment
-`azure:gpt-5-mini`.
+`azure:gpt-5.4-mini`.
+
+Confirmatory collection crosses anonymous peer headers (`Agent 2`) with assigned
+headers (`Agent 2 (assigned: Borealis)`) across mesh, chain, and star. Assigned
+headers expose which candidate the speaker reviewed, but not the private
+finding. The primary correction-scope claim remains the clean mesh + assigned
+cell; topology and attribution comparisons are secondary, and their interaction
+is exploratory.
 
 The primary comparison uses a fully connected mesh and four synchronous
 rounds. The seed's assessment persists from round 0. After one clean
@@ -75,7 +82,9 @@ Run the four primary `tool_v2` arms:
 ```bash
 uv run python scripts/run_pilot.py --client mock --scenario vendor_001 \
   --variants factual --scope-ladder --scope-protocol tool_v2 --n-seeds 1 \
-  --skip-baselines --skip-independent --rounds 4 --tag scope_smoke
+  --topologies looped_chain neutral_star fully_connected_mesh \
+  --attribution both --skip-baselines --skip-independent --rounds 4 \
+  --tag scope_smoke
 ```
 
 Add the two mechanism controls. They are included in the confirmatory run but
@@ -84,7 +93,8 @@ remain outside the four-arm primary contrast family:
 ```bash
 uv run python scripts/run_pilot.py --client mock --scenario vendor_001 \
   --variants factual --scope-ladder --scope-protocol tool_v2 --scope-controls \
-  --n-seeds 1 --skip-baselines --skip-independent --rounds 4 \
+  --topologies looped_chain neutral_star fully_connected_mesh \
+  --attribution both --n-seeds 1 --skip-baselines --skip-independent --rounds 4 \
   --tag scope_smoke_controls
 ```
 
@@ -111,9 +121,12 @@ The frozen 33-scenario collection command, exact sample size, exclusions, and
 analysis decisions are in `docs/PREREGISTRATION.md`. Commit the preregistration
 and analysis code before the first confirmatory API request.
 
-`--scope-ladder` is mesh-only by design. Using a sparse topology would change
-which agents receive the verifier's relay and would confound evidence route
-with recipient coverage.
+`--scope-ladder` supports all three topologies. Mesh gives conversation-carried
+correction equal immediate coverage and defines the primary scope comparison.
+Chain and star intentionally limit who hears testimony or an exact relay within
+the four-round horizon; direct delivery still reaches every non-verifier. The
+analysis reports actual exposure and does not interpret sparse cells as pure
+delivery-format effects.
 
 `tool_v2` is the default when `--scope-ladder` is supplied. The older
 prompt-only conditions remain reproducible with `--scope-protocol prompt_v1`
@@ -133,8 +146,9 @@ Convenience runners are available under `outputs/validation/`:
 .\outputs\validation\run_tool_v2_azure_six.ps1
 .\outputs\validation\run_tool_v2_azure_six.ps1 -IncludeControls
 
-# Frozen 33-scenario gpt-5-mini confirmatory run. This refuses a dirty
-# tracked worktree, a different deployment, or an inconsistent corpus.
+# Frozen 33-scenario gpt-5.4-mini confirmatory run. This refuses a dirty
+# tracked worktree, a different deployment, inconsistent corpus bytes, or an
+# incomplete arm x topology x attribution grid.
 .\outputs\validation\run_tool_v2_azure_33.ps1
 ```
 

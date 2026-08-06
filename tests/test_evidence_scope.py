@@ -978,7 +978,10 @@ async def test_scope_ladder_counterbalances_execution_order(
         scenario, variant, seed, UniqueResponseClient()
     )
     base_order = list(CORRECTION_SCOPE)
-    rotation_key = f"{variant.assumption_id}:{trial_index}"
+    rotation_key = (
+        f"prompt-v1:{variant.assumption_id}:{trial_index}:"
+        "fully_connected_mesh:anonymous"
+    )
     rotation = int(sha256_text(rotation_key)[:8], 16) % len(base_order)
     expected_order = tuple(base_order[rotation:] + base_order[:rotation])
     assert tuple(results) == expected_order
@@ -990,16 +993,19 @@ async def test_scope_ladder_counterbalances_execution_order(
 
 
 @pytest.mark.asyncio
-async def test_scope_ladder_rejects_topology_or_timing_confounds(scenario, variant):
+async def test_scope_ladder_supports_sparse_topologies_and_rejects_short_timing(
+    scenario, variant
+):
     seed = _frozen_seed(scenario, variant)
-    with pytest.raises(ValueError, match="mesh-only"):
-        await run_correction_scope_ladder(
+    for topology_name in ("looped_chain", "neutral_star"):
+        results = await run_correction_scope_ladder(
             scenario,
             variant,
             seed,
             UniqueResponseClient(),
-            topology_name="looped_chain",
+            topology_name=topology_name,
         )
+        assert set(results) == set(CORRECTION_SCOPE)
     for insufficient_rounds in (
         variant.corrective_evidence.available_round + 1,
         variant.corrective_evidence.available_round + 2,

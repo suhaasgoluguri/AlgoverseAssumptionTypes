@@ -197,7 +197,19 @@ class ConversationOutputs:
 
     def final_answers(self) -> dict[int, Optional[str]]:
         final_round = self.n_rounds - 1
-        return {a: self.outputs[(a, final_round)].answer for a in AGENT_IDS}
+        final_records = {
+            record.agent_id: record
+            for record in self.records
+            if record.round == final_round
+        }
+        return {
+            agent_id: (
+                None
+                if final_records[agent_id].parse_failed
+                else self.outputs[(agent_id, final_round)].answer
+            )
+            for agent_id in AGENT_IDS
+        }
 
 
 def _optional_sum(*values: Optional[int]) -> Optional[int]:
@@ -931,19 +943,17 @@ async def run_correction_scope_ladder(
 ) -> dict[str, ConversationOutputs]:
     """Run four matched correction-scope arms with a shared prefix.
 
-    The primary scope contrast is mesh-only. A common pre-correction history is
-    sampled once and replayed into every arm. At the correction-release round,
+    A common pre-correction history is sampled once and replayed into every arm
+    within one topology/attribution coordinate. At the correction-release round,
     every non-corrector response is also replayed because those agents have
     identical prompts. Hidden matched anchors sample the verifier once with and
     once without the record; measured arms replay those anchors and may run in
     rotated order. Thus the first point at which arms can differ is the intended
-    evidence-delivery channel.
+    evidence-delivery channel. Sparse topologies intentionally limit which
+    recipients hear conversation-carried testimony or relay payloads; direct
+    delivery remains topology-independent.
     """
-    if topology_name != "fully_connected_mesh":
-        raise ValueError(
-            "the correction-scope ladder is mesh-only; non-mesh routing changes "
-            "which peers receive a relay and confounds route with coverage"
-        )
+    validate_topology(topology_name)
     available = variant.corrective_evidence.available_round
     if n_rounds < available + 3:
         raise ValueError(
@@ -976,7 +986,11 @@ async def run_correction_scope_ladder(
     # record and once with it, while replaying every unaffected release-round
     # response. Actual measured arms branch from these anchors, so none of the
     # four must run first merely to supply history to another.
-    parity = frozen_seed.seed_trial_index % 2
+    anchor_key = (
+        f"prompt-v1-anchor:{variant.assumption_id}:"
+        f"{frozen_seed.seed_trial_index}:{topology_name}:{attribution}"
+    )
+    parity = int(sha256_text(anchor_key)[:8], 16) % 2
     anchor_order = (
         ["injection_no_correction", "injection"]
         if parity == 0
@@ -1013,7 +1027,10 @@ async def run_correction_scope_ladder(
     # routes last. The stable assumption/seed hash spreads rotations across the
     # corpus while preserving exact reproducibility.
     base_order = list(CORRECTION_SCOPE)
-    rotation_key = f"{variant.assumption_id}:{frozen_seed.seed_trial_index}"
+    rotation_key = (
+        f"prompt-v1:{variant.assumption_id}:{frozen_seed.seed_trial_index}:"
+        f"{topology_name}:{attribution}"
+    )
     rotation = int(sha256_text(rotation_key)[:8], 16) % len(base_order)
     execution_order = base_order[rotation:] + base_order[:rotation]
     results: dict[str, ConversationOutputs] = {}
@@ -1076,13 +1093,11 @@ async def run_tool_correction_scope_ladder(
     follows: no corrective tool; matched natural testimony; that testimony plus
     the exact canonical tool-result bytes; or a forced direct tool exchange for
     each recipient. Optional controls add the canonical payload as ordinary
-    prompt text or make the same tool turn with a non-diagnostic result.
+    prompt text or make the same tool turn with a non-diagnostic result. In
+    sparse topologies, testimony and exact relay follow graph edges; direct
+    recipient delivery and its controls remain available to every non-verifier.
     """
-    if topology_name != "fully_connected_mesh":
-        raise ValueError(
-            "the tool correction-scope ladder is mesh-only; non-mesh routing "
-            "confounds delivery mode with coverage"
-        )
+    validate_topology(topology_name)
     if not callable(getattr(client, "generate_with_forced_tool", None)):
         raise TypeError(
             "tool correction-scope ladder requires "
@@ -1118,7 +1133,11 @@ async def run_tool_correction_scope_ladder(
 
     # Counterbalance which hidden anchor samples first. Every unaffected
     # release-round response is copied from the first anchor to the second.
-    parity = frozen_seed.seed_trial_index % 2
+    anchor_key = (
+        f"tool-v2-anchor:{variant.assumption_id}:"
+        f"{frozen_seed.seed_trial_index}:{topology_name}:{attribution}"
+    )
+    parity = int(sha256_text(anchor_key)[:8], 16) % 2
     anchor_order = (
         ["injection_tool_none", "injection_tool_testimony"]
         if parity == 0
@@ -1156,7 +1175,7 @@ async def run_tool_correction_scope_ladder(
         base_order.extend(TOOL_CORRECTION_CONTROLS)
     rotation_key = (
         f"tool-v2:{variant.assumption_id}:{frozen_seed.seed_trial_index}:"
-        f"controls={include_controls}"
+        f"{topology_name}:{attribution}:controls={include_controls}"
     )
     rotation = int(sha256_text(rotation_key)[:8], 16) % len(base_order)
     execution_order = base_order[rotation:] + base_order[:rotation]
