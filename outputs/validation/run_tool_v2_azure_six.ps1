@@ -55,7 +55,7 @@ $pilotArgs = @(
     "--skip-independent",
     "--rounds", "4",
     "--temperature", "none",
-    "--max-completion-tokens", "8000",
+    "--max-completion-tokens", "1000",
     "--verbose",
     "--tag", $tag
 )

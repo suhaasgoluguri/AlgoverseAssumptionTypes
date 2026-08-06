@@ -453,7 +453,7 @@ class AzureChatClient:
         self,
         deployment: Optional[str] = None,
         temperature: Optional[float] = 0.2,
-        max_tokens: int = 8000,
+        max_tokens: int = 1000,
     ) -> None:
         self.deployment = deployment or os.environ["AZURE_OPENAI_DEPLOYMENT"]
         self.temperature = temperature

@@ -986,8 +986,8 @@ async def main() -> None:
     parser.add_argument(
         "--max-completion-tokens",
         type=int,
-        default=8000,
-        help="maximum completion-token budget for Azure responses (default: 8000). "
+        default=1000,
+        help="maximum completion-token budget for Azure responses (default: 1000). "
              "Reasoning models may return empty content when this is too small.",
     )
     args = parser.parse_args()

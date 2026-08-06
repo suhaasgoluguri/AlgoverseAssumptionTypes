@@ -19,6 +19,7 @@ def test_confirmatory_runner_collects_the_full_factorial() -> None:
     assert '$attribution = "both"' in text
     assert '$deployment -ne "gpt-5.4-mini"' in text
     assert '$manifest.client.model_identifier -eq "azure:gpt-5.4-mini"' in text
+    assert '"--max-completion-tokens", "1000"' in text
     assert '$attributionModes = @("anonymous", "assigned")' in text
     assert "$replayableSeeds" in text
     assert "$expectedInjectionPerCoordinate = $replayableSeeds * $nArms" in text

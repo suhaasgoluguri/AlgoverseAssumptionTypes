@@ -92,9 +92,9 @@ class _FakeCompletions:
 def _azure_client(outcomes) -> tuple[AzureChatClient, _FakeCompletions]:
     completions = _FakeCompletions(outcomes)
     client = AzureChatClient.__new__(AzureChatClient)
-    client.deployment = "gpt-5-mini"
+    client.deployment = "gpt-5.4-mini"
     client.temperature = None
-    client.max_tokens = 8000
+    client.max_tokens = 1000
     client._retry_wait = wait_none()
     client._client = SimpleNamespace(
         chat=SimpleNamespace(completions=completions)

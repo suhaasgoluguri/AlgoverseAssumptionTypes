@@ -257,7 +257,7 @@ uv run python scripts/run_pilot.py `
   --skip-independent `
   --rounds 4 `
   --temperature none `
-  --max-completion-tokens 8000 `
+  --max-completion-tokens 1000 `
   --verbose `
   --tag confirmatory_scope33_gpt54mini
 ```
@@ -498,3 +498,4 @@ the paper is submitted.
 | 2026-08-05 | Speaker attribution is fixed to `assigned` in every confirmatory condition rather than crossed as a second factor. | The pooling rule credits a report from a candidate's assigned reviewer. Anonymous headers make that standing unverifiable, introducing an avoidable authentication failure unrelated to corrective-evidence scope. Fixing attribution preserves the scope contrast and sample size. |
 | 2026-08-05 | Before any confirmatory API call, collection was expanded to the complete 4-arm × 3-topology × 2-attribution factorial, with both mechanism controls in every coordinate. The primary scope claim remains mesh + assigned. | Complete cells prevent selective topology omission and allow prespecified secondary network and attribution analyses. Sparse testimony/relay coverage is treated as part of finite-horizon system effectiveness, not pooled into the primary delivery-format contrast. This supersedes the same-day fixed-attribution collection decision above. |
 | 2026-08-05 | Before any confirmatory API call, the frozen subject deployment was changed from `azure:gpt-5-mini` to `azure:gpt-5.4-mini`. | The team selected the stronger deployment for the final confirmatory study. The deployment is pinned in the launcher and manifest and no results are pooled across models. This supersedes the 2026-08-04 model-selection row above. |
+| 2026-08-05 | Before any confirmatory API call, `max_completion_tokens` was reduced from 8,000 to 400 per completion. | The $190 Azure budget requires a bounded worst case. The final `gpt-5.4-mini` preflight used at most 127 output tokens across each genuine two-completion tool exchange, and earlier 400-token runs showed no truncation-attributable parse failures. The cap is pinned in the launcher and manifest; any length-finished or parse-failed response remains logged. |
