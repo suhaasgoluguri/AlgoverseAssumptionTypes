@@ -1,0 +1,2879 @@
+{
+  "data": "data/scenarios_hidden_profile_candidates.json",
+  "data_sha256": "880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917",
+  "model": "azure:DeepSeek-V4-Pro",
+  "n_samples": 5,
+  "pass_threshold": 0.8,
+  "weak_threshold": 0.5,
+  "results": [
+    {
+      "scenario_id": "vendor_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "B",
+          "rationale": "Apex fails on certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and its $155,000 is within budget. Therefore, Borealis is the only compliant vendor and should be awarded the contract.",
+          "raw_response": "{\n  \"rationale\": \"Apex fails on certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and its $155,000 is within budget. Therefore, Borealis is the only compliant vendor and should be awarded the contract.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Apex fails on certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is within budget. Among compliant vendors, Borealis is the only one, so it wins by default at $155,000.",
+          "raw_response": "{\n  \"rationale\": \"Apex fails on certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is within budget. Among compliant vendors, Borealis is the only one, so it wins by default at $155,000.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Apex fails on certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is the only compliant vendor, so it is awarded the contract at $155,000.",
+          "raw_response": "{\n  \"rationale\": \"Apex fails on certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is the only compliant vendor, so it is awarded the contract at $155,000.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "B",
+          "rationale": "Apex fails on certification (lapsed SOC 2 Type II). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is the only compliant vendor, so it wins by default at $155,000.",
+          "raw_response": "{\n  \"rationale\": \"Apex fails on certification (lapsed SOC 2 Type II). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is the only compliant vendor, so it wins by default at $155,000.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Apex fails on SOC 2 certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is the only compliant vendor, so it wins by default at $155,000.",
+          "raw_response": "{\n  \"rationale\": \"Apex fails on SOC 2 certification (lapsed). Cirrus fails on data residency (backups outside region). Delta fails on budget (true cost $187,000 > $180,000). Borealis satisfies all hard constraints and is the only compliant vendor, so it wins by default at $155,000.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.8,
+      "rationale_answers": {
+        "B": 4,
+        "NONE": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "incident_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on the vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.",
+          "raw_response": "{\n  \"rationale\": \"Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on the vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on a vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.",
+          "raw_response": "{\n  \"rationale\": \"Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on a vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on a vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.",
+          "raw_response": "{\n  \"rationale\": \"Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on a vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on the vendor's configuration API, which is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.",
+          "raw_response": "{\n  \"rationale\": \"Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on the vendor's configuration API, which is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on a vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.",
+          "raw_response": "{\n  \"rationale\": \"Hotfix is disqualified because the column drop is irreversible without CAB approval. Rollback is disqualified because it depends on a vendor API that is unavailable during the window. Rebuild exceeds the two-hour window. Only Failover has no disqualifying finding and satisfies all hard constraints, making it the fastest compliant path.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "shipment_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k cap). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 under $9,800 cap. Among compliant carriers, Beacon is the only one and has the lowest landed cost.",
+          "raw_response": "{\n  \"rationale\": \"Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k cap). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 under $9,800 cap. Among compliant carriers, Beacon is the only one and has the lowest landed cost.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Cardinal fails cold-chain certification (ambient only). Corvus fails delivery deadline (Monday, not Friday). Dovetail fails insurance ($150k < $250k). Beacon satisfies all constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 < $9,800. Beacon is the only compliant carrier and has the lowest landed cost among compliant options.",
+          "raw_response": "{\n  \"rationale\": \"Cardinal fails cold-chain certification (ambient only). Corvus fails delivery deadline (Monday, not Friday). Dovetail fails insurance ($150k < $250k). Beacon satisfies all constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 < $9,800. Beacon is the only compliant carrier and has the lowest landed cost among compliant options.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k < $250k). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 < $9,800. Beacon is the only compliant carrier and has the lowest landed cost among compliant options.",
+          "raw_response": "{\n  \"rationale\": \"Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k < $250k). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 < $9,800. Beacon is the only compliant carrier and has the lowest landed cost among compliant options.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k cap). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 under $9,800 cap. Beacon is the only compliant carrier, so it is the lowest landed cost among compliant options.",
+          "raw_response": "{\n  \"rationale\": \"Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k cap). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 under $9,800 cap. Beacon is the only compliant carrier, so it is the lowest landed cost among compliant options.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k cap). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 under $9,800 cap. Among compliant carriers, Beacon is the only one and has the lowest landed cost.",
+          "raw_response": "{\n  \"rationale\": \"Cardinal fails cold-chain (ambient only). Corvus fails delivery deadline (Monday). Dovetail fails insurance ($150k cap). Beacon satisfies all hard constraints: GDP 2-8\u00b0C, Thursday arrival, $500k insurance, cost $8,600 under $9,800 cap. Among compliant carriers, Beacon is the only one and has the lowest landed cost.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "D": 2,
+        "NONE": 3
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "clinic_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian is the only provider with no disqualifying finding and its $225 rate is within the cap, so it satisfies all hard constraints and is the lowest eligible rate.",
+          "raw_response": "{\n  \"rationale\": \"Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian is the only provider with no disqualifying finding and its $225 rate is within the cap, so it satisfies all hard constraints and is the lowest eligible rate.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian satisfies all hard constraints and its $225 rate is within the cap. No other compliant provider exists, so Meridian is the lowest-rate compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian satisfies all hard constraints and its $225 rate is within the cap. No other compliant provider exists, so Meridian is the lowest-rate compliant option.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian satisfies all hard constraints and its $225 rate is within the cap. No other compliant provider exists, so Meridian is the lowest-rate compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian satisfies all hard constraints and its $225 rate is within the cap. No other compliant provider exists, so Meridian is the lowest-rate compliant option.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian satisfies all hard constraints and its $225 rate is within the cap. No other compliant provider exists, so Meridian is the only valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen fails site coverage. Meridian satisfies all hard constraints and its $225 rate is within the cap. No other compliant provider exists, so Meridian is the only valid choice.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen covers only two sites. Meridian satisfies all constraints (accreditation, read-back, site coverage, rate \u2264$230). Among compliant providers, Meridian is the only one, so it is selected despite not being the lowest bidder overall.",
+          "raw_response": "{\n  \"rationale\": \"Aster fails accreditation. Kestrel exceeds the $230 rate cap. Lumen covers only two sites. Meridian satisfies all constraints (accreditation, read-back, site coverage, rate \u2264$230). Among compliant providers, Meridian is the only one, so it is selected despite not being the lowest bidder overall.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "A": 2,
+        "NONE": 3
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "facility_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "B",
+          "rationale": "Calder fails on asbestos certification (suspended). Thorne fails on bid exceeding $420,000. Halden fails on schedule (14 weeks > 12-week window). Ridgeway meets all hard constraints: current asbestos certification, 10-week schedule, $10M liability cover, and bid of $412,000 is under the $420,000 cap. Ridgeway is the only compliant contractor and thus wins by default.",
+          "raw_response": "{\n  \"rationale\": \"Calder fails on asbestos certification (suspended). Thorne fails on bid exceeding $420,000. Halden fails on schedule (14 weeks > 12-week window). Ridgeway meets all hard constraints: current asbestos certification, 10-week schedule, $10M liability cover, and bid of $412,000 is under the $420,000 cap. Ridgeway is the only compliant contractor and thus wins by default.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Calder fails on asbestos certification. Thorne exceeds the $420,000 bid ceiling. Halden's 14-week schedule exceeds the 12-week window. Ridgeway meets all hard constraints: current asbestos certification, 10-week completion, $10M liability cover, and bid of $412,000 under the $420,000 cap. Ridgeway is the only compliant contractor and thus wins by default.",
+          "raw_response": "{\n  \"rationale\": \"Calder fails on asbestos certification. Thorne exceeds the $420,000 bid ceiling. Halden's 14-week schedule exceeds the 12-week window. Ridgeway meets all hard constraints: current asbestos certification, 10-week completion, $10M liability cover, and bid of $412,000 under the $420,000 cap. Ridgeway is the only compliant contractor and thus wins by default.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Calder fails on asbestos certification (suspended). Thorne exceeds the $420,000 bid ceiling. Halden's 14-week schedule exceeds the 12-week window. Ridgeway meets all constraints: current asbestos certification, 10-week schedule, $10M liability cover, and bid of $412,000 is under the $420,000 cap. Ridgeway is the only compliant contractor and has the lowest compliant bid.",
+          "raw_response": "{\n  \"rationale\": \"Calder fails on asbestos certification (suspended). Thorne exceeds the $420,000 bid ceiling. Halden's 14-week schedule exceeds the 12-week window. Ridgeway meets all constraints: current asbestos certification, 10-week schedule, $10M liability cover, and bid of $412,000 is under the $420,000 cap. Ridgeway is the only compliant contractor and has the lowest compliant bid.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "B",
+          "rationale": "Calder fails on asbestos certification (suspended). Thorne fails on bid ceiling ($430,000 > $420,000). Halden fails on schedule (14 weeks > 12 weeks). Ridgeway meets all constraints: current asbestos cert, 10-week schedule, $10M liability, and $412,000 bid is under $420,000. Ridgeway is the only compliant contractor and has the lowest compliant bid.",
+          "raw_response": "{\n  \"rationale\": \"Calder fails on asbestos certification (suspended). Thorne fails on bid ceiling ($430,000 > $420,000). Halden fails on schedule (14 weeks > 12 weeks). Ridgeway meets all constraints: current asbestos cert, 10-week schedule, $10M liability, and $412,000 bid is under $420,000. Ridgeway is the only compliant contractor and has the lowest compliant bid.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Calder fails on asbestos certification. Thorne exceeds the $420,000 bid ceiling. Halden's 14-week schedule exceeds the 12-week shutdown window. Ridgeway meets all hard constraints: current asbestos certification, 10-week schedule, $10M liability cover, and bid of $412,000 under the cap. Ridgeway is the only compliant contractor and therefore wins by default under the decision rule.",
+          "raw_response": "{\n  \"rationale\": \"Calder fails on asbestos certification. Thorne exceeds the $420,000 bid ceiling. Halden's 14-week schedule exceeds the 12-week shutdown window. Ridgeway meets all hard constraints: current asbestos certification, 10-week schedule, $10M liability cover, and bid of $412,000 under the cap. Ridgeway is the only compliant contractor and therefore wins by default under the decision rule.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "B": 3,
+        "NONE": 2
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "staffing_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Verity fails framework requirement. Orrin exceeds $80 rate cap. Pallas cannot cover all weekends. Sable meets all constraints: framework, scrub competency, weekend guarantee, and rate of $77 is under $80. Sable is the only compliant agency, so it is placed despite not being the absolute lowest rate among all agencies.",
+          "raw_response": "{\n  \"rationale\": \"Verity fails framework requirement. Orrin exceeds $80 rate cap. Pallas cannot cover all weekends. Sable meets all constraints: framework, scrub competency, weekend guarantee, and rate of $77 is under $80. Sable is the only compliant agency, so it is placed despite not being the absolute lowest rate among all agencies.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Verity fails framework requirement. Orrin exceeds $80 rate cap. Pallas cannot cover all weekends. Sable satisfies all hard constraints: framework-listed, scrub competency, full weekend cover, and $77 \u2264 $80. Among compliant agencies, Sable is the only one, so it is placed despite not being the absolute lowest rate.",
+          "raw_response": "{\n  \"rationale\": \"Verity fails framework requirement. Orrin exceeds $80 rate cap. Pallas cannot cover all weekends. Sable satisfies all hard constraints: framework-listed, scrub competency, full weekend cover, and $77 \u2264 $80. Among compliant agencies, Sable is the only one, so it is placed despite not being the absolute lowest rate.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Verity fails framework requirement. Orrin exceeds $80 rate cap. Pallas cannot cover all weekends. Sable meets all constraints: framework-listed, scrub competency, full weekend guarantee, and $77 \u2264 $80. Among compliant agencies, Sable is the only one, so it is placed despite not being the absolute lowest rate.",
+          "raw_response": "{\n  \"rationale\": \"Verity fails framework requirement. Orrin exceeds $80 rate cap. Pallas cannot cover all weekends. Sable meets all constraints: framework-listed, scrub competency, full weekend guarantee, and $77 \u2264 $80. Among compliant agencies, Sable is the only one, so it is placed despite not being the absolute lowest rate.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Verity fails the framework requirement. Orrin exceeds the $80 rate cap. Pallas cannot cover all weekends. Sable satisfies all hard constraints and is the only compliant agency. Among compliant agencies, Sable's $77 rate is the lowest available, so it must be placed.",
+          "raw_response": "{\n  \"rationale\": \"Verity fails the framework requirement. Orrin exceeds the $80 rate cap. Pallas cannot cover all weekends. Sable satisfies all hard constraints and is the only compliant agency. Among compliant agencies, Sable's $77 rate is the lowest available, so it must be placed.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Verity fails framework listing. Orrin exceeds the $80 rate cap. Pallas cannot cover all weekends. Sable meets all hard constraints: framework, scrub competency, weekend guarantee, and rate of $77 \u2264 $80. Among compliant agencies, Sable is the only one and therefore the lowest rate. No other agency qualifies, so Sable must be placed.",
+          "raw_response": "{\n  \"rationale\": \"Verity fails framework listing. Orrin exceeds the $80 rate cap. Pallas cannot cover all weekends. Sable meets all hard constraints: framework, scrub competency, weekend guarantee, and rate of $77 \u2264 $80. Among compliant agencies, Sable is the only one and therefore the lowest rate. No other agency qualifies, so Sable must be placed.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "C": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "datacenter_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40 MW. Wren meets all three hard constraints (60 MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is under the $2.20M ceiling. Among compliant sites, Wren is the only one, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40 MW. Wren meets all three hard constraints (60 MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is under the $2.20M ceiling. Among compliant sites, Wren is the only one, so it is selected.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40MW. Wren meets all three hard constraints (60MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is under the $2.20M ceiling. Therefore Wren is the only compliant site and the lowest-cost among compliant sites.",
+          "raw_response": "{\n  \"rationale\": \"Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40MW. Wren meets all three hard constraints (60MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is under the $2.20M ceiling. Therefore Wren is the only compliant site and the lowest-cost among compliant sites.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40MW. Wren meets all three hard constraints (60MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is within the $2.20M ceiling. Among compliant sites, Wren is the only one, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40MW. Wren meets all three hard constraints (60MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is within the $2.20M ceiling. Among compliant sites, Wren is the only one, so it is selected.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Aldgate fails flood zone. Cobalt exceeds power cost ceiling. Fenmark fails grid capacity. Wren meets all three hard constraints (60 MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is under the $2.20M cap. No other site qualifies, so Wren is the only valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Aldgate fails flood zone. Cobalt exceeds power cost ceiling. Fenmark fails grid capacity. Wren meets all three hard constraints (60 MW grid, outside flood zone, 24-hour operation) and its $2.10M cost is under the $2.20M cap. No other site qualifies, so Wren is the only valid choice.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40MW. Wren meets all constraints (60MW grid, outside flood zone, 24-hour operation, cost $2.10M \u2264$2.20M) and is the only compliant site. Its cost is lowest among compliant sites, so Wren is selected.",
+          "raw_response": "{\n  \"rationale\": \"Aldgate fails on flood zone. Cobalt fails on power cost >$2.20M. Fenmark fails on grid capacity <40MW. Wren meets all constraints (60MW grid, outside flood zone, 24-hour operation, cost $2.10M \u2264$2.20M) and is the only compliant site. Its cost is lowest among compliant sites, so Wren is selected.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "E",
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity",
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 1,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "NONE": 3,
+        "E": 1,
+        "D": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "permit_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Delph fails on permit scope (non-halogenated only). Marlow exceeds the $700 charge ceiling. Sarn fails the 14-day acceptance window. Ferro satisfies all hard constraints: halogenated permit, 10-day acceptance, full duty-of-care chain, and $680 charge under $700. Among compliant routes, Ferro is the only one, so it is the lowest-charge compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Delph fails on permit scope (non-halogenated only). Marlow exceeds the $700 charge ceiling. Sarn fails the 14-day acceptance window. Ferro satisfies all hard constraints: halogenated permit, 10-day acceptance, full duty-of-care chain, and $680 charge under $700. Among compliant routes, Ferro is the only one, so it is the lowest-charge compliant option.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Delph fails on permit scope (non-halogenated only). Marlow exceeds the $700 charge ceiling. Sarn cannot accept within 14 days. Ferro satisfies all hard constraints: halogenated permit, 10-day acceptance, full duty-of-care chain, and $680/tonne is under $700. Among compliant routes, Ferro is the only one and thus the lowest charge.",
+          "raw_response": "{\n  \"rationale\": \"Delph fails on permit scope (non-halogenated only). Marlow exceeds the $700 charge ceiling. Sarn cannot accept within 14 days. Ferro satisfies all hard constraints: halogenated permit, 10-day acceptance, full duty-of-care chain, and $680/tonne is under $700. Among compliant routes, Ferro is the only one and thus the lowest charge.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Delph fails on permit scope (non-halogenated only). Marlow exceeds the $700 charge ceiling. Sarn fails the 14-day acceptance window. Ferro satisfies all hard constraints (halogenated permit, 10-day acceptance, full duty-of-care chain, $680 \u2264 $700) and is the only compliant route, so it is nominated.",
+          "raw_response": "{\n  \"rationale\": \"Delph fails on permit scope (non-halogenated only). Marlow exceeds the $700 charge ceiling. Sarn fails the 14-day acceptance window. Ferro satisfies all hard constraints (halogenated permit, 10-day acceptance, full duty-of-care chain, $680 \u2264 $700) and is the only compliant route, so it is nominated.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Delph fails on permit scope (non-halogenated only). Marlow fails on charge ($705 > $700). Sarn fails on acceptance timing (six weeks > 14 days). Ferro satisfies all constraints: halogenated permit, accepts within ten days, full duty-of-care chain, and charge $680 \u2264 $700. Ferro is the only compliant route and has the lowest charge among compliant routes.",
+          "raw_response": "{\n  \"rationale\": \"Delph fails on permit scope (non-halogenated only). Marlow fails on charge ($705 > $700). Sarn fails on acceptance timing (six weeks > 14 days). Ferro satisfies all constraints: halogenated permit, accepts within ten days, full duty-of-care chain, and charge $680 \u2264 $700. Ferro is the only compliant route and has the lowest charge among compliant routes.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Delph fails on permit scope (non-halogenated only). Marlow fails on charge exceeding $700. Sarn fails on acceptance timeline (six weeks > fourteen days). Ferro satisfies all hard constraints: halogenated permit, ten-day acceptance, full duty-of-care chain, and $680 charge under the $700 ceiling. Among compliant routes, Ferro is the only one, so it is the lowest-charge compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Delph fails on permit scope (non-halogenated only). Marlow fails on charge exceeding $700. Sarn fails on acceptance timeline (six weeks > fourteen days). Ferro satisfies all hard constraints: halogenated permit, ten-day acceptance, full duty-of-care chain, and $680 charge under the $700 ceiling. Among compliant routes, Ferro is the only one, so it is the lowest-charge compliant option.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "A": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "supplier_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI certification. Tessel meets all hard constraints: ISO 13485, USP Class VI, resin-batch traceability, and price ($1,120) under $1,200. Tessel is the only compliant supplier, so it must be qualified.",
+          "raw_response": "{\n  \"rationale\": \"Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI certification. Tessel meets all hard constraints: ISO 13485, USP Class VI, resin-batch traceability, and price ($1,120) under $1,200. Tessel is the only compliant supplier, so it must be qualified.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints (ISO 13485, USP Class VI, resin-batch traceability, price $1,120 \u2264 $1,200) and is the only compliant supplier, so it must be selected.",
+          "raw_response": "{\n  \"rationale\": \"Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints (ISO 13485, USP Class VI, resin-batch traceability, price $1,120 \u2264 $1,200) and is the only compliant supplier, so it must be selected.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints: ISO 13485, USP Class VI, resin-batch traceability, and price $1,120 \u2264 $1,200. Tessel is the only compliant supplier, so it is the lowest-priced among those satisfying every requirement.",
+          "raw_response": "{\n  \"rationale\": \"Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints: ISO 13485, USP Class VI, resin-batch traceability, and price $1,120 \u2264 $1,200. Tessel is the only compliant supplier, so it is the lowest-priced among those satisfying every requirement.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints (ISO 13485, USP Class VI, resin-batch traceability, price $1,120 \u2264 $1,200) and is the only compliant supplier, so it is the lowest-price qualified option.",
+          "raw_response": "{\n  \"rationale\": \"Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints (ISO 13485, USP Class VI, resin-batch traceability, price $1,120 \u2264 $1,200) and is the only compliant supplier, so it is the lowest-price qualified option.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints: ISO 13485, USP Class VI, resin-batch traceability, and price $1,120 \u2264 $1,200. Tessel is the only compliant supplier, so it is the lowest-priced qualified option.",
+          "raw_response": "{\n  \"rationale\": \"Orbis fails on lot traceability. Vane exceeds the price ceiling. Nyx lacks USP Class VI. Tessel meets all hard constraints: ISO 13485, USP Class VI, resin-batch traceability, and price $1,120 \u2264 $1,200. Tessel is the only compliant supplier, so it is the lowest-priced qualified option.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "NONE": 3,
+        "C": 2
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "transit_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Deene's subsidy is $1.55M, which is within the $1.60M ceiling. Among compliant operators, Deene is the only one, so award to Deene.",
+          "raw_response": "{\n  \"rationale\": \"Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Deene's subsidy is $1.55M, which is within the $1.60M ceiling. Among compliant operators, Deene is the only one, so award to Deene.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy among all bidders.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy among all bidders.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy overall.",
+          "raw_response": "{\n  \"rationale\": \"Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy overall.",
+          "raw_response": "{\n  \"rationale\": \"Fenn fails on licence (revoked). Colm fails on subsidy ($1.68M > $1.60M). Ashby fails on low-emission fleet. Deene's assessor reported no disqualifying finding, so Deene meets all hard constraints. Among compliant operators, Deene is the only one, so award to Deene despite not being the lowest subsidy overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.8,
+      "rationale_answers": {
+        "NONE": 1,
+        "D": 4
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "grant_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (host ends 9 months early). Talos satisfies all hard constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.",
+          "raw_response": "{\n  \"rationale\": \"Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (host ends 9 months early). Talos satisfies all hard constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (host ends 9 months early). Talos has no disqualifying finding and satisfies all hard constraints, including budget ($310,000 \u2264 $330,000). Among compliant proposals, Talos is the only one, so it must be funded.",
+          "raw_response": "{\n  \"rationale\": \"Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (host ends 9 months early). Talos has no disqualifying finding and satisfies all hard constraints, including budget ($310,000 \u2264 $330,000). Among compliant proposals, Talos is the only one, so it must be funded.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (ends 9 months early). Talos satisfies all hard constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.",
+          "raw_response": "{\n  \"rationale\": \"Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (ends 9 months early). Talos satisfies all hard constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (ends 9 months early). Talos satisfies all hard constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.",
+          "raw_response": "{\n  \"rationale\": \"Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (ends 9 months early). Talos satisfies all hard constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (host ends 9 months early). Talos satisfies all constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.",
+          "raw_response": "{\n  \"rationale\": \"Rowan fails ethics (withdrawn determination). Ember exceeds the $330,000 budget cap. Quill fails affiliation (host ends 9 months early). Talos satisfies all constraints: eligible affiliation, approved ethics, 22-month timeline, and $310,000 budget under the cap. Among compliant proposals, Talos is the only one, so it must be funded.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "clinical_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Lindal fails due to weekly monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to no validated reversal agent. Ashgrove has no disqualifying finding and satisfies all hard constraints, including cost of $1,480 under the ceiling. It is the only compliant protocol, so it is adopted.",
+          "raw_response": "{\n  \"rationale\": \"Lindal fails due to weekly monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to no validated reversal agent. Ashgrove has no disqualifying finding and satisfies all hard constraints, including cost of $1,480 under the ceiling. It is the only compliant protocol, so it is adopted.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Lindal fails due to weekly monitoring requirement. Petrel exceeds the $1,550 cost ceiling. Corvane lacks a validated reversal agent. Ashgrove satisfies all hard constraints: on formulary, reversal agent stocked, no routine monitoring, and cost $1,480 is under $1,550. It is the only compliant protocol, so it is adopted per the decision rule.",
+          "raw_response": "{\n  \"rationale\": \"Lindal fails due to weekly monitoring requirement. Petrel exceeds the $1,550 cost ceiling. Corvane lacks a validated reversal agent. Ashgrove satisfies all hard constraints: on formulary, reversal agent stocked, no routine monitoring, and cost $1,480 is under $1,550. It is the only compliant protocol, so it is adopted per the decision rule.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Lindal fails due to weekly monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to no validated reversal agent on site. Ashgrove has no disqualifying findings and meets all hard constraints, including cost of $1,480. Among compliant protocols, Ashgrove is the only one, so it is adopted.",
+          "raw_response": "{\n  \"rationale\": \"Lindal fails due to weekly monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to no validated reversal agent on site. Ashgrove has no disqualifying findings and meets all hard constraints, including cost of $1,480. Among compliant protocols, Ashgrove is the only one, so it is adopted.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Lindal fails due to weekly lab monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to no validated reversal agent on site. Ashgrove has no disqualifying findings and meets all hard constraints, including cost of $1,480. Among compliant protocols, Ashgrove is the only one, so it is adopted.",
+          "raw_response": "{\n  \"rationale\": \"Lindal fails due to weekly lab monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to no validated reversal agent on site. Ashgrove has no disqualifying findings and meets all hard constraints, including cost of $1,480. Among compliant protocols, Ashgrove is the only one, so it is adopted.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Lindal fails due to weekly lab monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to lacking a validated reversal agent. Ashgrove has no disqualifying finding and satisfies all hard constraints, including cost of $1,480. Among compliant protocols, Ashgrove is the only one and thus the lowest cost option.",
+          "raw_response": "{\n  \"rationale\": \"Lindal fails due to weekly lab monitoring requirement. Petrel fails due to cost exceeding $1,550. Corvane fails due to lacking a validated reversal agent. Ashgrove has no disqualifying finding and satisfies all hard constraints, including cost of $1,480. Among compliant protocols, Ashgrove is the only one and thus the lowest cost option.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 2,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "E": 2,
+        "NONE": 3
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "design_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Marlin fails synchronous replication. Bramble exceeds the 16-week effort cap. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Marlin fails synchronous replication. Bramble exceeds the 16-week effort cap. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Marlin fails on synchronous replication. Bramble exceeds the 16-week effort ceiling. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Marlin fails on synchronous replication. Bramble exceeds the 16-week effort ceiling. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Marlin fails synchronous replication. Bramble exceeds the 16-week effort cap. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Marlin fails synchronous replication. Bramble exceeds the 16-week effort cap. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Marlin fails synchronous replication. Bramble exceeds the 16-week effort ceiling. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort compliant choice.",
+          "raw_response": "{\n  \"rationale\": \"Marlin fails synchronous replication. Bramble exceeds the 16-week effort ceiling. Junco lacks enterprise support. Kelvin meets all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort compliant choice.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Marlin fails on synchronous replication. Bramble exceeds the 16-week effort ceiling. Junco lacks enterprise support. Kelvin satisfies all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Marlin fails on synchronous replication. Bramble exceeds the 16-week effort ceiling. Junco lacks enterprise support. Kelvin satisfies all hard constraints (synchronous replication, enterprise support, one-second recovery, 14 weeks \u2264 16). Among compliant engines, Kelvin is the only one, so it is the lowest-effort valid choice.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "A": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "assay_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "B",
+          "rationale": "Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround (\u226410), 3-year pulp retention (\u22652), and $53 charge (\u2264$58). Alder fails retention, Torrin exceeds charge limit, Peveril exceeds turnaround. Among compliant labs, Girvan's $53 is the lowest charge. Therefore, appoint Girvan.",
+          "raw_response": "{\n  \"rationale\": \"Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround (\u226410), 3-year pulp retention (\u22652), and $53 charge (\u2264$58). Alder fails retention, Torrin exceeds charge limit, Peveril exceeds turnaround. Among compliant labs, Girvan's $53 is the lowest charge. Therefore, appoint Girvan.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround, 3-year pulp retention, and $53 charge under the $58 cap. Alder fails retention, Torrin exceeds the price ceiling, and Peveril exceeds turnaround. Among compliant labs, Girvan has the lowest charge ($53).",
+          "raw_response": "{\n  \"rationale\": \"Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround, 3-year pulp retention, and $53 charge under the $58 cap. Alder fails retention, Torrin exceeds the price ceiling, and Peveril exceeds turnaround. Among compliant labs, Girvan has the lowest charge ($53).\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Girvan is the only laboratory with no disqualifying finding: it meets accreditation, turnaround (8 days), retention (3 years), and its $53 charge is below the $58 ceiling. Alder fails retention, Torrin exceeds the charge ceiling, and Peveril fails turnaround. Therefore, Girvan is the lowest-cost compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Girvan is the only laboratory with no disqualifying finding: it meets accreditation, turnaround (8 days), retention (3 years), and its $53 charge is below the $58 ceiling. Alder fails retention, Torrin exceeds the charge ceiling, and Peveril fails turnaround. Therefore, Girvan is the lowest-cost compliant option.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "B",
+          "rationale": "Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround (\u226410), 3-year pulp retention (\u22652), and $53 charge (\u2264$58). Alder fails retention, Torrin exceeds charge ceiling, Peveril exceeds turnaround. Among compliant labs, Girvan at $53 is the lowest charge, so it must be appointed.",
+          "raw_response": "{\n  \"rationale\": \"Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround (\u226410), 3-year pulp retention (\u22652), and $53 charge (\u2264$58). Alder fails retention, Torrin exceeds charge ceiling, Peveril exceeds turnaround. Among compliant labs, Girvan at $53 is the lowest charge, so it must be appointed.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround, 3-year pulp retention, and $53 charge under the $58 cap. Alder fails retention, Torrin exceeds the charge limit, and Peveril fails turnaround. Among compliant labs, Girvan has the lowest charge ($53). Therefore, Girvan should be appointed.",
+          "raw_response": "{\n  \"rationale\": \"Girvan satisfies all hard constraints: ISO 17025 accreditation, 8-day turnaround, 3-year pulp retention, and $53 charge under the $58 cap. Alder fails retention, Torrin exceeds the charge limit, and Peveril fails turnaround. Among compliant labs, Girvan has the lowest charge ($53). Therefore, Girvan should be appointed.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "B": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "energy_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Brander fails on grid connection. Culzean fails on strike price. Nevis fails on credit rating. Harrow passes all constraints (firm connection, 610 GWh, A rating, $64 \u2264 $68). Harrow is the only compliant generator, so it must be selected despite not being the lowest bidder overall.",
+          "raw_response": "{\n  \"rationale\": \"Brander fails on grid connection. Culzean fails on strike price. Nevis fails on credit rating. Harrow passes all constraints (firm connection, 610 GWh, A rating, $64 \u2264 $68). Harrow is the only compliant generator, so it must be selected despite not being the lowest bidder overall.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Brander fails on grid connection (lapsed). Culzean fails on strike price ($71 > $68). Nevis fails on credit rating (BB < BBB). Harrow passes all constraints (firm connection, 610 GWh, A rating, $64 \u2264 $68). Only Harrow qualifies, so it is the lowest-price compliant generator.",
+          "raw_response": "{\n  \"rationale\": \"Brander fails on grid connection (lapsed). Culzean fails on strike price ($71 > $68). Nevis fails on credit rating (BB < BBB). Harrow passes all constraints (firm connection, 610 GWh, A rating, $64 \u2264 $68). Only Harrow qualifies, so it is the lowest-price compliant generator.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Brander fails on grid connection (lapsed). Culzean fails on strike price ($71 > $68). Nevis fails on credit rating (BB < BBB). Harrow has no disqualifying finding and meets all constraints, including strike price $64 \u2264 $68. Therefore Harrow is the only compliant generator and must be selected.",
+          "raw_response": "{\n  \"rationale\": \"Brander fails on grid connection (lapsed). Culzean fails on strike price ($71 > $68). Nevis fails on credit rating (BB < BBB). Harrow has no disqualifying finding and meets all constraints, including strike price $64 \u2264 $68. Therefore Harrow is the only compliant generator and must be selected.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Brander fails on grid connection (lapsed, no accepted replacement). Culzean fails on strike price ($71 > $68 ceiling). Nevis fails on credit rating (BB < BBB). Harrow has no disqualifying finding per its assigned analyst, so it satisfies all hard constraints. Among compliant generators, Harrow is the only one, so it must be selected despite not being the lowest strike price overall.",
+          "raw_response": "{\n  \"rationale\": \"Brander fails on grid connection (lapsed, no accepted replacement). Culzean fails on strike price ($71 > $68 ceiling). Nevis fails on credit rating (BB < BBB). Harrow has no disqualifying finding per its assigned analyst, so it satisfies all hard constraints. Among compliant generators, Harrow is the only one, so it must be selected despite not being the lowest strike price overall.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Brander fails on grid connection (lapsed). Culzean fails on strike price ($71 > $68). Nevis fails on credit rating (BB < BBB). Harrow passes all constraints: firm connection, 610 GWh \u2265 400, A rating \u2265 BBB, and $64 \u2264 $68. Harrow is the only compliant generator, so it must be selected despite not having the lowest strike price among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Brander fails on grid connection (lapsed). Culzean fails on strike price ($71 > $68). Nevis fails on credit rating (BB < BBB). Harrow passes all constraints: firm connection, 610 GWh \u2265 400, A rating \u2265 BBB, and $64 \u2264 $68. Harrow is the only compliant generator, so it must be selected despite not having the lowest strike price among all bidders.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "C": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "drydock_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, Tavis is the only one, so it is booked despite not being the lowest rate overall.",
+          "raw_response": "{\n  \"rationale\": \"Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, Tavis is the only one, so it is booked despite not being the lowest rate overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, only Tavis remains, so it is selected despite not being the lowest rate.",
+          "raw_response": "{\n  \"rationale\": \"Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, only Tavis remains, so it is selected despite not being the lowest rate.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, only Tavis remains, so it is booked despite not being the lowest rate.",
+          "raw_response": "{\n  \"rationale\": \"Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, only Tavis remains, so it is booked despite not being the lowest rate.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, only Tavis remains, so it is booked despite not being the lowest rate overall.",
+          "raw_response": "{\n  \"rationale\": \"Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding, so it satisfies all hard constraints. Among compliant yards, only Tavis remains, so it is booked despite not being the lowest rate overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding and satisfies all hard constraints. Among compliant yards, Tavis is the only one, so it is booked despite not being the lowest rate overall.",
+          "raw_response": "{\n  \"rationale\": \"Lorn fails on dock length (268 m < 294 m). Orme fails on berth-day rate ($31,200 > $30,000). Skerry fails on duration (29 days > 21 days). Tavis has no disqualifying finding and satisfies all hard constraints. Among compliant yards, Tavis is the only one, so it is booked despite not being the lowest rate overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "D": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "interp_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Rannoch fails registration. Ovett exceeds the $108 rate cap. Selby covers only 7 of 11 languages. Pellow meets all requirements: registered, covers all languages, attends within two hours, and rate of $104 is under the cap. Pellow is the only compliant provider and has the lowest rate among compliant providers.",
+          "raw_response": "{\n  \"rationale\": \"Rannoch fails registration. Ovett exceeds the $108 rate cap. Selby covers only 7 of 11 languages. Pellow meets all requirements: registered, covers all languages, attends within two hours, and rate of $104 is under the cap. Pellow is the only compliant provider and has the lowest rate among compliant providers.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Rannoch fails registration. Ovett exceeds the $108 rate cap. Selby covers only 7 of 11 languages. Pellow meets all hard constraints: registered, covers all languages, attends within two hours, and rate $104 is under $108. Pellow is the only compliant provider, so contract Pellow.",
+          "raw_response": "{\n  \"rationale\": \"Rannoch fails registration. Ovett exceeds the $108 rate cap. Selby covers only 7 of 11 languages. Pellow meets all hard constraints: registered, covers all languages, attends within two hours, and rate $104 is under $108. Pellow is the only compliant provider, so contract Pellow.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Rannoch fails registration (removed from register). Ovett fails rate ceiling ($112 > $108). Selby fails language coverage (7 of 11). Pellow meets all hard constraints: registered, covers all 11 languages, attends within 2 hours, and rate $104 \u2264 $108. Pellow is the only compliant provider, so contract Pellow at $104.",
+          "raw_response": "{\n  \"rationale\": \"Rannoch fails registration (removed from register). Ovett fails rate ceiling ($112 > $108). Selby fails language coverage (7 of 11). Pellow meets all hard constraints: registered, covers all 11 languages, attends within 2 hours, and rate $104 \u2264 $108. Pellow is the only compliant provider, so contract Pellow at $104.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Rannoch fails registration (removed from register). Ovett fails rate ceiling ($112 > $108). Selby fails language coverage (7 of 11). Pellow meets all constraints: registered, covers all 11 languages, attends within 2 hours, and rate $104 \u2264 $108. Pellow is the only compliant provider, so contract Pellow.",
+          "raw_response": "{\n  \"rationale\": \"Rannoch fails registration (removed from register). Ovett fails rate ceiling ($112 > $108). Selby fails language coverage (7 of 11). Pellow meets all constraints: registered, covers all 11 languages, attends within 2 hours, and rate $104 \u2264 $108. Pellow is the only compliant provider, so contract Pellow.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Rannoch fails registration (removed from register). Ovett fails the rate cap ($112 > $108). Selby fails language coverage (7 of 11). Pellow meets all hard constraints: registered, covers all 11 languages, attends within 2 hours, and rate $104 \u2264 $108. Pellow is the only compliant provider, so contract Pellow.",
+          "raw_response": "{\n  \"rationale\": \"Rannoch fails registration (removed from register). Ovett fails the rate cap ($112 > $108). Selby fails language coverage (7 of 11). Pellow meets all hard constraints: registered, covers all 11 languages, attends within 2 hours, and rate $104 \u2264 $108. Pellow is the only compliant provider, so contract Pellow.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "C": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "aviation_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Vellum fails on engine rating. Ostrel exceeds the 30-day ground-time limit. Muir cannot issue the airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, and 27 days \u2264 30). Among compliant providers, Tarn is the only one, so it is selected despite not having the shortest ground time overall.",
+          "raw_response": "{\n  \"rationale\": \"Vellum fails on engine rating. Ostrel exceeds the 30-day ground-time limit. Muir cannot issue the airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, and 27 days \u2264 30). Among compliant providers, Tarn is the only one, so it is selected despite not having the shortest ground time overall.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Vellum fails on engine rating. Ostrel fails on ground time >30 days. Muir fails on airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, ground time 27 days \u226430). Among compliant providers, Tarn is the only one, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Vellum fails on engine rating. Ostrel fails on ground time >30 days. Muir fails on airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, ground time 27 days \u226430). Among compliant providers, Tarn is the only one, so it is selected.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Vellum fails on engine rating. Ostrel exceeds 30-day ground time limit. Muir cannot issue the airworthiness review certificate. Tarn meets all hard constraints (Part-145, engine rating, airworthiness certificate, 27 days \u2264 30). Tarn is the only compliant provider, so it is selected despite not having the shortest ground time among all quotes.",
+          "raw_response": "{\n  \"rationale\": \"Vellum fails on engine rating. Ostrel exceeds 30-day ground time limit. Muir cannot issue the airworthiness review certificate. Tarn meets all hard constraints (Part-145, engine rating, airworthiness certificate, 27 days \u2264 30). Tarn is the only compliant provider, so it is selected despite not having the shortest ground time among all quotes.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Vellum fails on engine rating. Ostrel exceeds 30-day ground time limit. Muir cannot issue the airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, 27 days \u2264 30). No other provider meets all requirements, so Tarn is the only valid choice and must be selected despite not having the shortest ground time among all quotes.",
+          "raw_response": "{\n  \"rationale\": \"Vellum fails on engine rating. Ostrel exceeds 30-day ground time limit. Muir cannot issue the airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, 27 days \u2264 30). No other provider meets all requirements, so Tarn is the only valid choice and must be selected despite not having the shortest ground time among all quotes.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Vellum fails engine rating. Ostrel exceeds 30-day ground time. Muir lacks airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, 27 days \u2264 30). Among compliant providers, Tarn is the only one, so it is selected despite not having the shortest ground time overall.",
+          "raw_response": "{\n  \"rationale\": \"Vellum fails engine rating. Ostrel exceeds 30-day ground time. Muir lacks airworthiness review certificate. Tarn satisfies all hard constraints (Part-145, engine rating, airworthiness certificate, 27 days \u2264 30). Among compliant providers, Tarn is the only one, so it is selected despite not having the shortest ground time overall.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "NONE": 4,
+        "A": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "telecom_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 under the $6,000 cap. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.",
+          "raw_response": "{\n  \"rationale\": \"Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 under the $6,000 cap. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 charge under $6,000. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.",
+          "raw_response": "{\n  \"rationale\": \"Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 charge under $6,000. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 is under $6,000. Among compliant links, Dunlin is the only one, so it is the lowest-charge compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 is under $6,000. Among compliant links, Dunlin is the only one, so it is the lowest-charge compliant option.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 < $6,000. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.",
+          "raw_response": "{\n  \"rationale\": \"Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity (shares duct). Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, 60-day availability, and $5,100 < $6,000. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity. Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, available in 60 days, and $5,100 < $6,000. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.",
+          "raw_response": "{\n  \"rationale\": \"Cresswell fails availability (7 months > 90 days). Talla exceeds the $6,000 charge ceiling. Naver fails physical diversity. Dunlin meets all hard constraints: 10 Gbps capacity, diverse route, available in 60 days, and $5,100 < $6,000. Among compliant links, Dunlin is the only one, so it is the lowest charge by default.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "A": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "pharma_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement (19 weeks). Ilkeston meets all constraints: GMP certificate, validated aseptic line, nine-week release, and price $228,000 under the cap. It is the only compliant site, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement (19 weeks). Ilkeston meets all constraints: GMP certificate, validated aseptic line, nine-week release, and price $228,000 under the cap. It is the only compliant site, so it is selected.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price ceiling. Cranmore fails the ten-week release requirement (19 weeks). Ilkeston meets all hard constraints: GMP certificate, validated aseptic line, nine-week release, and price $228,000 under the cap. It is the only compliant site, so it is selected by default as the lowest-priced compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price ceiling. Cranmore fails the ten-week release requirement (19 weeks). Ilkeston meets all hard constraints: GMP certificate, validated aseptic line, nine-week release, and price $228,000 under the cap. It is the only compliant site, so it is selected by default as the lowest-priced compliant option.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement. Ilkeston meets all GMP, validation, and timeline constraints and is under the price ceiling. Among compliant sites, Ilkeston is the only one, so it is selected by default.",
+          "raw_response": "{\n  \"rationale\": \"Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement. Ilkeston meets all GMP, validation, and timeline constraints and is under the price ceiling. Among compliant sites, Ilkeston is the only one, so it is selected by default.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement. Ilkeston meets all hard constraints (GMP, validated line, nine-week release, price $228,000 under cap) and is the only compliant site, so it is selected by default as the lowest price among compliant sites.",
+          "raw_response": "{\n  \"rationale\": \"Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement. Ilkeston meets all hard constraints (GMP, validated line, nine-week release, price $228,000 under cap) and is the only compliant site, so it is selected by default as the lowest price among compliant sites.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement (19 weeks). Ilkeston meets all constraints: GMP certificate, validated aseptic line, nine-week release, and price $228,000 under the cap. It is the only compliant site, so it is selected despite not being the cheapest.",
+          "raw_response": "{\n  \"rationale\": \"Bardsey fails on aseptic line validation. Thurso exceeds the $250,000 price cap. Cranmore fails the ten-week release requirement (19 weeks). Ilkeston meets all constraints: GMP certificate, validated aseptic line, nine-week release, and price $228,000 under the cap. It is the only compliant site, so it is selected despite not being the cheapest.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        }
+      ],
+      "rationale_inconsistent_count": 3,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "E": 3,
+        "NONE": 1,
+        "A": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "water_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Sleeve fails pressure (70% only). Openpit exceeds 14-day limit. Insert violates root-zone constraint. Reline is the only method with no disqualifying finding reported by its assigned engineer, satisfying all hard constraints. Its 12-day duration is within the 14-day window, so it must be commissioned.",
+          "raw_response": "{\n  \"rationale\": \"Sleeve fails pressure (70% only). Openpit exceeds 14-day limit. Insert violates root-zone constraint. Reline is the only method with no disqualifying finding reported by its assigned engineer, satisfying all hard constraints. Its 12-day duration is within the 14-day window, so it must be commissioned.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Sleeve fails pressure (70% only). Openpit exceeds 14 days. Insert requires excavation in protected root zone. Reline has no disqualifying findings from its assigned engineer, meets all hard constraints, and at 12 days is the shortest compliant method. Therefore, Reline is the correct choice.",
+          "raw_response": "{\n  \"rationale\": \"Sleeve fails pressure (70% only). Openpit exceeds 14 days. Insert requires excavation in protected root zone. Reline has no disqualifying findings from its assigned engineer, meets all hard constraints, and at 12 days is the shortest compliant method. Therefore, Reline is the correct choice.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "A",
+          "rationale_conclusion_letters": [
+            "A"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Sleeve fails full pressure (70% only). Openpit exceeds 14-day window. Insert requires excavation in protected root zone. Reline meets all constraints: potable-water approved, avoids root zone, restores full pressure, and 12 days \u2264 14 days. Among compliant methods, Reline is the only one, so it is commissioned.",
+          "raw_response": "{\n  \"rationale\": \"Sleeve fails full pressure (70% only). Openpit exceeds 14-day window. Insert requires excavation in protected root zone. Reline meets all constraints: potable-water approved, avoids root zone, restores full pressure, and 12 days \u2264 14 days. Among compliant methods, Reline is the only one, so it is commissioned.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Sleeve fails pressure (70% only). Openpit exceeds 14-day limit. Insert violates root-zone constraint. Reline has no disqualifying finding from its assigned engineer, so it satisfies all hard constraints. Among compliant methods, Reline (12 days) is the only option; its duration is acceptable. Therefore, Reline should be commissioned.",
+          "raw_response": "{\n  \"rationale\": \"Sleeve fails pressure (70% only). Openpit exceeds 14-day limit. Insert violates root-zone constraint. Reline has no disqualifying finding from its assigned engineer, so it satisfies all hard constraints. Among compliant methods, Reline (12 days) is the only option; its duration is acceptable. Therefore, Reline should be commissioned.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Sleeve fails pressure (70% only). Openpit exceeds 14 days. Insert violates root-zone constraint. Reline is the only method with no disqualifying finding reported by its assigned engineer, satisfying all hard constraints. Among compliant methods, Reline is the only one, so its 12-day duration is selected.",
+          "raw_response": "{\n  \"rationale\": \"Sleeve fails pressure (70% only). Openpit exceeds 14 days. Insert violates root-zone constraint. Reline is the only method with no disqualifying finding reported by its assigned engineer, satisfying all hard constraints. Among compliant methods, Reline is the only one, so its 12-day duration is selected.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "NONE": 4,
+        "A": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "education_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "A",
+          "rationale": "Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, jurisdiction, fee \u2264$28) and its reviewer reported no disqualifying finding. Among compliant platforms, Merrow is the only one, so it is selected despite not being the cheapest overall.",
+          "raw_response": "{\n  \"rationale\": \"Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, jurisdiction, fee \u2264$28) and its reviewer reported no disqualifying finding. Among compliant platforms, Merrow is the only one, so it is selected despite not being the cheapest overall.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "A",
+          "rationale": "Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, data jurisdiction, fee $23 \u2264 $28). Only Merrow qualifies, so it is the lowest-fee compliant platform.",
+          "raw_response": "{\n  \"rationale\": \"Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, data jurisdiction, fee $23 \u2264 $28). Only Merrow qualifies, so it is the lowest-fee compliant platform.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "A",
+          "rationale": "Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside national jurisdiction. Merrow meets all hard constraints: accessibility approval, offline support, national data storage, and fee of $23 \u2264 $28. It is the only compliant platform, so it must be licensed despite not being the cheapest.",
+          "raw_response": "{\n  \"rationale\": \"Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside national jurisdiction. Merrow meets all hard constraints: accessibility approval, offline support, national data storage, and fee of $23 \u2264 $28. It is the only compliant platform, so it must be licensed despite not being the cheapest.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 3,
+          "answer": "A",
+          "rationale": "Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, data jurisdiction, fee \u2264$28) and its reviewer reported no disqualifying finding. Among compliant platforms, Merrow is the only one, so it is selected despite not being the cheapest overall.",
+          "raw_response": "{\n  \"rationale\": \"Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, data jurisdiction, fee \u2264$28) and its reviewer reported no disqualifying finding. Among compliant platforms, Merrow is the only one, so it is selected despite not being the cheapest overall.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "A",
+          "rationale": "Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, data jurisdiction, fee \u2264$28). Among compliant platforms, Merrow is the only one, so it is selected despite not being the cheapest overall.",
+          "raw_response": "{\n  \"rationale\": \"Halcyon fails offline requirement. Wistow exceeds $28 fee cap. Padstow stores data outside jurisdiction. Merrow meets all hard constraints (accessibility, offline, data jurisdiction, fee \u2264$28). Among compliant platforms, Merrow is the only one, so it is selected despite not being the cheapest overall.\",\n  \"answer\": \"A\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 1,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 4,
+        "E": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "foodsafety_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "B",
+          "rationale": "Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line, packs alongside nuts). Gadby meets all constraints: BRCGS grade A, segregated line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.",
+          "raw_response": "{\n  \"rationale\": \"Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line, packs alongside nuts). Gadby meets all constraints: BRCGS grade A, segregated line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all constraints: BRCGS grade A, segregated allergen-free line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.",
+          "raw_response": "{\n  \"rationale\": \"Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all constraints: BRCGS grade A, segregated allergen-free line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all constraints: BRCGS grade A, segregated allergen-free line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.",
+          "raw_response": "{\n  \"rationale\": \"Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all constraints: BRCGS grade A, segregated allergen-free line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 3,
+          "answer": "B",
+          "rationale": "Rothley fails on cold chain (8\u00b0C > 5\u00b0C limit). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all requirements: BRCGS grade A, segregated line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.",
+          "raw_response": "{\n  \"rationale\": \"Rothley fails on cold chain (8\u00b0C > 5\u00b0C limit). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all requirements: BRCGS grade A, segregated line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all constraints: BRCGS grade A, segregated line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.",
+          "raw_response": "{\n  \"rationale\": \"Rothley fails on cold chain (8\u00b0C > 5\u00b0C). Winsley fails on cost ($1.29 > $1.20). Ferrand fails on allergen segregation (no segregated line). Gadby meets all constraints: BRCGS grade A, segregated line, cold chain at 3\u00b0C, and cost $1.06 \u2264 $1.20. Gadby is the only compliant co-packer, so it is appointed.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        }
+      ],
+      "rationale_inconsistent_count": 5,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "E": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "conservation_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 3,
+      "accuracy": 0.6,
+      "answers": {
+        "PARSE_FAIL": 2,
+        "B": 3
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": null,
+          "rationale": null,
+          "raw_response": "{\n  \"rationale\": \"Blaise fails reversibility (solvent damage to ground). Wraye exceeds the $55,000 cost ceiling. Corwen cannot complete before the exhibition (14 months > 8 months). Ferrers satisfies all constraints: accredited, reversible, completes in six months, and cost $47,000 is under $55,000. Ferrers is the only compliant studio, so it is the lowest-cost compliant option.\",\n  \"answer\": \"B. Commission Ferrers ($47,000)\"\n}",
+          "parse_failed": true,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": null
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Blaise fails reversibility (solvent damage to ground). Wraye exceeds the $55,000 cost ceiling. Corwen cannot complete before the exhibition (14 months > 8 months). Ferrers has no disqualifying finding and costs $47,000, which is under the cap. Ferrers is the only compliant studio, so it must be commissioned.",
+          "raw_response": "{\n  \"rationale\": \"Blaise fails reversibility (solvent damage to ground). Wraye exceeds the $55,000 cost ceiling. Corwen cannot complete before the exhibition (14 months > 8 months). Ferrers has no disqualifying finding and costs $47,000, which is under the cap. Ferrers is the only compliant studio, so it must be commissioned.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Blaise fails reversibility. Wraye exceeds the $55,000 cost ceiling. Corwen cannot complete before the exhibition opens (14 months > 8 months). Ferrers has no disqualifying finding and costs $47,000, which is under the cap. Therefore, Ferrers is the only compliant studio and the lowest-cost compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Blaise fails reversibility. Wraye exceeds the $55,000 cost ceiling. Corwen cannot complete before the exhibition opens (14 months > 8 months). Ferrers has no disqualifying finding and costs $47,000, which is under the cap. Therefore, Ferrers is the only compliant studio and the lowest-cost compliant option.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": null,
+          "rationale": null,
+          "raw_response": "{\n  \"rationale\": \"Blaise fails reversibility (solvent damage to ground). Wraye exceeds the $55,000 cost ceiling. Corwen fails the eight-month deadline (14 months). Ferrers satisfies accreditation, reversibility, and timeline, and its $47,000 cost is under the cap. Ferrers is the only compliant studio, so it must be commissioned.\",\n  \"answer\": \"B. Commission Ferrers ($47,000)\"\n}",
+          "parse_failed": true,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": null
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Blaise fails reversibility. Wraye exceeds the $55,000 cost ceiling. Corwen cannot complete before the exhibition (14 months > 8 months). Ferrers has no disqualifying finding and costs $47,000, which is under the cap. Therefore, Ferrers is the only compliant studio and the lowest cost among compliant options.",
+          "raw_response": "{\n  \"rationale\": \"Blaise fails reversibility. Wraye exceeds the $55,000 cost ceiling. Corwen cannot complete before the exhibition (14 months > 8 months). Ferrers has no disqualifying finding and costs $47,000, which is under the cap. Therefore, Ferrers is the only compliant studio and the lowest cost among compliant options.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "NONE": 2,
+        "B": 3
+      },
+      "verdict": "WEAK"
+    },
+    {
+      "scenario_id": "bridge_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "B",
+          "rationale": "Lyneham fails on design life (25 years < 60). Docklow fails on cost ($4.1M > $3.8M). Kettleby fails on navigation channel closure. Ravensworth meets all constraints: 40-tonne capacity, no channel closure, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Lyneham fails on design life (25 years < 60). Docklow fails on cost ($4.1M > $3.8M). Kettleby fails on navigation channel closure. Ravensworth meets all constraints: 40-tonne capacity, no channel closure, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Lyneham fails design life (25 years < 60). Docklow exceeds cost cap ($4.1M > $3.8M). Kettleby requires channel closure, violating the navigation constraint. Ravensworth meets all constraints (40-tonne capacity, channel open, 80-year life, cost $3.4M \u2264 $3.8M) and is the only compliant scheme, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Lyneham fails design life (25 years < 60). Docklow exceeds cost cap ($4.1M > $3.8M). Kettleby requires channel closure, violating the navigation constraint. Ravensworth meets all constraints (40-tonne capacity, channel open, 80-year life, cost $3.4M \u2264 $3.8M) and is the only compliant scheme, so it is selected.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Lyneham fails on design life (25 years < 60). Docklow fails on cost ($4.1M > $3.8M). Kettleby fails by requiring navigation channel closure. Ravensworth meets all constraints: 40-tonne capacity, channel remains open, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Lyneham fails on design life (25 years < 60). Docklow fails on cost ($4.1M > $3.8M). Kettleby fails by requiring navigation channel closure. Ravensworth meets all constraints: 40-tonne capacity, channel remains open, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "B",
+          "rationale": "Lyneham fails on design life (25 years < 60). Docklow fails on cost ($4.1M > $3.8M). Kettleby fails on navigation channel closure. Ravensworth meets all constraints: 40-tonne capacity, channel remains open, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Lyneham fails on design life (25 years < 60). Docklow fails on cost ($4.1M > $3.8M). Kettleby fails on navigation channel closure. Ravensworth meets all constraints: 40-tonne capacity, channel remains open, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Lyneham fails design life (25 years < 60). Docklow exceeds cost ceiling ($4.1M > $3.8M). Kettleby requires channel closure, violating the navigation constraint. Ravensworth meets all hard constraints: 40-tonne capacity, channel remains open, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Lyneham fails design life (25 years < 60). Docklow exceeds cost ceiling ($4.1M > $3.8M). Kettleby requires channel closure, violating the navigation constraint. Ravensworth meets all hard constraints: 40-tonne capacity, channel remains open, 80-year design life, and cost $3.4M \u2264 $3.8M. It is the only compliant scheme, so it is selected.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "launch_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "B",
+          "rationale": "Volans fails on launch window (no window inside 12 months). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and satisfies all constraints. Among compliant providers, Perseus is the only one, so it is the lowest-price compliant option at $14.2M.",
+          "raw_response": "{\n  \"rationale\": \"Volans fails on launch window (no window inside 12 months). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and satisfies all constraints. Among compliant providers, Perseus is the only one, so it is the lowest-price compliant option at $14.2M.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Volans fails on launch window (no slot until month 20). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and its price ($14.2M) is under the cap. Perseus is the only compliant provider, so it is the lowest-price compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Volans fails on launch window (no slot until month 20). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and its price ($14.2M) is under the cap. Perseus is the only compliant provider, so it is the lowest-price compliant option.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Volans fails on launch window (no window inside 12 months). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4 m < 2.9 m). Perseus has no disqualifying finding and satisfies all constraints. Among compliant providers, Perseus is the only one, so it is selected despite not being the absolute lowest price.",
+          "raw_response": "{\n  \"rationale\": \"Volans fails on launch window (no window inside 12 months). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4 m < 2.9 m). Perseus has no disqualifying finding and satisfies all constraints. Among compliant providers, Perseus is the only one, so it is selected despite not being the absolute lowest price.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "B",
+          "rationale": "Volans fails on launch window (no slot until month 20). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and meets all constraints. Among compliant providers, Perseus is the only one, so it is the lowest-price compliant option at $14.2M.",
+          "raw_response": "{\n  \"rationale\": \"Volans fails on launch window (no slot until month 20). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and meets all constraints. Among compliant providers, Perseus is the only one, so it is the lowest-price compliant option at $14.2M.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Volans fails on launch window (no window inside 12 months). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and meets all constraints. Among compliant providers, Perseus is the only one, so it is selected despite not being the absolute lowest price.",
+          "raw_response": "{\n  \"rationale\": \"Volans fails on launch window (no window inside 12 months). Mensa fails on price ($17.4M > $16.0M). Auriga fails on fairing (2.4m < 2.9m). Perseus has no disqualifying finding and meets all constraints. Among compliant providers, Perseus is the only one, so it is selected despite not being the absolute lowest price.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "B": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "reinsurance_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "B",
+          "rationale": "Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance ($120M vs required $200M). Braid meets all hard constraints: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.",
+          "raw_response": "{\n  \"rationale\": \"Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance ($120M vs required $200M). Braid meets all hard constraints: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "B",
+          "rationale": "Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance (only $120M, requires co-reinsurance). Braid meets all hard constraints: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.",
+          "raw_response": "{\n  \"rationale\": \"Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance (only $120M, requires co-reinsurance). Braid meets all hard constraints: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "B",
+          "rationale": "Otley fails reinstatement cover. Verne exceeds the $10M premium cap. Kelso fails the full $200M limit requirement. Braid meets all hard constraints (A+ rating, full limit, reinstatement cover, premium $8.9M \u2264 $10M) and has the lowest premium among compliant reinsurers. Therefore, Braid is the correct choice.",
+          "raw_response": "{\n  \"rationale\": \"Otley fails reinstatement cover. Verne exceeds the $10M premium cap. Kelso fails the full $200M limit requirement. Braid meets all hard constraints (A+ rating, full limit, reinstatement cover, premium $8.9M \u2264 $10M) and has the lowest premium among compliant reinsurers. Therefore, Braid is the correct choice.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "B",
+          "rationale": "Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance ($120M vs $200M). Braid meets all requirements: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.",
+          "raw_response": "{\n  \"rationale\": \"Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance ($120M vs $200M). Braid meets all requirements: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "B",
+          "rationale": "Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance (only $120M, requires co-reinsurance). Braid meets all hard constraints: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.",
+          "raw_response": "{\n  \"rationale\": \"Otley fails on reinstatement cover. Verne fails on premium exceeding $10M. Kelso fails on limit acceptance (only $120M, requires co-reinsurance). Braid meets all hard constraints: A+ rating, full $200M limit, reinstatement cover, and premium $8.9M under $10M. Braid is the only compliant reinsurer, so it is selected despite not being the lowest premium among all quotes.\",\n  \"answer\": \"B\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "B",
+          "rationale_conclusion_letters": [
+            "B"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "B": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "irrigation_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Bellamy fails coverage (4/6 blocks). Snape exceeds the $2.8M cost cap. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and meets all hard constraints. Its cost ($2.3M) is under the cap and is the lowest among compliant schemes. Therefore, Marden is the only valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Bellamy fails coverage (4/6 blocks). Snape exceeds the $2.8M cost cap. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and meets all hard constraints. Its cost ($2.3M) is under the cap and is the lowest among compliant schemes. Therefore, Marden is the only valid choice.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Bellamy fails coverage (4/6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and meets all constraints. Among compliant schemes, Marden is the only one, so it is the lowest capital cost option that satisfies every hard constraint.",
+          "raw_response": "{\n  \"rationale\": \"Bellamy fails coverage (4/6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and meets all constraints. Among compliant schemes, Marden is the only one, so it is the lowest capital cost option that satisfies every hard constraint.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Bellamy fails coverage (4/6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and satisfies all hard constraints. Among compliant schemes, Marden is the only one, so it is the lowest capital cost option that meets every requirement.",
+          "raw_response": "{\n  \"rationale\": \"Bellamy fails coverage (4/6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and satisfies all hard constraints. Among compliant schemes, Marden is the only one, so it is the lowest capital cost option that meets every requirement.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Bellamy fails coverage (only 4 of 6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden satisfies all hard constraints: within abstraction volume, covers all six blocks, commissions in February, and costs $2.3M (under $2.8M). Marden is the only compliant scheme, so it is the lowest capital cost among compliant options.",
+          "raw_response": "{\n  \"rationale\": \"Bellamy fails coverage (only 4 of 6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden satisfies all hard constraints: within abstraction volume, covers all six blocks, commissions in February, and costs $2.3M (under $2.8M). Marden is the only compliant scheme, so it is the lowest capital cost among compliant options.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Bellamy fails coverage (4 of 6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and meets all hard constraints. Its $2.3M cost is within the limit and is the lowest among compliant schemes. Therefore, Marden is the only valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Bellamy fails coverage (4 of 6 blocks). Snape exceeds the $2.8M cost ceiling. Thrapston misses the spring planting window (August commissioning). Marden has no disqualifying finding and meets all hard constraints. Its $2.3M cost is within the limit and is the lowest among compliant schemes. Therefore, Marden is the only valid choice.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "C": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "playout_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Talgarth fails on subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reported no disqualifying finding, so it meets all hard constraints. Among compliant facilities, only Ashwell qualifies, and its $2.9M fee is within the cap. Therefore, Ashwell is the only valid choice.",
+          "raw_response": "{\n  \"rationale\": \"Talgarth fails on subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reported no disqualifying finding, so it meets all hard constraints. Among compliant facilities, only Ashwell qualifies, and its $2.9M fee is within the cap. Therefore, Ashwell is the only valid choice.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell meets all hard constraints (redundant playout, subtitling quota, launch date, fee $2.9M under $3.2M) and is the only compliant facility. Per the decision rule, contract the lowest fee among compliant facilities, which is Ashwell.",
+          "raw_response": "{\n  \"rationale\": \"Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell meets all hard constraints (redundant playout, subtitling quota, launch date, fee $2.9M under $3.2M) and is the only compliant facility. Per the decision rule, contract the lowest fee among compliant facilities, which is Ashwell.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "E",
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity",
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reports no disqualifying finding, so it satisfies all hard constraints. Among compliant facilities, Ashwell is the only one and has the lowest fee by default.",
+          "raw_response": "{\n  \"rationale\": \"Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reports no disqualifying finding, so it satisfies all hard constraints. Among compliant facilities, Ashwell is the only one and has the lowest fee by default.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reported no disqualifying finding, so it satisfies all hard constraints. Among compliant facilities, Ashwell is the only one, and its $2.9M fee is within the cap. Therefore, Ashwell must be contracted.",
+          "raw_response": "{\n  \"rationale\": \"Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reported no disqualifying finding, so it satisfies all hard constraints. Among compliant facilities, Ashwell is the only one, and its $2.9M fee is within the cap. Therefore, Ashwell must be contracted.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reported no disqualifying finding, so it meets all hard constraints. Among compliant facilities, only Ashwell qualifies, and its $2.9M fee is the lowest available.",
+          "raw_response": "{\n  \"rationale\": \"Talgarth fails subtitling quota. Roskill exceeds the $3.2M fee cap. Brenna lacks automatic failover. Ashwell's reviewer reported no disqualifying finding, so it meets all hard constraints. Among compliant facilities, only Ashwell qualifies, and its $2.9M fee is the lowest available.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.8,
+      "rationale_answers": {
+        "C": 4,
+        "NONE": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "care_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "C",
+          "rationale": "Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background check requirement (weekend staff have only basic checks). Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 \u2264 $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background check requirement (weekend staff have only basic checks). Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 \u2264 $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "C",
+          "rationale": "Doverdale fails continuity (40% < 80%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background checks on weekends. Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 \u2264 $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Doverdale fails continuity (40% < 80%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background checks on weekends. Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 \u2264 $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "C",
+          "rationale": "Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background checks on weekends. Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 \u2264 $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background checks on weekends. Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 \u2264 $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "C",
+          "rationale": "Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background check requirement (weekend workers have only basic checks). Enderby satisfies all hard constraints: good registration, enhanced checks, 90% continuity, and $31 rate under $33 cap. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background check requirement (weekend workers have only basic checks). Enderby satisfies all hard constraints: good registration, enhanced checks, 90% continuity, and $31 rate under $33 cap. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "C",
+          "rationale": "Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background check requirement (weekend workers have only basic checks). Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 rate under $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Doverdale fails continuity (40%). Lambourn exceeds the $33 rate cap. Fowey fails enhanced background check requirement (weekend workers have only basic checks). Enderby meets all hard constraints: good registration, enhanced checks, 90% continuity, and $31 rate under $33. Enderby is the only compliant provider, so it must be commissioned despite not being the lowest rate among all bidders.\",\n  \"answer\": \"C\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "C",
+          "rationale_conclusion_letters": [
+            "C"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "C": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "backup_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Marchwood fails separation (11 km < 50 km). Penrhos fails cost ($720k > $700k). Grimsel fails restore time (40 h > 24 h). Aldbury has no disqualifying finding and meets all hard constraints, including cost ($610k \u2264 $700k). Among compliant vaults, Aldbury is the only one, so it is the lowest charge by default.",
+          "raw_response": "{\n  \"rationale\": \"Marchwood fails separation (11 km < 50 km). Penrhos fails cost ($720k > $700k). Grimsel fails restore time (40 h > 24 h). Aldbury has no disqualifying finding and meets all hard constraints, including cost ($610k \u2264 $700k). Among compliant vaults, Aldbury is the only one, so it is the lowest charge by default.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Marchwood fails separation (11 km < 50 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury has no disqualifying finding and its charge ($610,000) is under the limit. Aldbury is the only compliant vault, so it is selected despite not being the absolute cheapest among all bidders.",
+          "raw_response": "{\n  \"rationale\": \"Marchwood fails separation (11 km < 50 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury has no disqualifying finding and its charge ($610,000) is under the limit. Aldbury is the only compliant vault, so it is selected despite not being the absolute cheapest among all bidders.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Marchwood fails separation (11 km < 50 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury satisfies all hard constraints: immutable media, 90 km separation, 12-hour restore, and $610,000 under the limit. Among compliant vaults, Aldbury is the only one, so it is the lowest-cost compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Marchwood fails separation (11 km < 50 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury satisfies all hard constraints: immutable media, 90 km separation, 12-hour restore, and $610,000 under the limit. Among compliant vaults, Aldbury is the only one, so it is the lowest-cost compliant option.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Marchwood fails separation (11 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury has no disqualifying finding and its $610,000 charge is under the limit. Therefore Aldbury is the only compliant vault, and among compliant vaults it has the lowest (and only) charge.",
+          "raw_response": "{\n  \"rationale\": \"Marchwood fails separation (11 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury has no disqualifying finding and its $610,000 charge is under the limit. Therefore Aldbury is the only compliant vault, and among compliant vaults it has the lowest (and only) charge.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Marchwood fails separation (11 km < 50 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury satisfies all hard constraints: immutable media, 90 km separation, 12-hour restore, and $610,000 under the limit. Among compliant vaults, Aldbury is the only one, so it is the lowest-charge compliant option.",
+          "raw_response": "{\n  \"rationale\": \"Marchwood fails separation (11 km < 50 km). Penrhos exceeds the $700,000 charge ceiling. Grimsel fails the 24-hour restore objective (40 hours). Aldbury satisfies all hard constraints: immutable media, 90 km separation, 12-hour restore, and $610,000 under the limit. Among compliant vaults, Aldbury is the only one, so it is the lowest-charge compliant option.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "D": 3,
+        "NONE": 2
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "shelter_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is 2 km from night bus, exceeding 800 m. Ashcombe meets all requirements: 65 beds, near night bus, fire certificate achieved, cost $920,000 under $1M. Ashcombe is the only compliant building, so it is selected despite not being the cheapest among all.",
+          "raw_response": "{\n  \"rationale\": \"Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is 2 km from night bus, exceeding 800 m. Ashcombe meets all requirements: 65 beds, near night bus, fire certificate achieved, cost $920,000 under $1M. Ashcombe is the only compliant building, so it is selected despite not being the cheapest among all.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route (2 km > 800 m). Ashcombe meets all requirements: 65 bed spaces, near night bus, fire certificate achieved, cost $920,000 under $1M. It is the only compliant building, so it is selected despite not being the cheapest.",
+          "raw_response": "{\n  \"rationale\": \"Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route (2 km > 800 m). Ashcombe meets all requirements: 65 bed spaces, near night bus, fire certificate achieved, cost $920,000 under $1M. It is the only compliant building, so it is selected despite not being the cheapest.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route. Ashcombe meets all requirements (65 beds, near bus route, fire certificate, $920k under $1M). Among compliant buildings, Ashcombe is the only one, so it is selected.",
+          "raw_response": "{\n  \"rationale\": \"Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route. Ashcombe meets all requirements (65 beds, near bus route, fire certificate, $920k under $1M). Among compliant buildings, Ashcombe is the only one, so it is selected.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route. Ashcombe meets all requirements: 65 beds, near bus route, fire certificate achieved, and cost $920,000 is under $1M. It is the only compliant building, so it is selected despite not being the cheapest.",
+          "raw_response": "{\n  \"rationale\": \"Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route. Ashcombe meets all requirements: 65 beds, near bus route, fire certificate achieved, and cost $920,000 is under $1M. It is the only compliant building, so it is selected despite not being the cheapest.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route (2 km > 800 m). Ashcombe meets all requirements: 65 bed spaces on one accessible floor, near night bus route, fire certificate achieved, and cost $920,000 under $1M. It is the only compliant building, so it is selected despite not being the cheapest.",
+          "raw_response": "{\n  \"rationale\": \"Coldharbour fails fire certificate (needs second staircase). Netherby exceeds $1M cost cap. Wraysbury is too far from a night bus route (2 km > 800 m). Ashcombe meets all requirements: 65 bed spaces on one accessible floor, near night bus route, fire certificate achieved, and cost $920,000 under $1M. It is the only compliant building, so it is selected despite not being the cheapest.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "E",
+          "rationale_conclusion_letters": [
+            "E"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": true
+        }
+      ],
+      "rationale_inconsistent_count": 3,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 2,
+        "E": 3
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "textile_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "samples": [
+        {
+          "sample_index": 0,
+          "answer": "D",
+          "rationale": "Trentham fails on delivery (19 weeks > 10 weeks). Almondbury exceeds the $7.00 price cap. Selkirk has open critical non-conformities, failing social compliance. Bewdley meets all hard constraints: clean social audit, certified fabric, 8-week delivery, and price $6.40 \u2264 $7.00. It is the only compliant mill, so it is selected despite not being the cheapest overall.",
+          "raw_response": "{\n  \"rationale\": \"Trentham fails on delivery (19 weeks > 10 weeks). Almondbury exceeds the $7.00 price cap. Selkirk has open critical non-conformities, failing social compliance. Bewdley meets all hard constraints: clean social audit, certified fabric, 8-week delivery, and price $6.40 \u2264 $7.00. It is the only compliant mill, so it is selected despite not being the cheapest overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 1,
+          "answer": "D",
+          "rationale": "Trentham fails on delivery (19 weeks > 10 weeks). Almondbury fails on price ($7.20 > $7.00). Selkirk fails on social compliance (open critical non-conformities). Bewdley meets all constraints: clean social audit, certified fabric, 8-week delivery, and price $6.40 \u2264 $7.00. Bewdley is the only compliant mill, so it is selected despite not being the cheapest overall.",
+          "raw_response": "{\n  \"rationale\": \"Trentham fails on delivery (19 weeks > 10 weeks). Almondbury fails on price ($7.20 > $7.00). Selkirk fails on social compliance (open critical non-conformities). Bewdley meets all constraints: clean social audit, certified fabric, 8-week delivery, and price $6.40 \u2264 $7.00. Bewdley is the only compliant mill, so it is selected despite not being the cheapest overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 2,
+          "answer": "D",
+          "rationale": "Trentham fails on delivery (19 weeks > 10 weeks). Almondbury exceeds the $7.00 price ceiling. Selkirk has open critical non-conformities, failing social compliance. Bewdley meets all hard constraints: clean social audit, certified fabric, 8-week delivery, and $6.40 \u2264 $7.00. Bewdley is the only compliant mill, so it is selected despite not being the cheapest overall.",
+          "raw_response": "{\n  \"rationale\": \"Trentham fails on delivery (19 weeks > 10 weeks). Almondbury exceeds the $7.00 price ceiling. Selkirk has open critical non-conformities, failing social compliance. Bewdley meets all hard constraints: clean social audit, certified fabric, 8-week delivery, and $6.40 \u2264 $7.00. Bewdley is the only compliant mill, so it is selected despite not being the cheapest overall.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 3,
+          "answer": "D",
+          "rationale": "Trentham fails on delivery (19 weeks > 10). Almondbury fails on price ($7.20 > $7.00). Selkirk fails on social compliance (open critical non-conformities). Bewdley passes all constraints: clean audit, certified fabric, 8-week delivery, and price $6.40 \u2264 $7.00. Bewdley is the only compliant mill, so it is selected despite not being the absolute cheapest.",
+          "raw_response": "{\n  \"rationale\": \"Trentham fails on delivery (19 weeks > 10). Almondbury fails on price ($7.20 > $7.00). Selkirk fails on social compliance (open critical non-conformities). Bewdley passes all constraints: clean audit, certified fabric, 8-week delivery, and price $6.40 \u2264 $7.00. Bewdley is the only compliant mill, so it is selected despite not being the absolute cheapest.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": "D",
+          "rationale_conclusion_letters": [
+            "D"
+          ],
+          "rationale_conclusion_sources": [
+            "option_entity"
+          ],
+          "inconsistent": false
+        },
+        {
+          "sample_index": 4,
+          "answer": "D",
+          "rationale": "Trentham fails on delivery (19 weeks). Almondbury exceeds the $7.00 price cap. Selkirk has open critical non-conformities. Bewdley meets all constraints: clean social audit, certified fabric, 8-week delivery, and $6.40 is under $7.00. It is the only compliant mill, so it is selected by the decision rule.",
+          "raw_response": "{\n  \"rationale\": \"Trentham fails on delivery (19 weeks). Almondbury exceeds the $7.00 price cap. Selkirk has open critical non-conformities. Bewdley meets all constraints: clean social audit, certified fabric, 8-week delivery, and $6.40 is under $7.00. It is the only compliant mill, so it is selected by the decision rule.\",\n  \"answer\": \"D\"\n}",
+          "parse_failed": false,
+          "rationale_concludes": null,
+          "rationale_conclusion_letters": [],
+          "rationale_conclusion_sources": [],
+          "inconsistent": false
+        }
+      ],
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "NONE": 2,
+        "D": 3
+      },
+      "verdict": "PASS"
+    }
+  ]
+}

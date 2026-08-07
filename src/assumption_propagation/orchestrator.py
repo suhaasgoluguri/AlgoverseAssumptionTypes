@@ -805,6 +805,24 @@ async def run_conversation(
                     plan["tool_call_executed"] = False
                     plan["tool_trace_replayed"] = True
                     tool_traces[replay_key] = replayed_trace
+                elif plan["delivery"] in (
+                    CorrectionDelivery.CORRECTOR_TOOL_RECORD,
+                    CorrectionDelivery.DIRECT_TOOL_RECORD,
+                    CorrectionDelivery.TOOL_PLACEBO,
+                ):
+                    # The anchor's own forced tool call failed and demoted to
+                    # NONE with no trace; replaying arms must inherit that
+                    # demotion rather than keep a tool-delivery label with no
+                    # tool_trace to back it.
+                    plan.update(
+                        corrective_visible=False,
+                        delivery=CorrectionDelivery.NONE,
+                        record_in_dossier=False,
+                        record_in_peer_message=False,
+                        record_in_direct_receipt=False,
+                        record_sender_ids=[],
+                        corrector_held_record_when_speaking=False,
+                    )
             else:
                 if corrector_tool or direct_tool or placebo_tool:
                     tasks.append(

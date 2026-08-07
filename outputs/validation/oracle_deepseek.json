@@ -1,0 +1,566 @@
+{
+  "data": "data/scenarios_hidden_profile_candidates.json",
+  "data_sha256": "880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917",
+  "model": "azure:DeepSeek-V4-Pro",
+  "n_samples": 5,
+  "pass_threshold": 0.8,
+  "weak_threshold": 0.5,
+  "results": [
+    {
+      "scenario_id": "vendor_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "B": 3,
+        "NONE": 2
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "incident_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "shipment_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "NONE": 3,
+        "D": 2
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "clinic_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 4,
+      "accuracy": 0.8,
+      "answers": {
+        "A": 4,
+        "D": 1
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "NONE": 4,
+        "A": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "facility_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 4,
+      "rationale_accuracy": 0.8,
+      "rationale_answers": {
+        "B": 4,
+        "NONE": 1
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "scenario_id": "staffing_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 3,
+      "accuracy": 0.6,
+      "answers": {
+        "B": 2,
+        "C": 3
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "NONE": 2,
+        "C": 3
+      },
+      "verdict": "WEAK"
+    },
+    {
+      "scenario_id": "datacenter_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "NONE": 4,
+        "D": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "permit_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "NONE": 2,
+        "A": 3
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "supplier_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.8,
+      "rationale_answers": {
+        "C": 4,
+        "NONE": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "transit_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "grant_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "NONE": 4,
+        "D": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "clinical_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "design_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 5,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "A": 5
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "scenario_id": "assay_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "B": 3,
+        "NONE": 2
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "energy_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "C": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "drydock_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 1,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "NONE": 2,
+        "D": 2,
+        "E": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "interp_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "C": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "aviation_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 3,
+      "accuracy": 0.6,
+      "answers": {
+        "B": 2,
+        "A": 3
+      },
+      "rationale_inconsistent_count": 2,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "A": 2,
+        "NONE": 3
+      },
+      "verdict": "WEAK"
+    },
+    {
+      "scenario_id": "telecom_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 5,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "A": 5
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "scenario_id": "pharma_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 0,
+      "accuracy": 0.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 4,
+      "rationale_accuracy": 0.8,
+      "rationale_answers": {
+        "A": 4,
+        "NONE": 1
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "scenario_id": "water_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "education_001",
+      "correct_answer": "A",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "A": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "A": 1,
+        "NONE": 4
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "foodsafety_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 4,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "E": 4,
+        "NONE": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "conservation_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "B": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "bridge_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "launch_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.2,
+      "rationale_answers": {
+        "NONE": 4,
+        "B": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "reinsurance_001",
+      "correct_answer": "B",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "B": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 1.0,
+      "rationale_answers": {
+        "B": 5
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "irrigation_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "NONE": 3,
+        "C": 2
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "playout_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 1,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "C": 2,
+        "NONE": 2,
+        "E": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "care_001",
+      "correct_answer": "C",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "C": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "C": 2,
+        "NONE": 3
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "backup_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 1,
+      "rationale_accuracy": 0.6,
+      "rationale_answers": {
+        "E": 1,
+        "NONE": 1,
+        "D": 3
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "shelter_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 1,
+      "rationale_accuracy": 0.0,
+      "rationale_answers": {
+        "NONE": 4,
+        "E": 1
+      },
+      "verdict": "PASS"
+    },
+    {
+      "scenario_id": "textile_001",
+      "correct_answer": "D",
+      "n": 5,
+      "n_correct": 5,
+      "accuracy": 1.0,
+      "answers": {
+        "D": 5
+      },
+      "rationale_inconsistent_count": 0,
+      "rationale_accuracy": 0.4,
+      "rationale_answers": {
+        "D": 2,
+        "NONE": 3
+      },
+      "verdict": "PASS"
+    }
+  ]
+}

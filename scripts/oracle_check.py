@@ -37,7 +37,12 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from assumption_propagation.clients import AzureChatClient, MockClient, parse_or_repair
+from assumption_propagation.clients import (
+    AzureChatClient,
+    MockClient,
+    audit_answer_rationale,
+    parse_or_repair,
+)
 from assumption_propagation.prompts import (
     build_shared_task,
     build_seed_generation_system_prompt,
@@ -93,14 +98,62 @@ async def run_oracle(scenario: Scenario, client, n_samples: int) -> dict:
     # standard prompt's agent identity and multi-round instructions do not apply.
     system = build_seed_generation_system_prompt()
     answers: list[str | None] = []
-    for _ in range(n_samples):
+    # Rationale-consistency audit (mirrors orchestrator.py's use of the same
+    # helper on live records): the "answer" field and the letter the
+    # rationale's own prose concludes with can disagree. That disagreement is
+    # a binding/formatting defect, not evidence the scenario is unsolvable, so
+    # it is tracked separately from n_correct/accuracy rather than folded in.
+    inconsistent_count = 0
+    rationale_answers: list[str | None] = []
+    samples: list[dict] = []
+    for sample_index in range(n_samples):
         try:
             raw = await client.generate(system, prompt)
-            answers.append(parse_or_repair(raw).answer)
+            parsed = parse_or_repair(raw)
+            answers.append(parsed.answer)
+            audit = audit_answer_rationale(
+                parsed.answer, parsed.rationale, scenario.options
+            )
+            rationale_letter = audit.conclusion_letters[-1] if audit.conclusion_letters else None
+            rationale_answers.append(rationale_letter)
+            samples.append({
+                "sample_index": sample_index,
+                "answer": parsed.answer,
+                "rationale": parsed.rationale,
+                "raw_response": parsed.raw_response,
+                "parse_failed": parsed.parse_failed,
+                "rationale_concludes": rationale_letter,
+                "rationale_conclusion_letters": audit.conclusion_letters,
+                "rationale_conclusion_sources": audit.conclusion_sources,
+                "inconsistent": audit.inconsistent,
+            })
+            if audit.inconsistent:
+                inconsistent_count += 1
+                print(
+                    f"    ! rationale/answer mismatch: {scenario.scenario_id} "
+                    f"answer={parsed.answer} rationale_concludes={rationale_letter} "
+                    f"rationale={parsed.rationale!r}",
+                    file=sys.stderr,
+                )
         except Exception as exc:  # a failed call is data, not a crash
             answers.append(None)
+            rationale_answers.append(None)
+            samples.append({
+                "sample_index": sample_index,
+                "answer": None,
+                "rationale": None,
+                "raw_response": None,
+                "parse_failed": True,
+                "rationale_concludes": None,
+                "rationale_conclusion_letters": [],
+                "rationale_conclusion_sources": [],
+                "inconsistent": None,
+                "generation_error_type": type(exc).__name__,
+                "generation_error_message": str(exc)[:1200],
+            })
             print(f"    ! generation failed: {type(exc).__name__}: {exc}", file=sys.stderr)
     correct = sum(a == scenario.correct_answer for a in answers)
+    rationale_correct = sum(a == scenario.correct_answer for a in rationale_answers)
     return {
         "scenario_id": scenario.scenario_id,
         "correct_answer": scenario.correct_answer,
@@ -108,6 +161,10 @@ async def run_oracle(scenario: Scenario, client, n_samples: int) -> dict:
         "n_correct": correct,
         "accuracy": correct / len(answers) if answers else 0.0,
         "answers": dict(Counter(a or "PARSE_FAIL" for a in answers)),
+        "samples": samples,
+        "rationale_inconsistent_count": inconsistent_count,
+        "rationale_accuracy": rationale_correct / len(answers) if answers else 0.0,
+        "rationale_answers": dict(Counter(a or "NONE" for a in rationale_answers)),
     }
 
 
@@ -152,9 +209,15 @@ async def main() -> None:
         result = await run_oracle(scenario, client, args.n_samples)
         result["verdict"] = verdict(result["accuracy"])
         rows.append(result)
+        mismatch_flag = (
+            f"  [{result['rationale_inconsistent_count']}/{result['n']} rationale/answer mismatch, "
+            f"rationale-accuracy={result['rationale_accuracy']:>4.0%}]"
+            if result["rationale_inconsistent_count"]
+            else ""
+        )
         print(f"  {result['scenario_id']:16s} key={result['correct_answer']}  "
               f"{result['n_correct']}/{result['n']} = {result['accuracy']:>4.0%}  "
-              f"{result['verdict']:5s}  answers={result['answers']}")
+              f"{result['verdict']:5s}  answers={result['answers']}{mismatch_flag}")
 
     passed = [r for r in rows if r["verdict"] == "PASS"]
     weak = [r for r in rows if r["verdict"] == "WEAK"]
@@ -175,6 +238,21 @@ async def main() -> None:
     if not failed and not weak:
         print("\nAll scenarios solvable at ceiling. Group failure, where it occurs,")
         print("is a result about pooling rather than a broken task.")
+
+    mismatched = [r for r in rows if r["rationale_inconsistent_count"]]
+    if mismatched:
+        total_mismatches = sum(r["rationale_inconsistent_count"] for r in mismatched)
+        total_samples = sum(r["n"] for r in rows)
+        print(f"\n{total_mismatches}/{total_samples} samples had a rationale/answer "
+              f"letter mismatch (the model's prose names one option, the \"answer\" "
+              f"field names another). This is a binding defect, not a scenario or "
+              f"comprehension problem -- it inflates FAIL/WEAK verdicts for models "
+              f"prone to it. rationale_accuracy in the JSON output rescores using "
+              f"the rationale's own conclusion instead of the answer field:")
+        for r in mismatched:
+            print(f"  - {r['scenario_id']}: accuracy={r['accuracy']:>4.0%} vs "
+                  f"rationale_accuracy={r['rationale_accuracy']:>4.0%} "
+                  f"({r['rationale_inconsistent_count']}/{r['n']} mismatched)")
 
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)

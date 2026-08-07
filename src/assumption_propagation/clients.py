@@ -113,7 +113,7 @@ _CONCLUSION_PATTERNS = tuple(
     )
 )
 
-RATIONALE_AUDIT_VERSION = "v2.0"
+RATIONALE_AUDIT_VERSION = "v2.1"
 
 _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9]+")
 _ENTITY_STOPWORDS = {
@@ -123,8 +123,9 @@ _ENTITY_STOPWORDS = {
     "use", "vendor", "via", "with",
 }
 _ENTITY_CONCLUSION_CUE = re.compile(
-    r"\b(?:best|book|choose|correct|lowest-cost|recommend(?:ed)?|right|select|"
-    r"should\s+govern|qualif(?:y|ies))\b",
+    r"\b(?:best|book|choose|correct|lowest(?:-cost)?|recommend(?:ed)?|right|select|"
+    r"should\s+govern|qualif(?:y|ies)|only\s+compliant|only\s+qualifying|"
+    r"sole\s+compliant|sole\s+qualifying)\b",
     re.IGNORECASE,
 )
 
@@ -574,10 +575,31 @@ class AzureChatClient:
         arguments_json = getattr(function_call, "arguments", None)
         if not isinstance(arguments_json, str):
             raise ForcedToolProtocolError("forced tool arguments must be a JSON string")
+        # A zero-parameter tool has exactly one valid argument object. Some
+        # deployments express "no arguments" as an empty payload rather than
+        # "{}" (observed: DeepSeek-V4-Pro sends ""). Normalising it is a
+        # serialisation fix, not an inference about content: the schema
+        # declares no properties, so {} is the only object it could mean.
+        _params = tool_definition.get("function", {}).get("parameters") or {}
+        if not arguments_json.strip() and not _params.get("properties"):
+            arguments_json = "{}"
         try:
-            arguments = json.loads(arguments_json)
+            arguments, end = json.JSONDecoder().raw_decode(arguments_json.strip())
         except json.JSONDecodeError as exc:
-            raise ForcedToolProtocolError("forced tool arguments are not valid JSON") from exc
+            raise ForcedToolProtocolError(
+                f"forced tool arguments are not valid JSON: {arguments_json[:200]!r}"
+            ) from exc
+        trailing = arguments_json.strip()[end:].strip()
+        if trailing:
+            # Some deployments append stray bytes after an otherwise well-formed
+            # argument object (observed: DeepSeek-V4-Flash emitting '{}""').
+            # The tool takes no arguments, so a well-formed leading object is
+            # the entire payload; anything after it is a serialiser artifact
+            # rather than content, and is recorded but not treated as fatal.
+            if arguments != {}:
+                raise ForcedToolProtocolError(
+                    f"forced tool arguments have trailing content: {arguments_json[:200]!r}"
+                )
         if not isinstance(arguments, dict):
             raise ForcedToolProtocolError("forced tool arguments must decode to an object")
 
