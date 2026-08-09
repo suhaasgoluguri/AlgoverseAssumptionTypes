@@ -1,0 +1,36 @@
+client=azure:gpt-5.4-mini  scenarios=1  out=outputs/raw/20260808_233146_azure_smoke_gpt54mini_v32
+
+=== vendor_001/factual ===
+  seed 0: answer=A
+    [1T no corrective tool] vendor_001_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 4, 'B': 0, 'C': 0, 'D': 0, 'E': 0} -> A (WRONG)
+        tool audit: actual=0, replayed=0, deliveries={}
+        round 0: A0=A*  A1=E^  A2=B   A3=E 
+        round 1: A0=A*  A1=E^  A2=B   A3=E 
+        round 2: A0=A*  A1=E^  A2=A   A3=E 
+        round 3: A0=A*  A1=A^  A2=A   A3=A 
+        (*=seed  ^=corrector)
+    [2T verifier tool + testimony] vendor_001_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 1, 'B': 2, 'C': 0, 'D': 0, 'E': 1} -> B (correct)
+        tool audit: actual=1, replayed=2, deliveries={'corrector_tool_record': 3}
+        round 0: A0=A*  A1=E^  A2=B   A3=E 
+        round 1: A0=A*  A1=B^  A2=B   A3=E 
+        round 2: A0=A*  A1=B^  A2=B   A3=E 
+        round 3: A0=A*  A1=B^  A2=B   A3=E 
+        (*=seed  ^=corrector)
+    [3T verifier tool + record relay] vendor_001_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 1, 'B': 3, 'C': 0, 'D': 0, 'E': 0} -> B (correct)
+        tool audit: actual=1, replayed=2, deliveries={'corrector_tool_record': 3, 'relayed_record': 6}
+        round 0: A0=A*  A1=E^  A2=B   A3=E 
+        round 1: A0=A*  A1=B^  A2=B   A3=E 
+        round 2: A0=A*  A1=B^  A2=B   A3=B 
+        round 3: A0=A*  A1=B^  A2=B   A3=B 
+        (*=seed  ^=corrector)
+    [4T direct recipient tool result] vendor_001_factual_negative_seed_00 @ fully_connected_mesh   votes={'A': 0, 'B': 1, 'C': 0, 'D': 0, 'E': 3} -> E (WRONG)
+        tool audit: actual=7, replayed=2, deliveries={'corrector_tool_record': 3, 'direct_tool_record': 6}
+        round 0: A0=A*  A1=E^  A2=B   A3=E 
+        round 1: A0=A*  A1=B^  A2=B   A3=E 
+        round 2: A0=E*  A1=B^  A2=B   A3=B 
+        round 3: A0=E*  A1=E^  A2=B   A3=E 
+        (*=seed  ^=corrector)
+    [-  no communication] rep 0: votes={'A': 0, 'B': 1, 'C': 0, 'D': 0, 'E': 3} -> E
+    [-  uncorrupted reference] rep 0 @ fully_connected_mesh   -> B (correct)
+
+Done. Raw logs in outputs/raw/20260808_233146_azure_smoke_gpt54mini_v32
