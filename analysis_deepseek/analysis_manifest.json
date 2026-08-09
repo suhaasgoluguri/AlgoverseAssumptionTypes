@@ -1,0 +1,46 @@
+{
+  "analysis_manifest_version": "1.2",
+  "created_at_utc": "2026-08-09T02:34:47.925067+00:00",
+  "command_argv": [
+    "scripts/analyze_run.py",
+    "outputs/raw/20260807_193819_azure_confirmatory_scope33_deepseekv4pro_v32"
+  ],
+  "records": {
+    "path": "outputs/raw/20260807_193819_azure_confirmatory_scope33_deepseekv4pro_v32/records.jsonl",
+    "sha256": "1230a3f7a3fa891651c464f0d5ffb2b144deb9599ef898d5e26a83f6b2c38019",
+    "n_rows": 115200
+  },
+  "seeds": {
+    "path": "outputs/raw/20260807_193819_azure_confirmatory_scope33_deepseekv4pro_v32/seeds.jsonl",
+    "sha256": "cba50fd9707deae273610c2d9ce402a2de42e32f91f8c7c294e2015e84ceae3d",
+    "n_rows": 198
+  },
+  "scenario_data": {
+    "path": "outputs/raw/20260807_193819_azure_confirmatory_scope33_deepseekv4pro_v32/scenario_snapshot.json",
+    "source": "run_snapshot",
+    "sha256": "880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917"
+  },
+  "judged_data": null,
+  "analysis_sources": {
+    "scripts/analyze_run.py": "12033c69f8f031efa7fe33caa2561c9a96c403519adb23c67649e3364f83f8fe",
+    "src/assumption_propagation/analysis.py": "5de3a6a29a27f30c3975c220bdb271cdb9060e354695e8767ce20b8cd9ab9acd",
+    "src/assumption_propagation/metrics.py": "384b1668889fe37140371b12de52b3de46372a6f6d2a695a948c213c8eec57c2",
+    "src/assumption_propagation/aggregation.py": "df06dc304211d5eee45b2e8a925e5f1a6a425c076c98078fb9502be9fd888897",
+    "src/assumption_propagation/schemas.py": "b1a093c8dd2cc58928d8b157aa5e823184930355e79452e54b0c3f4af3db7d49",
+    "src/assumption_propagation/topologies.py": "9db39bde3ccccd6b78ab1edbeaaee76b23d5bc6733bd865a3aec2ca279b64344",
+    "src/assumption_propagation/judge.py": "91bd6ce8fbb1d1e129db7f2f12e90eedb23789f9396b4c6876e1065f7c150ee8"
+  },
+  "n_conversations": 7200,
+  "planned_injection_conditions": [
+    "injection_tool_none",
+    "injection_tool_testimony",
+    "injection_tool_relay",
+    "injection_tool_direct",
+    "injection_prompt_receipt_control",
+    "injection_tool_placebo"
+  ],
+  "n_replayable_conversation_aggregate_rows": 84,
+  "n_conditional_aggregate_rows": 84,
+  "n_seed_trials": 198,
+  "n_seed_trial_itt_rows": 2376
+}
