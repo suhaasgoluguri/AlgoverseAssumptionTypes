@@ -10,7 +10,13 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $python = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $scenarioData = Join-Path $repoRoot "data\scenarios_hidden_profile_candidates.json"
 $preregistration = Join-Path $repoRoot "docs\PREREGISTRATION.md"
-$expectedScenarioSha256 = "7f0f31556b2b9543815eac77272ab00f91804deb3128d33b5c7c12d48ac07fbf"
+# The gate. Hashes the parsed corpus, so it is identical on every platform.
+$expectedScenarioCanonicalSha256 = "653fe93f821846aca67748f0004dda3bb2c02ae9280382ed1c990d41ba15bea1"
+# Recorded provenance, not a gate. Hashes the exact bytes on disk, so a checkout
+# that rewrites line endings changes it without changing a single scenario:
+# LF gives this value, a Windows CRLF checkout gives
+# 7f0f31556b2b9543815eac77272ab00f91804deb3128d33b5c7c12d48ac07fbf.
+$expectedScenarioSha256 = "880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917"
 $attribution = "both"
 $attributionModes = @("anonymous", "assigned")
 $topologies = @("looped_chain", "neutral_star", "fully_connected_mesh")
@@ -51,11 +57,32 @@ if ($LASTEXITCODE -ne 0 -or $deployment -ne "gpt-5.4-mini") {
     )
 }
 
+$scenarioCanonicalSha256 = (& $python -c (
+    "import pathlib, sys; " +
+    "from assumption_propagation.reproducibility import canonical_json_sha256; " +
+    "print(canonical_json_sha256(pathlib.Path(sys.argv[1])))"
+) $scenarioData)
+if ($LASTEXITCODE -ne 0) {
+    throw "Could not compute the canonical scenario corpus hash."
+}
+$scenarioCanonicalSha256 = $scenarioCanonicalSha256.Trim()
+if ($scenarioCanonicalSha256 -ne $expectedScenarioCanonicalSha256) {
+    throw (
+        "Confirmatory scenario corpus content mismatch. Expected canonical " +
+        "$expectedScenarioCanonicalSha256; found $scenarioCanonicalSha256."
+    )
+}
+
+# Provenance only. A mismatch here with the canonical hash intact means the
+# working copy is serialized differently (typically CRLF from a Windows
+# checkout), not that any scenario changed, so it must not block the run.
 $scenarioSha256 = (Get-FileHash -LiteralPath $scenarioData -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($scenarioSha256 -ne $expectedScenarioSha256) {
-    throw (
-        "Confirmatory scenario corpus hash mismatch. Expected " +
-        "$expectedScenarioSha256; found $scenarioSha256."
+    Write-Warning (
+        "Scenario corpus raw byte hash is $scenarioSha256, not the recorded " +
+        "$expectedScenarioSha256. The canonical content hash matches, so the " +
+        "corpus is unchanged and only its on-disk serialization differs. Both " +
+        "values are recorded in the run manifest."
     )
 }
 
@@ -102,7 +129,8 @@ Write-Host "  Design: 3 frozen seeds per variant, 4 rounds, full factorial"
 Write-Host "  Topologies: $($topologies -join ', ')"
 Write-Host "  Speaker attribution: $($attributionModes -join ' + ')"
 Write-Host "  Primary cell: fully_connected_mesh + assigned"
-Write-Host "  Scenario SHA-256: $scenarioSha256"
+Write-Host "  Scenario canonical SHA-256: $scenarioCanonicalSha256"
+Write-Host "  Scenario raw SHA-256: $scenarioSha256"
 Write-Host "  Expected seeds: $expectedSeeds"
 Write-Host "  Maximum injection conversations: $maximumInjectionConversations"
 Write-Host "  Expected reference conversations: $expectedBaselineConversations"
@@ -216,7 +244,7 @@ $passed = (
     ($manifest.protocol.topologies -join "|") -eq ($topologies -join "|") -and
     $manifest.protocol.scope_primary_topology -eq "fully_connected_mesh" -and
     $manifest.protocol.scope_primary_attribution -eq "assigned" -and
-    $manifest.scenario_data.sha256 -eq $expectedScenarioSha256 -and
+    $manifest.scenario_data.canonical_sha256 -eq $expectedScenarioCanonicalSha256 -and
     $conditionCount -eq $nArms -and
     $seeds.Count -eq $expectedSeeds -and
     $results.Count -eq $expectedConversations -and
@@ -235,7 +263,8 @@ Write-Host "  Manifest state: $($manifest.status.state)"
 Write-Host "  Model: $($manifest.client.model_identifier)"
 Write-Host "  Attribution: $($manifest.protocol.attribution)"
 Write-Host "  Topologies: $($manifest.protocol.topologies -join ', ')"
-Write-Host "  Scenario SHA-256: $($manifest.scenario_data.sha256)"
+Write-Host "  Scenario canonical SHA-256: $($manifest.scenario_data.canonical_sha256)"
+Write-Host "  Scenario raw SHA-256: $($manifest.scenario_data.sha256)"
 Write-Host "  Conditions: $($manifest.protocol.injection_conditions -join ', ')"
 Write-Host "  Seeds: $($seeds.Count)/$expectedSeeds"
 Write-Host "  Replayable seeds: $replayableSeeds/$expectedSeeds"

@@ -30,6 +30,36 @@ def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes())
 
 
+def canonical_json_bytes(payload: bytes) -> bytes:
+    """Return a formatting-independent serialization of a JSON ``payload``.
+
+    The document is parsed and re-serialized with sorted keys, no optional
+    whitespace, and an explicit UTF-8 encoding, so line endings, indentation,
+    key order, and a leading byte-order mark cannot change the result. Only the
+    parsed data survives.
+    """
+    document = json.loads(payload.decode("utf-8-sig"))
+    return json.dumps(
+        document,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+
+def canonical_json_sha256(path: Path) -> str:
+    """Return the SHA-256 digest of a JSON file's *content*, not its bytes.
+
+    Use alongside :func:`sha256_file`, never instead of it. The raw digest
+    identifies an exact file and is what proves which bytes a run consumed; it
+    is also formatting-sensitive, so a checkout that rewrites line endings
+    changes it without changing a single scenario. This digest identifies the
+    data and is stable across those serializations, which makes it the right
+    thing to gate an experiment on.
+    """
+    return sha256_bytes(canonical_json_bytes(path.read_bytes()))
+
+
 def snapshot_scenario_data(source: Path, run_dir: Path) -> tuple[Path, str]:
     """Copy the exact input scenario bytes into ``run_dir`` and hash them.
 

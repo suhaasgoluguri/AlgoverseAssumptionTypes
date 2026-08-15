@@ -1,0 +1,9 @@
+# Check out LF everywhere, so a working copy is byte-identical on every platform.
+* text=auto eol=lf
+
+# The corpus and its snapshots are hashed in run manifests and gated by the
+# confirmatory launcher, so checkout must never rewrite their bytes. Under
+# core.autocrlf the same corpus hashes to 880cf414 (LF) or 7f0f3155 (CRLF).
+data/*.json -text
+data/archive/*.json -text
+outputs/raw/**/scenario_snapshot.json -text

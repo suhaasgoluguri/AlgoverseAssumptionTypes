@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $env:PYTHONUNBUFFERED = "1"
 
-Set-Location "C:\Users\imwri\OneDrive\Desktop\AlgoverseAssumptionTypes"
+Set-Location -LiteralPath (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Host.UI.RawUI.WindowTitle = "Azure completion-budget gate: 8000 tokens"
 
 Write-Host "Running one causal four-arm quality gate at 8,000 completion tokens..." -ForegroundColor Cyan

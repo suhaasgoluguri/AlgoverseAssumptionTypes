@@ -212,9 +212,28 @@ Collected topologies: `looped_chain`, `neutral_star`, and
 agent and only pooling identifies the compliant option.
 
 - Corpus: `data/scenarios_hidden_profile_candidates.json`,
-  sha256 `7f0f31556b2b9543815eac77272ab00f91804deb3128d33b5c7c12d48ac07fbf`
+  sha256 `880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917`
+  — the LF form, which is what git stores and therefore the canonical value.
+  This hash is taken over the file **as it sits on disk**, so a checkout that
+  rewrites line endings changes it without changing a single character of
+  content: under a Windows checkout with `core.autocrlf=true`, the identical
+  corpus hashes to
+  `7f0f31556b2b9543815eac77272ab00f91804deb3128d33b5c7c12d48ac07fbf`.
+  `.gitattributes` now pins these files to LF on every platform. Runs collected
+  before that pin recorded whichever form was on disk, so both values appear
+  across `run_manifest.json` files and denote identical stimuli.
 - 33 scenarios (34 authored, `custodian_001` excluded — see §5)
-- Oracle validity: 164/165 = 99.4% with full information
+- Oracle validity: 164/165 = 99.4% with full information (as preregistered).
+  This is a **sampled** quantity, not a fixed property of the corpus: the oracle
+  check draws the subject model five times per scenario, so re-measurement moves
+  it by a draw or two and no single value should be read as exact. Revalidation
+  on the frozen corpus under `azure:gpt-5.4-mini` gives 165/165 = 100%. The two
+  measurements cover the same 33 scenarios and differ by exactly one draw, on
+  `foodsafety_001` (4/5 versus 5/5); every other scenario scores 5/5 in both.
+  The preregistered measurement used a different deployment
+  (`azure:gpt-5.4-mini-1`) in a separate sampling run. The preregistered figure
+  stands as recorded and the revalidation is reported alongside it, not in place
+  of it.
 - No-pooling gate: 0/33 scenarios are solvable by dropping the trap and taking
   the metric optimum, enforced by Rule 3 in
   `scripts/build_hidden_profile_scenarios.py`. Lone-agent accuracy is 10%,
@@ -499,3 +518,7 @@ the paper is submitted.
 | 2026-08-05 | Before any confirmatory API call, collection was expanded to the complete 4-arm × 3-topology × 2-attribution factorial, with both mechanism controls in every coordinate. The primary scope claim remains mesh + assigned. | Complete cells prevent selective topology omission and allow prespecified secondary network and attribution analyses. Sparse testimony/relay coverage is treated as part of finite-horizon system effectiveness, not pooled into the primary delivery-format contrast. This supersedes the same-day fixed-attribution collection decision above. |
 | 2026-08-05 | Before any confirmatory API call, the frozen subject deployment was changed from `azure:gpt-5-mini` to `azure:gpt-5.4-mini`. | The team selected the stronger deployment for the final confirmatory study. The deployment is pinned in the launcher and manifest and no results are pooled across models. This supersedes the 2026-08-04 model-selection row above. |
 | 2026-08-05 | Before any confirmatory API call, `max_completion_tokens` was reduced from 8,000 to 400 per completion. | The $190 Azure budget requires a bounded worst case. The final `gpt-5.4-mini` preflight used at most 127 output tokens across each genuine two-completion tool exchange, and earlier 400-token runs showed no truncation-attributable parse failures. The cap is pinned in the launcher and manifest; any length-finished or parse-failed response remains logged. |
+| 2026-08-05 | Correction to the row immediately above: the cap actually applied is **1,000** output tokens per completion, not 400. The launcher moved directly from 8,000 to 1,000; no run was collected at 400. | The 400 figure was recorded here but never implemented. The launcher was set to 1,000 in commit `ddcdf8e`, two days before the first confirmatory API call, and the launcher, the frozen collection command above, and both run manifests all agree at 1,000. No result is affected. The tag `full-factorial-gpt54mini-400-v1` keeps the superseded figure in its name; the commit it points at sets 1,000. The original row is left unedited so the log remains auditable. |
+| 2026-08-11 | Documentation correction after collection, no protocol change: the frozen corpus in §"Track" is now identified by sha256 `880cf414…` (LF, the form git stores) rather than `7f0f3155…` (the same bytes after a CRLF checkout), and `.gitattributes` pins the corpus and snapshots to LF. | The hash is computed over the file on disk, and a Windows checkout with `core.autocrlf=true` rewrote LF to CRLF before hashing, so the launcher's gate could only pass on one operating system. The two values always denoted byte-identical content; what changed is how the corpus is named, not the corpus. Manifests written earlier record whichever form was on disk, so both values legitimately appear across runs. |
+| 2026-08-11 | Documentation addition, not a deviation: the preregistered oracle-validity figure of 164/165 is retained, with a revalidation of 165/165 reported alongside it and a note that oracle validity is a sampled quantity at five draws per scenario. | The two measurements cover the same 33 scenarios and differ by a single draw on `foodsafety_001`; every other scenario scores 5/5 in both. They used different deployments (`azure:gpt-5.4-mini-1` and `azure:gpt-5.4-mini`) in separate sampling runs. The gap is sampling variation, not a change to scenario content or corpus membership, so the preregistered number is reported as recorded rather than replaced. |
+| 2026-08-11 | Change to the confirmatory launcher's corpus gate, after all reported data was collected: it now validates a canonical hash of the parsed corpus (`653fe93f…`) instead of the raw byte hash, and the raw hash is retained as recorded provenance that warns rather than aborts on mismatch. Run manifests gain `scenario_data.canonical_sha256` beside the existing `sha256` (manifest version 1.6). | A raw byte hash cannot pass on both platforms at once, because a Windows checkout rewrites line endings and changes it without changing any scenario. The gate was therefore unsatisfiable for at least one collaborator and could not have validated a cross-platform run. The canonical hash is computed over parsed JSON with sorted keys and no optional whitespace, so it identifies scenario content rather than file formatting. No already-collected run is revalidated or altered by this change, and no historical manifest is rewritten; the raw digest remains recorded so the exact bytes any run consumed stay auditable. | 

@@ -8,8 +8,10 @@ import pytest
 from assumption_propagation.reproducibility import (
     SCENARIO_SNAPSHOT_NAME,
     RUN_MANIFEST_NAME,
+    canonical_json_sha256,
     resolve_scenario_data,
     sha256_bytes,
+    sha256_file,
     snapshot_protocol_sources,
     snapshot_scenario_data,
 )
@@ -109,3 +111,38 @@ def test_protocol_source_snapshot_preserves_relative_paths(tmp_path: Path):
     frozen = run_dir / "protocol_snapshot" / "src" / "prompts.py"
     assert frozen.read_bytes() == source.read_bytes()
     assert manifest["src/prompts.py"]["sha256"] == sha256_bytes(source.read_bytes())
+
+
+def test_canonical_hash_ignores_line_endings(tmp_path: Path):
+    """CRLF and LF checkouts of one corpus must hash to the same value.
+
+    This is the failure the raw digest cannot survive: git with
+    ``core.autocrlf=true`` rewrites line endings on checkout, so the same
+    corpus produced two different raw hashes on two machines.
+    """
+    lf = tmp_path / "lf.json"
+    crlf = tmp_path / "crlf.json"
+    payload = b'[\n  {"scenario_id": "s1", "answer": "B"}\n]\n'
+    lf.write_bytes(payload)
+    crlf.write_bytes(payload.replace(b"\n", b"\r\n"))
+
+    assert sha256_file(lf) != sha256_file(crlf)
+    assert canonical_json_sha256(lf) == canonical_json_sha256(crlf)
+
+
+def test_canonical_hash_ignores_key_order_indentation_and_bom(tmp_path: Path):
+    compact = tmp_path / "compact.json"
+    pretty = tmp_path / "pretty.json"
+    compact.write_bytes(b'{"b":2,"a":1}')
+    pretty.write_bytes('﻿{\n  "a": 1,\n  "b": 2\n}\n'.encode("utf-8"))
+
+    assert canonical_json_sha256(compact) == canonical_json_sha256(pretty)
+
+
+def test_canonical_hash_still_detects_content_change(tmp_path: Path):
+    original = tmp_path / "original.json"
+    edited = tmp_path / "edited.json"
+    original.write_bytes(b'[{"scenario_id": "s1", "answer": "B"}]')
+    edited.write_bytes(b'[{"scenario_id": "s1", "answer": "C"}]')
+
+    assert canonical_json_sha256(original) != canonical_json_sha256(edited)

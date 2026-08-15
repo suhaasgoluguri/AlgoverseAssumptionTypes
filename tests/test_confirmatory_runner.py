@@ -2,14 +2,17 @@
 
 from pathlib import Path
 
-from assumption_propagation.reproducibility import sha256_file
+from assumption_propagation.reproducibility import canonical_json_sha256, sha256_file
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RUNNER = REPO_ROOT / "outputs" / "validation" / "run_tool_v2_azure_33.ps1"
 SCENARIOS = REPO_ROOT / "data" / "scenarios_hidden_profile_candidates.json"
 EXPECTED_SCENARIO_SHA256 = (
-    "7f0f31556b2b9543815eac77272ab00f91804deb3128d33b5c7c12d48ac07fbf"
+    "880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917"
+)
+EXPECTED_SCENARIO_CANONICAL_SHA256 = (
+    "653fe93f821846aca67748f0004dda3bb2c02ae9280382ed1c990d41ba15bea1"
 )
 
 
@@ -43,3 +46,19 @@ def test_confirmatory_runner_pins_the_active_scenario_bytes() -> None:
 
     assert EXPECTED_SCENARIO_SHA256 in text
     assert sha256_file(SCENARIOS) == EXPECTED_SCENARIO_SHA256
+
+
+def test_confirmatory_runner_gates_on_canonical_scenario_content() -> None:
+    """The gate must be the content hash, not the formatting-sensitive one.
+
+    A raw byte hash cannot pass on both platforms at once: a Windows checkout
+    with ``core.autocrlf=true`` rewrites line endings and changes it without
+    changing a single scenario.
+    """
+    text = RUNNER.read_text(encoding="utf-8")
+
+    assert EXPECTED_SCENARIO_CANONICAL_SHA256 in text
+    assert canonical_json_sha256(SCENARIOS) == EXPECTED_SCENARIO_CANONICAL_SHA256
+    assert "$manifest.scenario_data.canonical_sha256 -eq" in text
+    # The raw hash is provenance, so a mismatch warns rather than throwing.
+    assert "Write-Warning" in text

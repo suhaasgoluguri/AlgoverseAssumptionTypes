@@ -46,6 +46,7 @@ from assumption_propagation.prompts import PROMPT_VERSION
 from assumption_propagation.reproducibility import (
     RUN_MANIFEST_NAME,
     git_provenance,
+    canonical_json_sha256,
     sha256_file,
     snapshot_scenario_data,
     snapshot_protocol_sources,
@@ -1081,6 +1082,14 @@ async def main() -> None:
         snapshot_path, scenario_sha256 = snapshot_scenario_data(data_path, out_dir)
     except FileNotFoundError as exc:
         sys.exit(str(exc))
+    # Recorded alongside the raw digest, never instead of it: the raw digest
+    # identifies the exact bytes this run read, while the canonical digest
+    # survives a checkout that rewrites line endings and so is comparable
+    # across platforms.
+    try:
+        scenario_canonical_sha256 = canonical_json_sha256(snapshot_path)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        sys.exit(f"invalid scenario data {snapshot_path}: {exc}")
     try:
         scenarios = load_scenarios(snapshot_path, args.scenario)
     except (OSError, UnicodeError, json.JSONDecodeError, ValidationError, ValueError) as exc:
@@ -1142,7 +1151,8 @@ async def main() -> None:
         else len(selected_variants) * args.independent_reps
     )
     manifest = {
-        "manifest_version": "1.5",
+        # 1.6 adds scenario_data.canonical_sha256 alongside the raw digest.
+        "manifest_version": "1.6",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "runner": "scripts/run_pilot.py",
         "command_argv": sys.argv,
@@ -1152,6 +1162,7 @@ async def main() -> None:
             "source_path": str(data_path.resolve()),
             "snapshot_path": snapshot_path.name,
             "sha256": scenario_sha256,
+            "canonical_sha256": scenario_canonical_sha256,
             "selected_scenario_ids": [scenario.scenario_id for scenario in scenarios],
             "selected_assumption_ids": selected_assumption_ids,
         },

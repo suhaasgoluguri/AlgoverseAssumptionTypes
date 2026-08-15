@@ -353,4 +353,4 @@ def test_all_options_and_constraints_rendered(scenario, variant):
 
 
 def test_prompt_version_defined():
-    assert PROMPT_VERSION == "v3.1"
+    assert PROMPT_VERSION == "v3.2"

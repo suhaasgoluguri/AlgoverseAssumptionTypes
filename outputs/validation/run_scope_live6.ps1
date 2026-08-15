@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $env:PYTHONUNBUFFERED = "1"
 
-Set-Location "C:\Users\imwri\OneDrive\Desktop\AlgoverseAssumptionTypes"
+Set-Location -LiteralPath (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $Host.UI.RawUI.WindowTitle = "Azure evidence-scope pilot: 6 scenarios"
 
 Write-Host "Azure evidence-scope pilot" -ForegroundColor Cyan

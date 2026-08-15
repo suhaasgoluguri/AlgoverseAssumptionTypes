@@ -1,27 +1,15 @@
 """Ceiling test: is each scenario solvable at all?
 
-Every propagation result sits downstream of one assumption — that a correct
-answer is reachable from the information the design distributes. Nothing in
-the pipeline currently establishes that. `audit_scenarios.py` checks structural
-properties (letter balance, refutation markers, unknown-status rules), but
-structure is not solvability, and Track B baseline group accuracy of 19% is
-direct evidence that a well-formed scenario can still be unsolvable in practice.
+Gives one agent every private finding at once, with no communication — the best
+any group could do if pooling worked perfectly. A correct oracle answer means
+the task is well posed and the answer key is right, so group failure is a
+finding about pooling; a wrong one means the scenario is broken and should be
+cut before collection. `audit_scenarios.py` checks structure, which is not the
+same as solvability.
 
-This gives ONE agent every private finding at once, with no communication and
-one round. That is the ceiling: the best any group could do if pooling worked
-perfectly.
-
-  oracle correct  -> the scenario is well posed, the information suffices, and
-                     the answer key is right. Group failure is then a finding
-                     about pooling rather than a broken task.
-  oracle wrong    -> the scenario is broken. No downstream result from it means
-                     anything, and it should be excluded before the
-                     confirmatory run rather than after.
-
-The oracle receives the BASELINE information state (every agent's honest
-finding, including the seed's), so it tests the task, not the injection.
-Prompts are built with the same builders the experiment uses, so this
-exercises the actual materials rather than a paraphrase.
+Uses the baseline information state (every honest finding, including the
+seed's), so it tests the task rather than the injection, and builds prompts with
+the same builders the experiment uses.
 
 Usage:
   uv run python scripts/oracle_check.py --data data/scenarios_hidden_profile_candidates.json

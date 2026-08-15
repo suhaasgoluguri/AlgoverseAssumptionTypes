@@ -9,5 +9,16 @@ venv/
 outputs/raw/*
 !outputs/raw/20260728_*
 
-# run logs (raw run dirs are already ignored above)
+# run logs (raw run dirs are already ignored above). Shell redirections, not
+# pipeline output; tracking them would trip the launcher's clean-worktree gate.
 outputs/*.log
+*_run.log
+smoke_*.log
+
+# tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Local working notes. Untracked deliberately: collaborator names, venue
+# details, cost figures, unpublished results. Nothing in the codebase reads it.
+CLAUDE.md
