@@ -6,9 +6,18 @@ Experiment output.
 and both are reproducible from the corpus plus a run manifest. Real
 experimental runs should also be backed up outside the repository.
 
-The small derived summaries in this directory (`adoption_*.json`,
-`oracle_*.json`, `transit_diag.json`, and `validation/`) are tracked, because
-they are what the write-up cites and they stay small.
+Diagnostic artifacts (`adoption_*.json`, per-model oracle checks,
+`transit_diag.json`) are git-ignored too: each is regenerable by re-running
+the script that wrote it, and nothing in the repo cites them.
+
+Two things here are tracked on purpose:
+
+- `oracle_34*.json` -- the ceiling test for the active corpus, pinned to its
+  `data_sha256`. It is the evidence that each scenario is solvable at all, so
+  a group failure is a finding about pooling rather than a broken task.
+- `validation/*.ps1` and `validation/scenarios_scope_live6.json` -- the
+  reproduction launchers README.md documents, and the corpus one of them
+  reads.
 
 ## Layout
 
@@ -20,8 +29,8 @@ outputs/
 |   |-- results.jsonl            per-conversation answer/vote summary
 |   |-- run_manifest.json        corpus hash, protocol snapshot, provenance
 |   `-- analysis/                written by scripts/analyze_run.py
-|-- validation/                  oracle checks and run launchers
-`-- *.json                       adoption and oracle summaries
+|-- validation/                  run launchers (README.md documents these)
+`-- oracle_34*.json              corpus ceiling test, pinned to a corpus hash
 ```
 
 - `raw/` is written directly by `scripts/run_pilot.py`.

@@ -14,11 +14,19 @@ outputs/raw/
 # Generated HTML reports. Rebuilt from the run they cite.
 reports/
 
-# run logs (raw run dirs are already ignored above). Shell redirections, not
-# pipeline output; tracking them would trip the launcher's clean-worktree gate.
-outputs/*.log
-*_run.log
-smoke_*.log
+# Run logs, anywhere in the tree. Shell redirections of console progress, not
+# pipeline output: the structured form of the same run is in records.jsonl and
+# results.jsonl. Tracking them would also trip the launcher's clean-worktree
+# gate. The previous name-by-name patterns missed any log named differently.
+*.log
+
+# Internal working documents. Team-facing, not reviewer-facing, and none of
+# them is referenced by anything in the repo.
+docs/PINNED.md
+docs/TEAM_BRIEFING.html
+
+# Page rasters of docs/analysis/*.pdf plus the superseded July pilot analysis.
+docs/analysis/
 
 # tool caches
 .pytest_cache/
@@ -27,3 +35,23 @@ smoke_*.log
 # Local working notes. Untracked deliberately: collaborator names, venue
 # details, cost figures, unpublished results. Nothing in the codebase reads it.
 CLAUDE.md
+
+# Diagnostic and validation artifacts. Each is regenerable by re-running the
+# script that wrote it, none is cited by the write-up, and together they were
+# 3.3 MB of the 7.9 MB repo. outputs/oracle_34*.json is deliberately NOT
+# matched here: it is the corpus-validity ceiling test for the active corpus,
+# pinned to its sha256, and it is 7 KB.
+outputs/adoption_*.json
+outputs/oracle_check.json
+outputs/transit_diag.json
+outputs/validation/oracle_*.json
+outputs/validation/20260803_scenarios_rebuilt.json
+outputs/validation/scenarios_scope_live8.json
+# Pilot-phase launchers for a superseded corpus. scenarios_scope_live6.json
+# stays tracked: run_tool_v2_azure_six.ps1 is a documented reproduction step
+# in README.md and --data's it.
+outputs/validation/run_scope_live6.ps1
+outputs/validation/run_scope_budget_smoke8000.ps1
+
+# Internal self-audit; team-facing, unreferenced.
+docs/RESEARCH_AUDIT.md
