@@ -6,8 +6,13 @@ venv/
 .DS_Store
 *.egg-info/
 .ipynb_checkpoints/
-outputs/raw/*
-!outputs/raw/20260728_*
+# Raw run data. Large, machine-specific, and reproducible from the corpus
+# plus a run manifest, so it is distributed alongside the paper rather
+# than tracked here. docs/sample_records.jsonl is the in-repo example.
+outputs/raw/
+
+# Generated HTML reports. Rebuilt from the run they cite.
+reports/
 
 # run logs (raw run dirs are already ignored above). Shell redirections, not
 # pipeline output; tracking them would trip the launcher's clean-worktree gate.
