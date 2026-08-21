@@ -50,11 +50,8 @@ keeps it out of ordinary-neutral outcomes.
 - `src/assumption_propagation/clients.py`: ordinary completion and forced-tool
   client flows.
 - `src/assumption_propagation/topologies.py`: graph routing and role placement.
-- `src/assumption_propagation/judge.py`: blinded semantic Judge LLM pipeline.
-- `src/assumption_propagation/metrics.py` and `analysis.py`: answer- and
-  judge-level outcomes.
-- `docs/JUDGE_RUBRIC.md`: shared Judge LLM/human annotation codebook.
-- `docs/JUDGE_INTERFACE.md`: exact judge input, output, and merge boundary.
+- `src/assumption_propagation/metrics.py` and `analysis.py`: answer-level
+  outcomes, within one conversation and across a run.
 
 There are currently 33 executable scenarios with 99 matched variants: one
 factual, causal, and framing treatment for every base scenario.
@@ -166,49 +163,6 @@ attempted seed generation, including parse/generation failures, and
 topology-specific outcome coverage, a missing-as-incorrect point estimate, and
 missing-outcome bounds. The conditional aggregates are secondary
 post-treatment summaries and must not replace that all-attempt report.
-
-Run the judge plumbing without an API call, then merge and analyze it:
-
-```bash
-uv run python scripts/run_judge.py outputs/raw/<stamp> --client mock
-uv run python scripts/merge_judged.py \
-  outputs/raw/<stamp> outputs/judged/<stamp>/judged.jsonl --allow-mock
-uv run python scripts/analyze_run.py \
-  outputs/raw/<stamp> --judged outputs/judged/<stamp>/merged.jsonl --allow-mock
-```
-
-For a production Claude judge, copy `.env.example` to `.env`, configure
-`ANTHROPIC_API_KEY` and the exact `ANTHROPIC_JUDGE_MODEL`, then use
-`--client anthropic`. The default model identifier is `claude-sonnet-5`.
-
-## Judge design
-
-The Judge LLM is post-hoc and blinded. It receives one response, one canonical
-target, and the semantic references needed to assess qualification and
-correction. It never receives topology, condition, role, answer correctness,
-or join identifiers. The runner attaches trusted keys after validation.
-
-The current eight-state taxonomy is:
-
-```text
-absent | mention_only | qualified_acceptance | categorical_acceptance
-challenge | rejection | supported_correction | unclear
-```
-
-Exact evidence spans are required for determinate non-absent labels. Exposure
-is not guessed by the LLM: direct note visibility and routed target engagement,
-acceptance, and correction are kept as distinct post-hoc fields. Partial row
-coverage, unclear labels, and judge-uncertain labels are reported separately;
-substantive judge-level metrics are withheld until coverage is complete and
-uncertain cases are adjudicated.
-
-The judge client must be selected explicitly. `mock` is a no-cost plumbing
-client whose all-absent labels are rejected by merge and analysis unless
-`--allow-mock` is deliberately supplied; never use them as research results.
-
-`JUDGE_RUBRIC.md` is currently `v1.2-draft`: calibrate it on development data,
-then freeze the rubric, prompt, schema, model snapshot, and adjudication plan
-before opening the held-out validation set.
 
 ## Verification
 
