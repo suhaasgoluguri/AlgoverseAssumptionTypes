@@ -4,12 +4,14 @@ When a run loses records to transient API failures, the affected scenarios can
 be re-collected and spliced in. Replacement is by whole scenario because
 scenario is the bootstrap cluster, so no paired contrast straddles the join.
 
-Both runs must share a corpus; the merged manifest records each source commit
+Every recovery run contributes all of its scenarios, and each of those replaces
+the main run's copy wholesale. Recovery runs must not overlap each other, and
+all runs must share a corpus. The merged manifest records each source commit
 and is marked complete.
 
 Usage:
-  uv run python scripts/merge_scenarios.py <main-run> <recovery-run> <out-dir> \
-      --scenarios foodsafety_001
+  uv run python scripts/merge_scenarios.py <main-run> <out-dir> \
+      --recovery <run-a> <run-b> --reason "..."
 """
 
 from __future__ import annotations
@@ -19,22 +21,17 @@ import datetime
 import json
 import shutil
 import sys
+from collections import Counter
 from pathlib import Path
 
 ROW_FILES = ("records.jsonl", "results.jsonl", "seeds.jsonl")
 CARRY_FILES = ("scenario_snapshot.json", "git_tracked_changes.patch")
 
 
-def split_rows(path: Path, replace: set[str]) -> tuple[list[str], int]:
-    """Return (rows to keep, count dropped) for one JSONL file."""
-    keep, dropped = [], 0
-    with path.open(encoding="utf-8") as handle:
-        for line in handle:
-            if json.loads(line)["scenario_id"] in replace:
-                dropped += 1
-            else:
-                keep.append(line)
-    return keep, dropped
+def scenarios_in(run: Path) -> set[str]:
+    """Scenario ids present in a run's results."""
+    with (run / "results.jsonl").open(encoding="utf-8") as handle:
+        return {json.loads(line)["scenario_id"] for line in handle}
 
 
 def read_rows(path: Path) -> list[str]:
@@ -45,30 +42,51 @@ def read_rows(path: Path) -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("main_run", type=Path)
-    parser.add_argument("recovery_run", type=Path)
     parser.add_argument("out_dir", type=Path)
-    parser.add_argument("--scenarios", nargs="+", required=True)
+    parser.add_argument("--recovery", nargs="+", required=True, type=Path)
     parser.add_argument("--reason", default="")
     args = parser.parse_args()
 
-    replace = set(args.scenarios)
     if args.out_dir.exists():
         sys.exit(f"{args.out_dir} already exists")
 
     main_manifest = json.loads((args.main_run / "run_manifest.json").read_text())
-    reco_manifest = json.loads((args.recovery_run / "run_manifest.json").read_text())
-    main_sha = main_manifest["scenario_data"]["sha256"]
-    reco_sha = reco_manifest["scenario_data"]["sha256"]
-    if main_sha != reco_sha:
-        sys.exit(f"corpus mismatch: main {main_sha[:12]} != recovery {reco_sha[:12]}")
+    corpus = main_manifest["scenario_data"]["sha256"]
+
+    recovery: dict[Path, set[str]] = {}
+    for run in args.recovery:
+        manifest = json.loads((run / "run_manifest.json").read_text())
+        if manifest["scenario_data"]["sha256"] != corpus:
+            sys.exit(f"{run.name}: corpus {manifest['scenario_data']['sha256'][:12]} "
+                     f"!= main {corpus[:12]}")
+        recovery[run] = scenarios_in(run)
+
+    overlap = [s for s, n in Counter(
+        s for ids in recovery.values() for s in ids
+    ).items() if n > 1]
+    if overlap:
+        sys.exit(f"recovery runs overlap on {sorted(overlap)}")
+
+    replace = set().union(*recovery.values())
+    missing = replace - scenarios_in(args.main_run)
+    if missing:
+        sys.exit(f"not present in main run: {sorted(missing)}")
 
     args.out_dir.mkdir(parents=True)
     created = datetime.datetime.now(datetime.UTC).isoformat()
     counts: dict[str, dict[str, int]] = {}
 
     for name in ROW_FILES:
-        kept, dropped = split_rows(args.main_run / name, replace)
-        added = read_rows(args.recovery_run / name)
+        kept, dropped = [], 0
+        with (args.main_run / name).open(encoding="utf-8") as handle:
+            for line in handle:
+                if json.loads(line)["scenario_id"] in replace:
+                    dropped += 1
+                else:
+                    kept.append(line)
+        added: list[str] = []
+        for run in recovery:
+            added.extend(read_rows(run / name))
         (args.out_dir / name).write_text("".join(kept + added), encoding="utf-8")
         counts[name] = {
             "kept_from_main": len(kept),
@@ -76,8 +94,6 @@ def main() -> None:
             "added_from_recovery": len(added),
             "total": len(kept) + len(added),
         }
-        if dropped == 0:
-            sys.exit(f"{name}: no rows matched {sorted(replace)}")
 
     for extra in CARRY_FILES:
         if (args.main_run / extra).exists():
@@ -87,17 +103,26 @@ def main() -> None:
             args.main_run / "protocol_snapshot", args.out_dir / "protocol_snapshot"
         )
 
+    sources = [
+        {
+            "run": run.name,
+            "scenarios": sorted(ids),
+            "git_commit": json.loads(
+                (run / "run_manifest.json").read_text()
+            )["git"]["commit"],
+        }
+        for run, ids in recovery.items()
+    ]
     main_manifest["status"]["state"] = "complete"
     main_manifest["status"]["completed_at_utc"] = created
     main_manifest["merge"] = {
         "kind": "merge_scenarios_v1",
         "main_run": args.main_run.name,
-        "recovery_run": args.recovery_run.name,
+        "main_git_commit": main_manifest["git"]["commit"],
+        "recovery_runs": sources,
         "replaced_scenarios": sorted(replace),
         "reason": args.reason,
-        "main_git_commit": main_manifest["git"]["commit"],
-        "recovery_git_commit": reco_manifest["git"]["commit"],
-        "corpus_sha256": main_sha,
+        "corpus_sha256": corpus,
     }
     (args.out_dir / "run_manifest.json").write_text(
         json.dumps(main_manifest, indent=2) + "\n", encoding="utf-8"
@@ -107,7 +132,7 @@ def main() -> None:
             {
                 "created_at_utc": created,
                 "main_run": args.main_run.name,
-                "recovery_run": args.recovery_run.name,
+                "recovery_runs": sources,
                 "replaced_scenarios": sorted(replace),
                 "reason": args.reason,
                 "counts": counts,
@@ -119,6 +144,7 @@ def main() -> None:
     )
 
     print(f"merged -> {args.out_dir}")
+    print(f"  replaced {len(replace)} scenario(s): {', '.join(sorted(replace))}")
     for name, c in counts.items():
         print(
             f"  {name:<16} kept {c['kept_from_main']:>6}  "

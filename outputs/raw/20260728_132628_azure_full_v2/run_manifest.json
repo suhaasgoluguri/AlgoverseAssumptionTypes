@@ -28,7 +28,7 @@
     "bytes": 34599
   },
   "scenario_data": {
-    "source_path": "C:\\Users\\rupsa\\algoverse_assumptions\\AlgoverseAssumptionTypes\\data\\scenarios_hidden_profile_candidates.json",
+    "source_path": "data/scenarios_hidden_profile_candidates.json",
     "snapshot_path": "scenario_snapshot.json",
     "sha256": "c0dc5ac515c70287bff650e28535f4e2a35fcd9b43b0432674709fb9ca1559d7",
     "selected_scenario_ids": [

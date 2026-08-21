@@ -40,7 +40,7 @@
     "bytes": 0
   },
   "scenario_data": {
-    "source_path": "C:\\Users\\imwri\\OneDrive\\Desktop\\AlgoverseAssumptionTypes\\data\\scenarios_six_calibration.json",
+    "source_path": "data/scenarios_six_calibration.json",
     "snapshot_path": "scenario_snapshot.json",
     "sha256": "be687513023a1effb0719c749578dcce9c7550db94d8a62298406b5ac8bfdd18",
     "selected_scenario_ids": [
