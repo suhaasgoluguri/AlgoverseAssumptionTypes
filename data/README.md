@@ -56,7 +56,7 @@ collected on. That is why they are archived rather than deleted.
 The corpus was revised repeatedly, and several of those revisions were prompted
 by outcomes rather than by prior reasoning. That is recorded rather than hidden
 because it is the reason every result to date is **exploratory**, and the reason
-a preregistration precedes the confirmatory collection.
+the confirmatory collection is gated on a frozen corpus hash and protocol.
 
 The revisions that changed the design substantively, in order:
 

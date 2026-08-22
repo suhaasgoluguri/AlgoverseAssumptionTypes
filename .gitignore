@@ -14,19 +14,17 @@ outputs/
 # Generated HTML reports. Rebuilt from the run they cite.
 reports/
 
+# Nothing under docs/ is tracked. What remained was team-facing rather than
+# reviewer-facing: a deferred-decision log, an internal status write-up, a
+# self-audit, and page rasters of a superseded pilot analysis.
+docs/
+
 # Run logs, anywhere in the tree. Shell redirections of console progress, not
 # pipeline output: the structured form of the same run is in records.jsonl and
 # results.jsonl. Tracking them would also trip the launcher's clean-worktree
 # gate. The previous name-by-name patterns missed any log named differently.
 *.log
 
-# Internal working documents. Team-facing, not reviewer-facing, and none of
-# them is referenced by anything in the repo.
-docs/PINNED.md
-docs/TEAM_BRIEFING.html
-
-# Page rasters of docs/analysis/*.pdf plus the superseded July pilot analysis.
-docs/analysis/
 
 # tool caches
 .pytest_cache/
@@ -36,8 +34,6 @@ docs/analysis/
 # details, cost figures, unpublished results. Nothing in the codebase reads it.
 CLAUDE.md
 
-# Internal self-audit; team-facing, unreferenced.
-docs/RESEARCH_AUDIT.md
 
 # Superseded scenario corpora. 2.0 MB that no reproduction path touches: the
 # confirmatory run reads data/scenarios_hidden_profile_candidates.json and the

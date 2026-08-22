@@ -115,8 +115,10 @@ tool output. A direct-versus-relay effect alone is not called a tool-invocation
 effect.
 
 The frozen 33-scenario collection command, exact sample size, exclusions, and
-analysis decisions are in `docs/PREREGISTRATION.md`. Commit the preregistration
-and analysis code before the first confirmatory API request.
+analysis decisions are fixed by `scripts/run_tool_v2_azure_33.ps1`, which
+refuses to start unless the corpus hash, deployment, and worktree all match.
+Commit the protocol and analysis code before the first confirmatory API
+request.
 
 `--scope-ladder` supports all three topologies. Mesh gives conversation-carried
 correction equal immediate coverage and defines the primary scope comparison.
@@ -141,8 +143,8 @@ scripts, so a malformed run fails loudly instead of being analyzed:
 .\scripts\run_tool_v2_mock_smoke.ps1
 
 # Frozen 33-scenario gpt-5.4-mini confirmatory run. Refuses to start on a
-# dirty tracked worktree, an unfrozen preregistration, a deployment other
-# than gpt-5.4-mini, or a corpus whose canonical hash has moved.
+# dirty tracked worktree, a deployment other than gpt-5.4-mini, or a corpus
+# whose canonical hash has moved.
 .\scripts\run_tool_v2_azure_33.ps1
 
 # Same corpus, grid and protocol on a second model family. Reported
@@ -159,8 +161,8 @@ require an explicit `--data` path.
 Run data under `outputs/raw/` is not tracked in this repository: it is large
 and machine-specific, and every run is reproducible from the corpus in `data/`
 plus its run manifest. It is distributed alongside the paper instead.
-`docs/sample_records.jsonl` is the in-repo example of the `records.jsonl`
-format.
+`scripts/run_tool_v2_mock_smoke.ps1` produces a full run locally at no cost if
+you want to see the record format.
 
 Analysis reports two different populations explicitly. `aggregates.jsonl`
 summarizes completed conversations, so injection rows include only seed trials
