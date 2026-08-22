@@ -146,6 +146,12 @@ scripts, so a malformed run fails loudly instead of being analyzed:
 # dirty tracked worktree, a deployment other than gpt-5.4-mini, or a corpus
 # whose canonical hash has moved.
 .\scripts\run_tool_v2_azure_33.ps1
+
+# No-authority ablation: same protocol and scenarios, against the corpus whose
+# pooling rule drops the authority sentence. Mesh only, and the deployment is a
+# parameter rather than a pin. Reported separately, never pooled with the
+# confirmatory run -- it is a different corpus with a different hash.
+.\scripts\run_tool_v2_azure_noauthority.ps1
 ```
 
 Each raw run freezes the exact scenario bytes and protocol source files in its
