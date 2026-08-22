@@ -41,7 +41,7 @@ def favored_adoption_by_round(
 ) -> list[float]:
     """Per round: share of agents answering the assumption-favored option.
 
-    The cheapest propagation signal — visible before any judging.
+    The cheapest propagation signal — visible directly in the answers.
     """
     if not records:
         return []

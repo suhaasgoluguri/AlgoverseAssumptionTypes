@@ -43,6 +43,7 @@ CLAUDE.md
 # pinned to its sha256, and it is 7 KB.
 outputs/adoption_*.json
 outputs/oracle_*.json
+outputs/README.md
 outputs/transit_diag.json
 outputs/validation/oracle_*.json
 outputs/validation/20260803_scenarios_rebuilt.json

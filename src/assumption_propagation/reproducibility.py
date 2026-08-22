@@ -1,7 +1,7 @@
 """Small reproducibility helpers shared by experiment CLI scripts.
 
 Raw runs retain the exact scenario-file bytes they were generated from.  Any
-later analysis or judging step therefore defaults to that immutable snapshot,
+later analysis step therefore defaults to that immutable snapshot,
 while legacy runs without a snapshot require an explicit path to the exact
 scenario file that produced them.
 """

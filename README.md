@@ -152,8 +152,14 @@ Convenience runners are available under `outputs/validation/`:
 Each raw run freezes the exact scenario bytes and protocol source files in its
 run directory, records their hashes and Git/model settings in
 `run_manifest.json`, and refuses to append to an existing run directory.
-Downstream judging and analysis use the verified run snapshot by default;
-legacy runs without one require an explicit `--data` path.
+Analysis uses the verified run snapshot by default; legacy runs without one
+require an explicit `--data` path.
+
+Run data under `outputs/raw/` is not tracked in this repository: it is large
+and machine-specific, and every run is reproducible from the corpus in `data/`
+plus its run manifest. It is distributed alongside the paper instead.
+`docs/sample_records.jsonl` is the in-repo example of the `records.jsonl`
+format.
 
 Analysis reports two different populations explicitly. `aggregates.jsonl`
 summarizes completed conversations, so injection rows include only seed trials
