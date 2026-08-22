@@ -191,7 +191,7 @@ def test_every_collection_path_forwards_attribution():
 def test_anonymous_rendering_is_unchanged_from_the_pre_attribution_build(entries):
     """Anonymous output must stay byte-identical to the build without the factor.
 
-    Historical runs and Richard's tool-protocol runs are all anonymous. If this
+    Historical runs and the tool-protocol runs are all anonymous. If this
     drifts, they stop being comparable and nothing raises.
     """
     from assumption_propagation.prompts import build_private_dossier, build_round0_prompt
