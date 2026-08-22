@@ -146,10 +146,6 @@ scripts, so a malformed run fails loudly instead of being analyzed:
 # dirty tracked worktree, a deployment other than gpt-5.4-mini, or a corpus
 # whose canonical hash has moved.
 .\scripts\run_tool_v2_azure_33.ps1
-
-# Same corpus, grid and protocol on a second model family. Reported
-# separately and never pooled with the confirmatory run.
-.\scripts\run_tool_v2_azure_deepseekflash.ps1
 ```
 
 Each raw run freezes the exact scenario bytes and protocol source files in its
