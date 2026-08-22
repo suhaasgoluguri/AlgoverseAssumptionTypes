@@ -486,7 +486,7 @@ def paired_cluster_bootstrap(
 
 
 def holm(p_values: dict[str, float]) -> dict[str, float]:
-    """Holm-Bonferroni adjusted p-values, preregistered across the 3 primaries."""
+    """Holm-Bonferroni adjusted p-values across the 3 primary comparisons."""
     ordered = sorted(p_values.items(), key=lambda kv: kv[1])
     n = len(ordered)
     adjusted, running = {}, 0.0
@@ -707,11 +707,11 @@ def scope_ladder_report(
                 )
     out["adjacent_contrasts"] = adjacent
 
-    # Holm correction is applied only to the three preregistered adjacent-arm
-    # tests for ordinary-neutral final accuracy. Mechanism controls, group
-    # accuracy, and mechanism outcomes stay outside this family. The 95%
-    # bootstrap intervals above remain unadjusted and are labelled as such in
-    # the preregistration.
+    # Holm correction is applied only to the three primary adjacent-arm tests
+    # for ordinary-neutral final accuracy, fixed before collection. Mechanism
+    # controls, group accuracy, and mechanism outcomes stay outside this
+    # family. The 95% bootstrap intervals above remain unadjusted, and are
+    # reported as unadjusted.
     primary_names = [name for name, _arm_from, _arm_to in primary_pairs]
     if not apply_primary_holm:
         out["primary_inference"] = {
@@ -1128,7 +1128,7 @@ def main() -> None:
                 )
             else:
                 sys.exit(
-                    "factorial run lacks the preregistered primary mesh/assigned cell"
+                    "factorial run lacks the primary mesh/assigned cell"
                 )
         else:
             out["analysis_hierarchy"]["primary"]["status"] = "exact_cell"

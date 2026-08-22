@@ -17,6 +17,11 @@ knowledge state is held constant across types:
                                           and the type finding dissolves
 
 Usage:
+  This wants the knowledge-constant build, which is not distributed with the
+  repository. Regenerate it first, then point --data at it:
+
+  uv run python scripts/build_hidden_profile_scenarios.py --additive-all \\
+      --out data/scenarios_additive_all.json
   uv run python scripts/adoption_check.py --data data/scenarios_additive_all.json \\
       --client azure --n-seeds 5 --json outputs/adoption_check.json
 """
