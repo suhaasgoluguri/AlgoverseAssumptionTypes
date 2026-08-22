@@ -130,23 +130,24 @@ prompt-only conditions remain reproducible with `--scope-protocol prompt_v1`
 for historical comparisons. Prompt-v1 and tool-v2 runs use distinct condition
 IDs and must never be pooled.
 
-Convenience runners are available under `outputs/validation/`:
+Run launchers live in `scripts/`. Each one wraps `run_pilot.py` with a fixed
+argument set, then gates the output it produced and chains the two analysis
+scripts, so a malformed run fails loudly instead of being analyzed:
 
 ```powershell
-# One scenario, no API cost. Add -IncludeControls to exercise both controls.
-.\outputs\validation\run_tool_v2_mock_smoke.ps1
+# Full protocol against the mock client: no API key, no cost. Verifies the
+# forced-tool path executes and its traces replay, then analyzes the result.
+# Add -IncludeControls to exercise the prompt-receipt and placebo controls.
+.\scripts\run_tool_v2_mock_smoke.ps1
 
-# One-scenario Azure compatibility gate; run this before the larger pilot.
-.\outputs\validation\run_tool_v2_azure_smoke.ps1
+# Frozen 33-scenario gpt-5.4-mini confirmatory run. Refuses to start on a
+# dirty tracked worktree, an unfrozen preregistration, a deployment other
+# than gpt-5.4-mini, or a corpus whose canonical hash has moved.
+.\scripts\run_tool_v2_azure_33.ps1
 
-# Six scenarios on Azure. Controls remain opt-in.
-.\outputs\validation\run_tool_v2_azure_six.ps1
-.\outputs\validation\run_tool_v2_azure_six.ps1 -IncludeControls
-
-# Frozen 33-scenario gpt-5.4-mini confirmatory run. This refuses a dirty
-# tracked worktree, a different deployment, inconsistent corpus bytes, or an
-# incomplete arm x topology x attribution grid.
-.\outputs\validation\run_tool_v2_azure_33.ps1
+# Same corpus, grid and protocol on a second model family. Reported
+# separately and never pooled with the confirmatory run.
+.\scripts\run_tool_v2_azure_deepseekflash.ps1
 ```
 
 Each raw run freezes the exact scenario bytes and protocol source files in its

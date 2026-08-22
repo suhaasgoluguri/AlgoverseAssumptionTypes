@@ -6,10 +6,10 @@ venv/
 .DS_Store
 *.egg-info/
 .ipynb_checkpoints/
-# Raw run data. Large, machine-specific, and reproducible from the corpus
-# plus a run manifest, so it is distributed alongside the paper rather
-# than tracked here. docs/sample_records.jsonl is the in-repo example.
-outputs/raw/
+# Nothing under outputs/ is tracked. Run data is large and machine-specific,
+# every artifact here is regenerable from the corpus plus a run manifest, and
+# the runs themselves are distributed alongside the paper.
+outputs/
 
 # Generated HTML reports. Rebuilt from the run they cite.
 reports/
@@ -36,33 +36,13 @@ docs/analysis/
 # details, cost figures, unpublished results. Nothing in the codebase reads it.
 CLAUDE.md
 
-# Diagnostic and validation artifacts. Each is regenerable by re-running the
-# script that wrote it, none is cited by the write-up, and together they were
-# 3.3 MB of the 7.9 MB repo. outputs/oracle_34*.json is deliberately NOT
-# matched here: it is the corpus-validity ceiling test for the active corpus,
-# pinned to its sha256, and it is 7 KB.
-outputs/adoption_*.json
-outputs/oracle_*.json
-outputs/README.md
-outputs/transit_diag.json
-outputs/validation/oracle_*.json
-outputs/validation/20260803_scenarios_rebuilt.json
-outputs/validation/scenarios_scope_live*.json
-# Cost-control launchers, not reproduction steps. The six-scenario corpus was
-# a byte duplicate of six scenarios already in data/, which is a drift hazard
-# given that corpus bytes are hashed into every run manifest.
-outputs/validation/run_scope_live6.ps1
-outputs/validation/run_scope_budget_smoke8000.ps1
-outputs/validation/run_tool_v2_azure_six.ps1
-
 # Internal self-audit; team-facing, unreferenced.
 docs/RESEARCH_AUDIT.md
 
 # Superseded scenario corpora. 2.0 MB that no reproduction path touches: the
 # confirmatory run reads data/scenarios_hidden_profile_candidates.json and the
-# analysis reads a run snapshot. data/archive/README.md stays tracked -- it is
-# the written account of how the corpus evolved, which is what a reviewer
-# actually needs from this directory.
+# analysis reads a run snapshot. The written account of how the corpus evolved
+# lives in data/README.md, which is the part a reviewer actually needs.
 data/archive/*.json
 # Exception: scripts/audit_scenarios.py and tests/test_scenarios_fixed.py both
 # read this corpus, and the audit's rules (letter-balance quotas, release-round

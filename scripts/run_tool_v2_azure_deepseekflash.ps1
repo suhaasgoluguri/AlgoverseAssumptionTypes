@@ -16,7 +16,7 @@ param(
 $ErrorActionPreference = "Stop"
 $env:PYTHONUNBUFFERED = "1"
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $python = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $scenarioData = Join-Path $repoRoot "data\scenarios_hidden_profile_candidates.json"
 $preregistration = Join-Path $repoRoot "docs\PREREGISTRATION.md"
