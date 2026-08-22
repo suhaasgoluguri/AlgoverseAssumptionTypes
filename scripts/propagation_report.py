@@ -14,7 +14,8 @@ evidence delivery that actually occurred.
 
 Usage:
   uv run python scripts/propagation_report.py outputs/raw/<stamp>
-  uv run python scripts/propagation_report.py <run-dir> --data data/scenarios_v3.json
+  uv run python scripts/propagation_report.py <run-dir> \\
+      --data data/scenarios_hidden_profile_candidates.json
   uv run python scripts/propagation_report.py <run-dir> --json report.json
 """
 

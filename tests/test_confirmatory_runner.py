@@ -6,7 +6,7 @@ from assumption_propagation.reproducibility import canonical_json_sha256, sha256
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RUNNER = REPO_ROOT / "outputs" / "validation" / "run_tool_v2_azure_33.ps1"
+RUNNER = REPO_ROOT / "scripts" / "run_tool_v2_azure_33.ps1"
 SCENARIOS = REPO_ROOT / "data" / "scenarios_hidden_profile_candidates.json"
 EXPECTED_SCENARIO_SHA256 = (
     "880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917"

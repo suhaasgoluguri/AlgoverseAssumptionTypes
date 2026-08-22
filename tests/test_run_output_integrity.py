@@ -23,7 +23,11 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 
 
 def _minimal_run_files(tmp_path: Path) -> tuple[dict[str, Path], list, str]:
-    scenarios = load_scenarios(Path("data/archive/scenarios_fixed.json"), "travel_001")
+    # Any active scenario with at least two variants works: this fixture needs a
+    # well-formed scenario, not a particular one.
+    scenarios = load_scenarios(
+        Path("data/scenarios_hidden_profile_candidates.json"), "vendor_001"
+    )
     variant = scenarios[0].assumption_variants[0]
     seed = SeedInstance(
         seed_instance_id=f"{variant.assumption_id}_seed_00",

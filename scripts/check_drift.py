@@ -19,7 +19,8 @@ Two probes are reported:
 
 Usage:
   uv run python scripts/check_drift.py outputs/raw/<run_a> outputs/raw/<run_b>
-  uv run python scripts/check_drift.py <a> <b> <c> --data data/scenarios_v3.json
+  uv run python scripts/check_drift.py <a> <b> <c> \\
+      --data data/scenarios_hidden_profile_candidates.json
 """
 
 from __future__ import annotations

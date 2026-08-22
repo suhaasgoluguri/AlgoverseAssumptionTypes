@@ -58,9 +58,9 @@ DEFAULT_OUT = REPO_ROOT / "data" / "scenarios_hidden_profile_candidates.json"
 # reordered in eight of them to close the no-pooling shortcut. The subset
 # selects the same scenario IDS, not the same scenario CONTENT.
 #
-# The July results describe the superseded version, which survives only as
-# data/archive/scenarios_hidden_profile.json. Do not compare numbers across
-# the two without saying so.
+# The July results describe the superseded version of the corpus, which is not
+# distributed with this repository. Do not compare numbers across the two
+# without saying so.
 # Scenarios cut after failing a predeclared runtime gate. Recorded here, with the
 # reason, so the confirmatory corpus is reproducible by running the builder with
 # no arguments rather than by remembering a command-line flag.

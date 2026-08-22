@@ -1,8 +1,7 @@
 # Separately labelled replication on a second model family. Same corpus, grid
 # and protocol as run_tool_v2_azure_33.ps1, which stays pinned to the
-# preregistered confirmatory deployment. Per preregistration §"Subject model",
-# results from this run are reported separately and never pooled with the
-# confirmatory run.
+# pinned confirmatory deployment. Results from this run are reported separately
+# and never pooled with the confirmatory run.
 #
 # Seed rows that come back unusable are dropped as whole matched blocks, so the
 # seed-count gate below is a floor rather than an equality; conversation and
@@ -16,10 +15,9 @@ param(
 $ErrorActionPreference = "Stop"
 $env:PYTHONUNBUFFERED = "1"
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $python = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $scenarioData = Join-Path $repoRoot "data\scenarios_hidden_profile_candidates.json"
-$preregistration = Join-Path $repoRoot "docs\PREREGISTRATION.md"
 # The gate. Hashes the parsed corpus, so it is identical on every platform.
 $expectedScenarioCanonicalSha256 = "653fe93f821846aca67748f0004dda3bb2c02ae9280382ed1c990d41ba15bea1"
 # Recorded provenance, not a gate. Hashes the exact bytes on disk, so a checkout
@@ -45,15 +43,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 if ($trackedChanges.Count -gt 0) {
     throw (
-        "Tracked worktree changes remain. Commit the frozen preregistration and " +
-        "protocol before starting the confirmatory run.`n" +
+        "Tracked worktree changes remain. Commit the frozen protocol " +
+        "before starting the confirmatory run.`n" +
         ($trackedChanges -join "`n")
     )
-}
-
-$preregText = Get-Content -Raw -Encoding UTF8 -LiteralPath $preregistration
-if ($preregText -match '\[\s*(FILL|RECOMPUTE)' -or $preregText -match '\*\*Status:\*\* DRAFT') {
-    throw "Preregistration still contains an unresolved placeholder or DRAFT status."
 }
 
 $deployment = (& $python -c (

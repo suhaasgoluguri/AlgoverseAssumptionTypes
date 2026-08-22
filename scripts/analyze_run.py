@@ -1,4 +1,4 @@
-"""Answer-level (and optionally judge-level) analysis of one run directory.
+"""Answer-level analysis of one run directory.
 
 Reads outputs/raw/<stamp>/records.jsonl, joins scenario metadata from the
 run's frozen scenario snapshot (or an explicit --data override), and writes
@@ -9,19 +9,14 @@ into <run_dir>/analysis/:
                         condition x topology x attribution x semantic type
   conditional_aggregates.jsonl
                         secondary summaries conditional on seed trap uptake
-                        and, with judge labels, seed decision reliance
   seed_trials.jsonl     every attempted seed generation, including failures
   seed_trial_itt.jsonl  true all-attempt seed ITT by condition and topology,
                         including seed generation failures and missing-outcome
                         bounds
   analysis_manifest.json hashes and provenance for this analysis pass
 
-With --judged pointing at a merge_judged.py output (or raw judge JSONL),
-judge-level metrics are added to each covered conversation.
-
 Usage:
   uv run python scripts/analyze_run.py outputs/raw/<stamp>
-  uv run python scripts/analyze_run.py <run-dir> --judged <merged.jsonl>
 """
 
 from __future__ import annotations
@@ -40,9 +35,7 @@ from assumption_propagation.analysis import (
     aggregate_summaries,
     group_by_run,
     load_agent_records,
-    merge_judged,
     summarize_conversation,
-    summarize_judged_conversation,
     validate_conversation_records,
     variant_lookup,
     write_jsonl,
@@ -50,12 +43,10 @@ from assumption_propagation.analysis import (
 from assumption_propagation.schemas import (
     CORRECTION_SCOPE,
     INJECTION_CONDITIONS,
-    JudgedAgentRound,
     Scenario,
     SeedInstance,
     Topology,
 )
-from assumption_propagation.judge import load_assumption_references
 from assumption_propagation.reproducibility import (
     RUN_MANIFEST_NAME,
     resolve_scenario_data,
@@ -491,37 +482,6 @@ def _validate_completed_output_files(
             )
 
 
-def load_judged_any(path: Path) -> list[JudgedAgentRound]:
-    """Accept either raw judge JSONL or merge_judged.py merged.jsonl rows."""
-    rows = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        data = json.loads(line)
-        if "judge_assumption_state" in data:  # merged row: un-prefix label fields
-            label_data = {
-                "run_id": data["run_id"],
-                "agent_id": data["agent_id"],
-                "round": data["round"],
-                "assumption_id": data["assumption_id"],
-            }
-            for field in JudgedAgentRound.model_fields:
-                if field in label_data:
-                    continue
-                merged_name = (
-                    "judge_text_source"
-                    if field == "judged_text_source"
-                    else field
-                    if field.startswith("judge_")
-                    else f"judge_{field}"
-                )
-                if merged_name in data:
-                    label_data[field] = data[merged_name]
-            data = label_data
-        rows.append(JudgedAgentRound.model_validate(data))
-    return rows
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("run_dir", type=Path)
@@ -531,12 +491,6 @@ def main() -> None:
         default=None,
         help="scenario JSON override; default <run_dir>/scenario_snapshot.json, "
              "legacy runs without a snapshot require this override",
-    )
-    parser.add_argument("--judged", type=Path, default=None)
-    parser.add_argument(
-        "--allow-mock",
-        action="store_true",
-        help="permit development-only mock labels (never use for research results)",
     )
     parser.add_argument(
         "--allow-incomplete",
@@ -644,37 +598,6 @@ def main() -> None:
                         f"manifest={planned_seed_generations}, actual={len(seeds)}"
                     )
 
-    judged_by_run: dict[str, list[JudgedAgentRound]] = defaultdict(list)
-    if args.judged:
-        try:
-            rows = load_judged_any(args.judged)
-        except (OSError, UnicodeError, json.JSONDecodeError, ValidationError) as exc:
-            sys.exit(f"invalid judged data {args.judged}: {exc}")
-        mock_rows = [row for row in rows if row.judge_model.startswith("mock:")]
-        if mock_rows and not args.allow_mock:
-            sys.exit(
-                f"refusing {len(mock_rows)} development-only mock judge rows; "
-                "use --allow-mock only for plumbing tests"
-            )
-        references = load_assumption_references(data_path)
-        matched, orphans, unjudged, conflicts = merge_judged(
-            records,
-            rows,
-            verification_gap_defined={
-                assumption_id: reference.verification_gap is not None
-                for assumption_id, reference in references.items()
-            },
-        )
-        if orphans or unjudged or conflicts:
-            sys.exit(
-                "judge labels do not form a complete, conflict-free join: "
-                f"orphan={len(orphans)} "
-                f"unjudged={len(unjudged)} conflicts={len(conflicts)}; "
-                "run scripts/merge_judged.py for the detailed report"
-            )
-        for _, row in matched.values():
-            judged_by_run[row.run_id].append(row)
-
     summaries = []
     for run_id, conversation in group_by_run(records).items():
         first = conversation[0]
@@ -724,14 +647,6 @@ def main() -> None:
             conversation, correct_answer=correct,
             favored_option=favored, semantic_type=semantic,
         )
-        labels = judged_by_run.get(run_id)
-        if labels and first.seed_agent_id is not None:
-            summary.update(summarize_judged_conversation(
-                labels,
-                seed_agent_id=first.seed_agent_id,
-                n_records=len(conversation),
-                records=conversation,
-            ))
         summaries.append(summary)
 
     seed_trial_rows: list[dict] = []
@@ -967,14 +882,6 @@ def main() -> None:
             "source": data_source,
             "sha256": sha256_file(data_path),
         },
-        "judged_data": (
-            {
-                "path": str(args.judged),
-                "sha256": sha256_file(args.judged),
-            }
-            if args.judged
-            else None
-        ),
         "analysis_sources": {
             str(path.relative_to(Path(__file__).resolve().parents[1])): sha256_file(path)
             for path in (
@@ -999,10 +906,6 @@ def main() -> None:
                 / "src"
                 / "assumption_propagation"
                 / "topologies.py",
-                Path(__file__).resolve().parents[1]
-                / "src"
-                / "assumption_propagation"
-                / "judge.py",
             )
         },
         "n_conversations": len(summaries),

@@ -50,11 +50,8 @@ keeps it out of ordinary-neutral outcomes.
 - `src/assumption_propagation/clients.py`: ordinary completion and forced-tool
   client flows.
 - `src/assumption_propagation/topologies.py`: graph routing and role placement.
-- `src/assumption_propagation/judge.py`: blinded semantic Judge LLM pipeline.
-- `src/assumption_propagation/metrics.py` and `analysis.py`: answer- and
-  judge-level outcomes.
-- `docs/JUDGE_RUBRIC.md`: shared Judge LLM/human annotation codebook.
-- `docs/JUDGE_INTERFACE.md`: exact judge input, output, and merge boundary.
+- `src/assumption_propagation/metrics.py` and `analysis.py`: answer-level
+  outcomes, within one conversation and across a run.
 
 There are currently 33 executable scenarios with 99 matched variants: one
 factual, causal, and framing treatment for every base scenario.
@@ -118,8 +115,10 @@ tool output. A direct-versus-relay effect alone is not called a tool-invocation
 effect.
 
 The frozen 33-scenario collection command, exact sample size, exclusions, and
-analysis decisions are in `docs/PREREGISTRATION.md`. Commit the preregistration
-and analysis code before the first confirmatory API request.
+analysis decisions are fixed by `scripts/run_tool_v2_azure_33.ps1`, which
+refuses to start unless the corpus hash, deployment, and worktree all match.
+Commit the protocol and analysis code before the first confirmatory API
+request.
 
 `--scope-ladder` supports all three topologies. Mesh gives conversation-carried
 correction equal immediate coverage and defines the primary scope comparison.
@@ -133,30 +132,37 @@ prompt-only conditions remain reproducible with `--scope-protocol prompt_v1`
 for historical comparisons. Prompt-v1 and tool-v2 runs use distinct condition
 IDs and must never be pooled.
 
-Convenience runners are available under `outputs/validation/`:
+Run launchers live in `scripts/`. Each one wraps `run_pilot.py` with a fixed
+argument set, then gates the output it produced and chains the two analysis
+scripts, so a malformed run fails loudly instead of being analyzed:
 
 ```powershell
-# One scenario, no API cost. Add -IncludeControls to exercise both controls.
-.\outputs\validation\run_tool_v2_mock_smoke.ps1
+# Full protocol against the mock client: no API key, no cost. Verifies the
+# forced-tool path executes and its traces replay, then analyzes the result.
+# Add -IncludeControls to exercise the prompt-receipt and placebo controls.
+.\scripts\run_tool_v2_mock_smoke.ps1
 
-# One-scenario Azure compatibility gate; run this before the larger pilot.
-.\outputs\validation\run_tool_v2_azure_smoke.ps1
+# Frozen 33-scenario gpt-5.4-mini confirmatory run. Refuses to start on a
+# dirty tracked worktree, a deployment other than gpt-5.4-mini, or a corpus
+# whose canonical hash has moved.
+.\scripts\run_tool_v2_azure_33.ps1
 
-# Six scenarios on Azure. Controls remain opt-in.
-.\outputs\validation\run_tool_v2_azure_six.ps1
-.\outputs\validation\run_tool_v2_azure_six.ps1 -IncludeControls
-
-# Frozen 33-scenario gpt-5.4-mini confirmatory run. This refuses a dirty
-# tracked worktree, a different deployment, inconsistent corpus bytes, or an
-# incomplete arm x topology x attribution grid.
-.\outputs\validation\run_tool_v2_azure_33.ps1
+# Same corpus, grid and protocol on a second model family. Reported
+# separately and never pooled with the confirmatory run.
+.\scripts\run_tool_v2_azure_deepseekflash.ps1
 ```
 
 Each raw run freezes the exact scenario bytes and protocol source files in its
 run directory, records their hashes and Git/model settings in
 `run_manifest.json`, and refuses to append to an existing run directory.
-Downstream judging and analysis use the verified run snapshot by default;
-legacy runs without one require an explicit `--data` path.
+Analysis uses the verified run snapshot by default; legacy runs without one
+require an explicit `--data` path.
+
+Run data under `outputs/raw/` is not tracked in this repository: it is large
+and machine-specific, and every run is reproducible from the corpus in `data/`
+plus its run manifest. It is distributed alongside the paper instead.
+`scripts/run_tool_v2_mock_smoke.ps1` produces a full run locally at no cost if
+you want to see the record format.
 
 Analysis reports two different populations explicitly. `aggregates.jsonl`
 summarizes completed conversations, so injection rows include only seed trials
@@ -166,49 +172,6 @@ attempted seed generation, including parse/generation failures, and
 topology-specific outcome coverage, a missing-as-incorrect point estimate, and
 missing-outcome bounds. The conditional aggregates are secondary
 post-treatment summaries and must not replace that all-attempt report.
-
-Run the judge plumbing without an API call, then merge and analyze it:
-
-```bash
-uv run python scripts/run_judge.py outputs/raw/<stamp> --client mock
-uv run python scripts/merge_judged.py \
-  outputs/raw/<stamp> outputs/judged/<stamp>/judged.jsonl --allow-mock
-uv run python scripts/analyze_run.py \
-  outputs/raw/<stamp> --judged outputs/judged/<stamp>/merged.jsonl --allow-mock
-```
-
-For a production Claude judge, copy `.env.example` to `.env`, configure
-`ANTHROPIC_API_KEY` and the exact `ANTHROPIC_JUDGE_MODEL`, then use
-`--client anthropic`. The default model identifier is `claude-sonnet-5`.
-
-## Judge design
-
-The Judge LLM is post-hoc and blinded. It receives one response, one canonical
-target, and the semantic references needed to assess qualification and
-correction. It never receives topology, condition, role, answer correctness,
-or join identifiers. The runner attaches trusted keys after validation.
-
-The current eight-state taxonomy is:
-
-```text
-absent | mention_only | qualified_acceptance | categorical_acceptance
-challenge | rejection | supported_correction | unclear
-```
-
-Exact evidence spans are required for determinate non-absent labels. Exposure
-is not guessed by the LLM: direct note visibility and routed target engagement,
-acceptance, and correction are kept as distinct post-hoc fields. Partial row
-coverage, unclear labels, and judge-uncertain labels are reported separately;
-substantive judge-level metrics are withheld until coverage is complete and
-uncertain cases are adjudicated.
-
-The judge client must be selected explicitly. `mock` is a no-cost plumbing
-client whose all-absent labels are rejected by merge and analysis unless
-`--allow-mock` is deliberately supplied; never use them as research results.
-
-`JUDGE_RUBRIC.md` is currently `v1.2-draft`: calibrate it on development data,
-then freeze the rubric, prompt, schema, model snapshot, and adjudication plan
-before opening the held-out validation set.
 
 ## Verification
 

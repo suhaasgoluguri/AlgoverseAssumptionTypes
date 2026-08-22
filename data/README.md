@@ -1,18 +1,26 @@
-# Superseded scenario corpora
+# Scenario corpora
 
-Kept for provenance. Nothing in the current analysis reads these files, and no
-reported result should be traced to them without saying so explicitly.
-
-The active corpora live in `data/`:
+## Active
 
 | File | Role |
 |---|---|
-| `scenarios_hidden_profile_candidates.json` | The 33-scenario corpus. Every current result comes from this. |
-| `scenarios_remaining_v2b.json` | The 21-scenario subset used for the second collection of 28 July; needed as `--data` to re-run that report. |
-| `scenarios_candidates_additive.json` | Knowledge-constant build of the 33 (`--additive-all`), used by `adoption_check.py`. |
-| `scenarios_hidden_profile.json` | The frozen 10-scenario corpus the July pilots ran on. Retained because it can no longer be regenerated from source. |
+| `scenarios_hidden_profile_candidates.json` | The 33-scenario corpus. Every current result comes from this, and it is the default for `run_pilot.py`. |
+| `scenarios_no_authority.json` | Ablation over the same 33: the pooling rule's authority sentence is removed, so no clause tells an agent that an assigned reviewer's report is authoritative and sufficient. |
+| `scenarios_no_transfer_clause.json` | Ablation over the same 33: the authority sentence is kept but its transfer clause ("whether you hold it directly or hear it from that reviewer") is dropped, so authority no longer visibly survives relay. |
+| `archive/scenarios_fixed.json` | Superseded 20-scenario Track A set. Tracked only because `scripts/audit_scenarios.py` and `tests/test_scenarios_fixed.py` audit it; its rules describe the Track A design and do not apply to the active corpus. |
 
-## What is in here, and why it was superseded
+## Superseded corpora are not tracked
+
+The rest of `data/archive/` is git-ignored. No reproduction path reads it: the
+confirmatory launcher runs against `scenarios_hidden_profile_candidates.json`
+and the analysis reads a run snapshot. The corpora themselves are kept outside
+the repository; what mattered about them is the account below.
+
+Read that account rather than the files. Nothing here should be traced to a
+superseded corpus without saying so explicitly.
+
+## What the superseded corpora were, and why they were replaced
+
 
 ### Track A, pre-hidden-profile
 - `scenarios_v2.json`, `scenarios_v3.json`, `scenarios_v4.json`
@@ -48,7 +56,7 @@ collected on. That is why they are archived rather than deleted.
 The corpus was revised repeatedly, and several of those revisions were prompted
 by outcomes rather than by prior reasoning. That is recorded rather than hidden
 because it is the reason every result to date is **exploratory**, and the reason
-a preregistration precedes the confirmatory collection.
+the confirmatory collection is gated on a frozen corpus hash and protocol.
 
 The revisions that changed the design substantively, in order:
 
@@ -73,8 +81,8 @@ The revisions that changed the design substantively, in order:
 
 ## Archived 3 August 2026 — superseded working sets
 
-Moved here during a repo tidy. None was referenced by any script, test or doc
-at the time; all three are calibration-era artefacts kept for provenance.
+Moved to `archive/` during a repo tidy. None was referenced by any script,
+test or doc at the time; all three are calibration-era artefacts.
 
 - `scenarios_candidates_additive.json` — the additive-framing candidate set from
   the 34-scenario build. Superseded by `scenarios_hidden_profile_candidates.json`,
@@ -83,19 +91,16 @@ at the time; all three are calibration-era artefacts kept for provenance.
 - `scenarios_six_calibration.json` — the six-scenario calibration subset used
   before the corpus reached 10.
 
-Still live in `data/`: `scenarios_hidden_profile_candidates.json` (the
-33-scenario corpus, and the default for `run_pilot.py`),
-`scenarios_hidden_profile.json`, and `scenarios_fixed.json` (the superseded
-20-scenario Track A set, retained because tests and older runs cite it).
+What is still live in `data/` is listed in the table at the top of this file.
 
 ## Archived 3 August 2026 — the last two superseded corpora
 
-`data/` now holds exactly one scenario file, so there is no way to run against
-a superseded corpus by accident.
+This left `data/` holding only live corpora, so there is no way to run against
+a superseded one by accident.
 
 - `scenarios_fixed.json` — the 20-scenario Track A set. Every agent could solve
   these alone; Track B replaced them. Still audited by
-  `scripts/audit_scenarios.py`, which now points here.
+  `scripts/audit_scenarios.py`, and the one archived corpus still tracked.
 - `scenarios_hidden_profile.json` — the pre-28-July hidden-profile corpus, the
   version the July pilots were collected on. Superseded by the metric reorder
   that closed the no-pooling shortcut and by the causal-injection rewrite.
