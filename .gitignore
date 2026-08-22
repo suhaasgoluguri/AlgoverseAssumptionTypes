@@ -47,7 +47,5 @@ data/archive/*.json
 !data/archive/scenarios_fixed.json
 
 # Replication launcher for a second model family. Three attempts were made and
-# none completed, so no result in the write-up rests on it. The trailing-byte
-# handling in clients.py that those attempts motivated stays: it is generic
-# robustness, not specific to that deployment.
+# none reached state=complete, so no reported result rests on it.
 scripts/run_tool_v2_azure_deepseekflash.ps1
