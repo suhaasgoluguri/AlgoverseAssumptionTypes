@@ -592,7 +592,7 @@ class AzureChatClient:
         trailing = arguments_json.strip()[end:].strip()
         if trailing:
             # Some deployments append stray bytes after an otherwise well-formed
-            # argument object (observed: DeepSeek-V4-Flash emitting '{}""').
+            # argument object (observed: DeepSeek-V4-Pro emitting '{}""').
             # The tool takes no arguments, so a well-formed leading object is
             # the entire payload; anything after it is a serialiser artifact
             # rather than content, and is recorded but not treated as fatal.
