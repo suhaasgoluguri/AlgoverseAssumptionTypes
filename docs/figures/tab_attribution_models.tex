@@ -1,0 +1,29 @@
+\begin{table}[!ht]
+\centering
+\caption{The attribution effect in both models, fully connected mesh, in
+percentage points with 95\% paired cluster bootstrap intervals over 33
+scenarios. Each entry is attributed minus anonymous within one model. Group
+accuracy is the plurality answer; trap adoption is the two ordinary agents'
+round-3 adoption of the injected claim. The two halves of the effect
+separate: naming speakers raises group accuracy for GPT-5.4-mini in five of
+six arms and for DeepSeek-V4-Pro in none, but it raises adoption of the
+injected claim in both models.}
+\label{tab:attributionmodels}
+\small
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{$\Delta$ Group accuracy} & \multicolumn{2}{c}{$\Delta$ Trap adoption} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+Arm & GPT-5.4-mini & DeepSeek-V4-Pro & GPT-5.4-mini & DeepSeek-V4-Pro \\
+\midrule
+No correction & $-$2.5 {\scriptsize [$-$10.6, +5.6]} & $-$2.1 {\scriptsize [$-$4.7, +0.0]} & +34.8 {\scriptsize [+27.0, +42.7]} & +6.1 {\scriptsize [+2.4, +10.1]} \\
+Testimony & +14.1 {\scriptsize [+2.0, +26.3]} & $-$12.2 {\scriptsize [$-$17.8, $-$7.0]} & +13.1 {\scriptsize [+6.6, +20.2]} & +15.6 {\scriptsize [+10.7, +20.7]} \\
+Exact relay & +9.6 {\scriptsize [+3.0, +16.7]} & $-$13.2 {\scriptsize [$-$20.2, $-$6.3]} & +1.0 {\scriptsize [$-$2.3, +4.3]} & +6.1 {\scriptsize [+1.0, +11.2]} \\
+Direct tool & +24.7 {\scriptsize [+17.2, +32.8]} & +0.5 {\scriptsize [+0.0, +1.6]} & $-$0.5 {\scriptsize [$-$1.5, +0.0]} & +0.0 {\scriptsize [+0.0, +0.0]} \\
+Prompt receipt & +33.8 {\scriptsize [+25.3, +42.9]} & $-$1.6 {\scriptsize [$-$4.2, +1.1]} & +0.0 {\scriptsize [$-$0.8, +0.8]} & +0.8 {\scriptsize [$-$0.8, +2.6]} \\
+Tool placebo & +16.2 {\scriptsize [+5.1, +27.3]} & $-$2.6 {\scriptsize [$-$7.1, +1.1]} & +9.6 {\scriptsize [+5.3, +14.4]} & +5.8 {\scriptsize [+1.9, +10.5]} \\
+\addlinespace
+Honest baseline & +47.0 {\scriptsize [+34.8, +59.1]} & +0.0 {\scriptsize [+0.0, +0.0]} & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}

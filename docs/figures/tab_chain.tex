@@ -1,0 +1,22 @@
+\begin{table}[!ht]
+\centering
+\caption{The looped chain under assigned attribution, in percent. Ordinary
+accuracy is the two ordinary agents' round-3 answers; the remaining columns
+describe the group's plurality answer. Without correction the agents are
+individually almost always right and the group almost never is, because most
+conversations reach no plurality at all. One verifier's testimony closes the
+group column while barely moving the individual one.}
+\label{tab:chain}
+\small
+\begin{tabular}{llcccc}
+\toprule
+Model & Arm & Ordinary acc. & Group acc. & No plurality & Trap \\
+\midrule
+GPT-5.4-mini & No correction & 98.2 & 7.1 & 89.4 & 1.8 \\
+ & Testimony & 99.7 & 95.5 & 4.0 & 0.3 \\
+\addlinespace
+DeepSeek-V4-Pro & No correction & 81.2 & 1.6 & 65.1 & 18.0 \\
+ & Testimony & 96.6 & 92.1 & 3.2 & 3.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
