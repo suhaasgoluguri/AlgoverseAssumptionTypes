@@ -1,0 +1,27 @@
+\begin{table}[!ht]
+\centering
+\caption{The honest baseline by topology and speaker attribution,
+GPT-5.4-mini, in percent. No claim is injected and no correction is needed:
+every agent reports truthfully and the findings that identify the correct
+option are distributed across the four dossiers. Groups are scored on their
+plurality answer, decomposed into the correct option, no plurality (tie), a
+plurality declining to choose, and a wrong option. $n=66$ conversations per
+row. The wrong-option column is zero everywhere: without attribution honest
+groups fail by deadlocking or declining, never by erring.}
+\label{tab:baseline}
+\small
+\begin{tabular}{llcccc}
+\toprule
+Topology & Header & Correct & Tie & Declined & Wrong \\
+\midrule
+Fully connected mesh & Anonymous & 53.0 & 21.2 & 25.8 & 0.0 \\
+ & Attributed & 100.0 & 0.0 & 0.0 & 0.0 \\
+\addlinespace
+Looped chain & Anonymous & 48.5 & 36.4 & 15.2 & 0.0 \\
+ & Attributed & 74.2 & 25.8 & 0.0 & 0.0 \\
+\addlinespace
+Neutral star & Anonymous & 81.8 & 15.2 & 3.0 & 0.0 \\
+ & Attributed & 100.0 & 0.0 & 0.0 & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
