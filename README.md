@@ -217,17 +217,22 @@ uv run python docs/figures/make_fig_attribution.py # fig_attribution.{pdf,png}
 uv run python docs/figures/make_fig_setup_rounds.py
 ```
 
-Outputs are written next to the generators in `docs/figures/`, overwriting the
-committed copies. The nine `.tex` tables regenerate byte-identically from the
-committed artifacts.
+**Read this before running `make_tables.py`: one input is not shipped.** It
+reads `records.jsonl` from the primary and cross-model runs -- 310 MB and
+297 MB of full per-agent-round transcripts -- and opens them at module scope,
+so without those two files it raises `FileNotFoundError` immediately and
+writes no tables at all. Request them if you need to rerun the table
+generator; they are the only missing input.
 
-**One input is not shipped.** `make_tables.py` reads `records.jsonl` from the
-primary and cross-model runs -- 310 MB and 297 MB, the full per-agent-round
-transcripts. It opens them at module scope, so without them the script raises
-`FileNotFoundError` and writes *no* tables rather than a subset. Everything
-else it needs is committed: `results.jsonl`, `scenario_snapshot.json`,
-`analysis/conversations.jsonl`, `analysis/aggregates.jsonl`, and the
-`statistics_*.json` files.
+Everything else the generators read **is** committed: `results.jsonl`,
+`scenario_snapshot.json`, `analysis/conversations.jsonl`,
+`analysis/aggregates.jsonl`, and the `statistics_*.json` files. The three
+`make_fig_*.py` scripts do not touch `records.jsonl` and run against the
+committed artifacts as-is.
+
+With `records.jsonl` present, all nine `.tex` tables regenerate
+byte-identically to the committed copies. Outputs are written next to the
+generators in `docs/figures/`, overwriting them.
 
 `analysis/statistics_secondary.json` is regenerated rather than original; it
 is produced by

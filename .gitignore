@@ -20,7 +20,9 @@ reports/
 # self-audit, page rasters of a superseded pilot analysis). docs/figures/ is
 # tracked by exception -- it holds the table and figure generators and their
 # committed output, which the paper depends on.
-docs/
+# 'docs/*' not 'docs/' -- excluding the directory itself stops git descending
+# into it, which would silently ignore anything new added under docs/figures/.
+docs/*
 !docs/figures/
 
 # Run logs, anywhere in the tree. Shell redirections of console progress, not
