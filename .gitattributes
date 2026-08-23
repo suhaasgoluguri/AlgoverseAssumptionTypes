@@ -7,3 +7,9 @@
 data/*.json -text
 data/archive/*.json -text
 outputs/raw/**/scenario_snapshot.json -text
+
+# Shipped run artifacts. run_manifest.json records the sha256 of results.jsonl
+# and its siblings under status.observed_files, so checkout must not rewrite
+# their bytes -- an eol conversion would silently invalidate every hash a
+# reviewer checks.
+outputs/raw/** -text

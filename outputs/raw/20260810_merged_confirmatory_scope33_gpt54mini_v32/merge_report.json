@@ -1,0 +1,108 @@
+{
+  "created_at_utc": "2026-08-11T00:05:56.017289+00:00",
+  "output": "outputs/raw/20260810_merged_confirmatory_scope33_gpt54mini_v32",
+  "keep_original": [
+    "vendor_001",
+    "incident_001",
+    "shipment_001",
+    "clinic_001",
+    "facility_001",
+    "staffing_001",
+    "datacenter_001",
+    "permit_001",
+    "supplier_001",
+    "transit_001",
+    "grant_001",
+    "clinical_001",
+    "design_001",
+    "assay_001",
+    "energy_001",
+    "drydock_001",
+    "interp_001",
+    "aviation_001",
+    "telecom_001",
+    "pharma_001",
+    "water_001",
+    "education_001",
+    "foodsafety_001",
+    "conservation_001",
+    "bridge_001",
+    "launch_001",
+    "reinsurance_001",
+    "irrigation_001"
+  ],
+  "replace_from_recovery": [
+    "playout_001",
+    "care_001",
+    "backup_001",
+    "shelter_001",
+    "textile_001"
+  ],
+  "merge_counts": {
+    "seeds.jsonl": {
+      "original_interrupted_valid_prefix": 168,
+      "recovery_replacement": 30
+    },
+    "records.jsonl": {
+      "original_interrupted_valid_prefix": 102144,
+      "recovery_replacement": 18240
+    },
+    "results.jsonl": {
+      "original_interrupted_valid_prefix": 6384,
+      "recovery_replacement": 1140
+    }
+  },
+  "integrity_summary": {
+    "output_integrity_check_version": "1.2",
+    "replayable_seed_generations": 198,
+    "unreplayable_seed_generations": 0,
+    "reconciled_expected_rows": {
+      "seeds": 198,
+      "agent_round_records": 120384,
+      "conversation_results": 7524
+    },
+    "observed_conversations": {
+      "injection": 7128,
+      "injection_by_condition": {
+        "injection_prompt_receipt_control": 1188,
+        "injection_tool_direct": 1188,
+        "injection_tool_none": 1188,
+        "injection_tool_placebo": 1188,
+        "injection_tool_relay": 1188,
+        "injection_tool_testimony": 1188
+      },
+      "no_injection_baseline": 396,
+      "independent_control": 0,
+      "total": 7524
+    },
+    "response_quality": {
+      "agent_round_records": 120384,
+      "parse_failed": 6,
+      "parse_repaired": 0,
+      "generation_failed": 6,
+      "carried_forward": 6,
+      "tool_trace_records": 32076,
+      "tool_calls_executed": 20196,
+      "tool_traces_replayed": 11880,
+      "tool_api_call_attempts": 40392,
+      "zero_parse_failures": false
+    }
+  },
+  "observed_files": {
+    "seeds": {
+      "path": "seeds.jsonl",
+      "rows": 198,
+      "sha256": "ad109e072d2431abc179721dede3afca0658068b69462726c585dcadf1d6daf8"
+    },
+    "records": {
+      "path": "records.jsonl",
+      "rows": 120384,
+      "sha256": "2e7668622a29dcec8fdc88934ad3d9546dcff3678ddc6707c63504622e1a24ea"
+    },
+    "results": {
+      "path": "results.jsonl",
+      "rows": 7524,
+      "sha256": "3282ecd553c7fceaa7eda220e0e18cbdaa33c228b70a36afb8847e8792826b41"
+    }
+  }
+}

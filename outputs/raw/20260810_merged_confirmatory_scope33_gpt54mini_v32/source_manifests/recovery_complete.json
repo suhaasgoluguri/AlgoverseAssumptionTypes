@@ -1,0 +1,250 @@
+{
+  "manifest_version": "1.5",
+  "created_at_utc": "2026-08-10T22:19:25.693723+00:00",
+  "runner": "scripts/run_pilot.py",
+  "command_argv": [
+    "scripts/run_pilot.py",
+    "--client",
+    "azure",
+    "--data",
+    "outputs/raw/recovery_five_scenarios.json",
+    "--variants",
+    "factual",
+    "causal",
+    "--scope-ladder",
+    "--scope-protocol",
+    "tool_v2",
+    "--scope-controls",
+    "--topologies",
+    "looped_chain",
+    "neutral_star",
+    "fully_connected_mesh",
+    "--attribution",
+    "both",
+    "--n-seeds",
+    "3",
+    "--baseline-reps",
+    "1",
+    "--skip-independent",
+    "--rounds",
+    "4",
+    "--temperature",
+    "none",
+    "--max-completion-tokens",
+    "1000",
+    "--verbose",
+    "--tag",
+    "recovery5_gpt54mini_v32"
+  ],
+  "git": {
+    "commit": "d06c1b38c9f080328f029ee5f9ba0f1eff3562b9",
+    "branch": "gpt54mini-v32",
+    "dirty": false,
+    "status_porcelain": ""
+  },
+  "git_tracked_changes": {
+    "path": "git_tracked_changes.patch",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "scenario_data": {
+    "source_path": "outputs/raw/recovery_five_scenarios.json",
+    "snapshot_path": "scenario_snapshot.json",
+    "sha256": "6a80bc2e8f11f221e486a0d77bb941f8389c6c3520f2168388e377c3ea600d04",
+    "selected_scenario_ids": [
+      "playout_001",
+      "care_001",
+      "backup_001",
+      "shelter_001",
+      "textile_001"
+    ],
+    "selected_assumption_ids": [
+      "playout_001_factual_negative",
+      "playout_001_causal_negative",
+      "care_001_factual_negative",
+      "care_001_causal_negative",
+      "backup_001_factual_negative",
+      "backup_001_causal_negative",
+      "shelter_001_factual_negative",
+      "shelter_001_causal_negative",
+      "textile_001_factual_negative",
+      "textile_001_causal_negative"
+    ]
+  },
+  "prompt_version": "v3.2",
+  "protocol_sources": {
+    "pyproject.toml": {
+      "snapshot_path": "protocol_snapshot/pyproject.toml",
+      "sha256": "04405c49e88c706f7c1432b81c11da65ee4bc2250c5741a743e5dea724b492b2"
+    },
+    "uv.lock": {
+      "snapshot_path": "protocol_snapshot/uv.lock",
+      "sha256": "7a03bdee2e61444721dc0a3099dfeb28b26fe17b286a42b4f7f0cded1eec87f6"
+    },
+    "scripts/run_pilot.py": {
+      "snapshot_path": "protocol_snapshot/scripts/run_pilot.py",
+      "sha256": "5e2b0ade47467aeaad2b2b1d39564a43a13b3a749594afb271dcd11b78766a79"
+    },
+    "src/assumption_propagation/prompts.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/prompts.py",
+      "sha256": "381952a0484cd6b1dd281b1eedf9b5c423d22e136aca5071bacc7d39a225a595"
+    },
+    "src/assumption_propagation/evidence.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/evidence.py",
+      "sha256": "04445e6051de6c46921867aa08af5d5c9ffa10f60cbb0efbdbfcde77eaac83bf"
+    },
+    "src/assumption_propagation/orchestrator.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/orchestrator.py",
+      "sha256": "645d96b5a1b8f6e27dbeb754f0b2cb5fc80d9428f54f5e8a1444cb4b0b469752"
+    },
+    "src/assumption_propagation/topologies.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/topologies.py",
+      "sha256": "77af65dee6698a9504119ad0381ef7456853b42dd35b0bdd50448c9574a2d620"
+    },
+    "src/assumption_propagation/schemas.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/schemas.py",
+      "sha256": "0c4cf8ba48b857432c1f670dfbb54a7b0af6c3e55e31de699c4bbf12206dd6f4"
+    },
+    "src/assumption_propagation/clients.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/clients.py",
+      "sha256": "d9916fb452b865cf8e00a02980119e3c10a9f89821c847d3f854512052ce5d42"
+    },
+    "src/assumption_propagation/aggregation.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/aggregation.py",
+      "sha256": "30adf5f0aa91fad023ac251f0ce255ca9cf309fc9dcb3086a84a504f4a0c18ba"
+    },
+    "src/assumption_propagation/reproducibility.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/reproducibility.py",
+      "sha256": "80303e0926976f0fd3e848a613ef537b7e189151266b7e042cf73ab1becfec18"
+    }
+  },
+  "client": {
+    "kind": "azure",
+    "model_identifier": "azure:gpt-5.4-mini",
+    "deployment": "gpt-5.4-mini",
+    "temperature": null,
+    "max_tokens": 1000,
+    "request_timeout_seconds": 120.0,
+    "sdk_max_retries": 0,
+    "tenacity_max_attempts": 6
+  },
+  "protocol": {
+    "n_rounds": 4,
+    "withhold_corrective": false,
+    "ablation_arm": false,
+    "scope_ladder": true,
+    "attribution": "both",
+    "scope_protocol": "tool_v2",
+    "scope_controls": true,
+    "injection_conditions": [
+      "injection_tool_none",
+      "injection_tool_testimony",
+      "injection_tool_relay",
+      "injection_tool_direct",
+      "injection_prompt_receipt_control",
+      "injection_tool_placebo"
+    ],
+    "scope_primary_topology": "fully_connected_mesh",
+    "scope_primary_attribution": "assigned",
+    "matched_pre_correction_replay": true,
+    "matched_verifier_response_replay": true,
+    "arm_order_counterbalanced_by_assumption_seed_hash": true,
+    "coordinate_order_counterbalanced_by_assumption_seed_hash": true,
+    "finite_horizon_rounds": 4,
+    "direct_access_delivery": "forced function call plus role=tool result",
+    "independent_control_n_rounds": 1,
+    "topologies": [
+      "looped_chain",
+      "neutral_star",
+      "fully_connected_mesh"
+    ],
+    "n_seeds": 3,
+    "baseline_reps": 1,
+    "skip_baselines": false,
+    "skip_injection": false,
+    "independent_reps": 1,
+    "skip_independent": true,
+    "correction_available_round_by_assumption": {
+      "playout_001_factual_negative": 1,
+      "playout_001_causal_negative": 1,
+      "care_001_factual_negative": 1,
+      "care_001_causal_negative": 1,
+      "backup_001_factual_negative": 1,
+      "backup_001_causal_negative": 1,
+      "shelter_001_factual_negative": 1,
+      "shelter_001_causal_negative": 1,
+      "textile_001_factual_negative": 1,
+      "textile_001_causal_negative": 1
+    },
+    "seed_private_dossier_persistent": true,
+    "neutral_control_dossier_persistent": true,
+    "corrective_dossier_persistent_from_available_round": true
+  },
+  "status": {
+    "state": "complete",
+    "completed_at_utc": "2026-08-11T00:01:40.040092+00:00",
+    "planned_seed_generations": 30,
+    "planned_conversation_attempts": {
+      "injection_max_if_all_seeds_replayable": 1080,
+      "no_injection_baseline": 60,
+      "independent_control": 0,
+      "total_max_if_all_seeds_replayable": 1140
+    },
+    "observed_rows": {
+      "seeds": 30,
+      "agent_round_records": 18240,
+      "conversation_results": 1140
+    },
+    "observed_files": {
+      "seeds": {
+        "path": "seeds.jsonl",
+        "rows": 30,
+        "sha256": "c35bbced50418e78d4da39bc3f0274f93daaa972f9b2b23a061c6cac0f3fe1b0"
+      },
+      "records": {
+        "path": "records.jsonl",
+        "rows": 18240,
+        "sha256": "cb6c55008a5a52ddff5f3410c3da7406cb72cf709f52ef9e77d4b8af252be886"
+      },
+      "results": {
+        "path": "results.jsonl",
+        "rows": 1140,
+        "sha256": "af2e3288adfc8c7a4b90d4285b6945192fce494eb24d9ef9e613341e0c10e336"
+      }
+    },
+    "output_integrity_check_version": "1.2",
+    "replayable_seed_generations": 30,
+    "unreplayable_seed_generations": 0,
+    "reconciled_expected_rows": {
+      "seeds": 30,
+      "agent_round_records": 18240,
+      "conversation_results": 1140
+    },
+    "observed_conversations": {
+      "injection": 1080,
+      "injection_by_condition": {
+        "injection_prompt_receipt_control": 180,
+        "injection_tool_direct": 180,
+        "injection_tool_none": 180,
+        "injection_tool_placebo": 180,
+        "injection_tool_relay": 180,
+        "injection_tool_testimony": 180
+      },
+      "no_injection_baseline": 60,
+      "independent_control": 0,
+      "total": 1140
+    },
+    "response_quality": {
+      "agent_round_records": 18240,
+      "parse_failed": 1,
+      "parse_repaired": 0,
+      "generation_failed": 1,
+      "carried_forward": 1,
+      "tool_trace_records": 4860,
+      "tool_calls_executed": 3060,
+      "tool_traces_replayed": 1800,
+      "tool_api_call_attempts": 6120,
+      "zero_parse_failures": false
+    }
+  }
+}

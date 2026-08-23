@@ -1,0 +1,439 @@
+{
+  "manifest_version": "1.5",
+  "created_at_utc": "2026-08-11T00:05:56.017289+00:00",
+  "runner": "composite_recovery_merge_v1",
+  "command_argv": [],
+  "git": {
+    "commit": "d06c1b38c9f080328f029ee5f9ba0f1eff3562b9",
+    "branch": "gpt54mini-v32",
+    "dirty": false,
+    "status_porcelain": ""
+  },
+  "git_tracked_changes": {
+    "path": "git_tracked_changes.patch",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "scenario_data": {
+    "source_path": "composite: original first 28 + recovery final 5",
+    "snapshot_path": "scenario_snapshot.json",
+    "sha256": "7f0f31556b2b9543815eac77272ab00f91804deb3128d33b5c7c12d48ac07fbf",
+    "selected_scenario_ids": [
+      "vendor_001",
+      "incident_001",
+      "shipment_001",
+      "clinic_001",
+      "facility_001",
+      "staffing_001",
+      "datacenter_001",
+      "permit_001",
+      "supplier_001",
+      "transit_001",
+      "grant_001",
+      "clinical_001",
+      "design_001",
+      "assay_001",
+      "energy_001",
+      "drydock_001",
+      "interp_001",
+      "aviation_001",
+      "telecom_001",
+      "pharma_001",
+      "water_001",
+      "education_001",
+      "foodsafety_001",
+      "conservation_001",
+      "bridge_001",
+      "launch_001",
+      "reinsurance_001",
+      "irrigation_001",
+      "playout_001",
+      "care_001",
+      "backup_001",
+      "shelter_001",
+      "textile_001"
+    ],
+    "selected_assumption_ids": [
+      "vendor_001_factual_negative",
+      "vendor_001_causal_negative",
+      "incident_001_factual_negative",
+      "incident_001_causal_negative",
+      "shipment_001_factual_negative",
+      "shipment_001_causal_negative",
+      "clinic_001_factual_negative",
+      "clinic_001_causal_negative",
+      "facility_001_factual_negative",
+      "facility_001_causal_negative",
+      "staffing_001_factual_negative",
+      "staffing_001_causal_negative",
+      "datacenter_001_factual_negative",
+      "datacenter_001_causal_negative",
+      "permit_001_factual_negative",
+      "permit_001_causal_negative",
+      "supplier_001_factual_negative",
+      "supplier_001_causal_negative",
+      "transit_001_factual_negative",
+      "transit_001_causal_negative",
+      "grant_001_factual_negative",
+      "grant_001_causal_negative",
+      "clinical_001_factual_negative",
+      "clinical_001_causal_negative",
+      "design_001_factual_negative",
+      "design_001_causal_negative",
+      "assay_001_factual_negative",
+      "assay_001_causal_negative",
+      "energy_001_factual_negative",
+      "energy_001_causal_negative",
+      "drydock_001_factual_negative",
+      "drydock_001_causal_negative",
+      "interp_001_factual_negative",
+      "interp_001_causal_negative",
+      "aviation_001_factual_negative",
+      "aviation_001_causal_negative",
+      "telecom_001_factual_negative",
+      "telecom_001_causal_negative",
+      "pharma_001_factual_negative",
+      "pharma_001_causal_negative",
+      "water_001_factual_negative",
+      "water_001_causal_negative",
+      "education_001_factual_negative",
+      "education_001_causal_negative",
+      "foodsafety_001_factual_negative",
+      "foodsafety_001_causal_negative",
+      "conservation_001_factual_negative",
+      "conservation_001_causal_negative",
+      "bridge_001_factual_negative",
+      "bridge_001_causal_negative",
+      "launch_001_factual_negative",
+      "launch_001_causal_negative",
+      "reinsurance_001_factual_negative",
+      "reinsurance_001_causal_negative",
+      "irrigation_001_factual_negative",
+      "irrigation_001_causal_negative",
+      "playout_001_factual_negative",
+      "playout_001_causal_negative",
+      "care_001_factual_negative",
+      "care_001_causal_negative",
+      "backup_001_factual_negative",
+      "backup_001_causal_negative",
+      "shelter_001_factual_negative",
+      "shelter_001_causal_negative",
+      "textile_001_factual_negative",
+      "textile_001_causal_negative"
+    ]
+  },
+  "prompt_version": "v3.2",
+  "protocol_sources": {
+    "pyproject.toml": {
+      "snapshot_path": "protocol_snapshot/pyproject.toml",
+      "sha256": "04405c49e88c706f7c1432b81c11da65ee4bc2250c5741a743e5dea724b492b2"
+    },
+    "uv.lock": {
+      "snapshot_path": "protocol_snapshot/uv.lock",
+      "sha256": "7a03bdee2e61444721dc0a3099dfeb28b26fe17b286a42b4f7f0cded1eec87f6"
+    },
+    "scripts/run_pilot.py": {
+      "snapshot_path": "protocol_snapshot/scripts/run_pilot.py",
+      "sha256": "5e2b0ade47467aeaad2b2b1d39564a43a13b3a749594afb271dcd11b78766a79"
+    },
+    "src/assumption_propagation/prompts.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/prompts.py",
+      "sha256": "381952a0484cd6b1dd281b1eedf9b5c423d22e136aca5071bacc7d39a225a595"
+    },
+    "src/assumption_propagation/evidence.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/evidence.py",
+      "sha256": "04445e6051de6c46921867aa08af5d5c9ffa10f60cbb0efbdbfcde77eaac83bf"
+    },
+    "src/assumption_propagation/orchestrator.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/orchestrator.py",
+      "sha256": "645d96b5a1b8f6e27dbeb754f0b2cb5fc80d9428f54f5e8a1444cb4b0b469752"
+    },
+    "src/assumption_propagation/topologies.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/topologies.py",
+      "sha256": "77af65dee6698a9504119ad0381ef7456853b42dd35b0bdd50448c9574a2d620"
+    },
+    "src/assumption_propagation/schemas.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/schemas.py",
+      "sha256": "0c4cf8ba48b857432c1f670dfbb54a7b0af6c3e55e31de699c4bbf12206dd6f4"
+    },
+    "src/assumption_propagation/clients.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/clients.py",
+      "sha256": "d9916fb452b865cf8e00a02980119e3c10a9f89821c847d3f854512052ce5d42"
+    },
+    "src/assumption_propagation/aggregation.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/aggregation.py",
+      "sha256": "30adf5f0aa91fad023ac251f0ce255ca9cf309fc9dcb3086a84a504f4a0c18ba"
+    },
+    "src/assumption_propagation/reproducibility.py": {
+      "snapshot_path": "protocol_snapshot/src/assumption_propagation/reproducibility.py",
+      "sha256": "80303e0926976f0fd3e848a613ef537b7e189151266b7e042cf73ab1becfec18"
+    }
+  },
+  "client": {
+    "kind": "azure",
+    "model_identifier": "azure:gpt-5.4-mini",
+    "deployment": "gpt-5.4-mini",
+    "temperature": null,
+    "max_tokens": 1000,
+    "request_timeout_seconds": 120.0,
+    "sdk_max_retries": 0,
+    "tenacity_max_attempts": 6
+  },
+  "protocol": {
+    "n_rounds": 4,
+    "withhold_corrective": false,
+    "ablation_arm": false,
+    "scope_ladder": true,
+    "attribution": "both",
+    "scope_protocol": "tool_v2",
+    "scope_controls": true,
+    "injection_conditions": [
+      "injection_tool_none",
+      "injection_tool_testimony",
+      "injection_tool_relay",
+      "injection_tool_direct",
+      "injection_prompt_receipt_control",
+      "injection_tool_placebo"
+    ],
+    "scope_primary_topology": "fully_connected_mesh",
+    "scope_primary_attribution": "assigned",
+    "matched_pre_correction_replay": true,
+    "matched_verifier_response_replay": true,
+    "arm_order_counterbalanced_by_assumption_seed_hash": true,
+    "coordinate_order_counterbalanced_by_assumption_seed_hash": true,
+    "finite_horizon_rounds": 4,
+    "direct_access_delivery": "forced function call plus role=tool result",
+    "independent_control_n_rounds": 1,
+    "topologies": [
+      "looped_chain",
+      "neutral_star",
+      "fully_connected_mesh"
+    ],
+    "n_seeds": 3,
+    "baseline_reps": 1,
+    "skip_baselines": false,
+    "skip_injection": false,
+    "independent_reps": 1,
+    "skip_independent": true,
+    "correction_available_round_by_assumption": {
+      "vendor_001_factual_negative": 1,
+      "vendor_001_causal_negative": 1,
+      "incident_001_factual_negative": 1,
+      "incident_001_causal_negative": 1,
+      "shipment_001_factual_negative": 1,
+      "shipment_001_causal_negative": 1,
+      "clinic_001_factual_negative": 1,
+      "clinic_001_causal_negative": 1,
+      "facility_001_factual_negative": 1,
+      "facility_001_causal_negative": 1,
+      "staffing_001_factual_negative": 1,
+      "staffing_001_causal_negative": 1,
+      "datacenter_001_factual_negative": 1,
+      "datacenter_001_causal_negative": 1,
+      "permit_001_factual_negative": 1,
+      "permit_001_causal_negative": 1,
+      "supplier_001_factual_negative": 1,
+      "supplier_001_causal_negative": 1,
+      "transit_001_factual_negative": 1,
+      "transit_001_causal_negative": 1,
+      "grant_001_factual_negative": 1,
+      "grant_001_causal_negative": 1,
+      "clinical_001_factual_negative": 1,
+      "clinical_001_causal_negative": 1,
+      "design_001_factual_negative": 1,
+      "design_001_causal_negative": 1,
+      "assay_001_factual_negative": 1,
+      "assay_001_causal_negative": 1,
+      "energy_001_factual_negative": 1,
+      "energy_001_causal_negative": 1,
+      "drydock_001_factual_negative": 1,
+      "drydock_001_causal_negative": 1,
+      "interp_001_factual_negative": 1,
+      "interp_001_causal_negative": 1,
+      "aviation_001_factual_negative": 1,
+      "aviation_001_causal_negative": 1,
+      "telecom_001_factual_negative": 1,
+      "telecom_001_causal_negative": 1,
+      "pharma_001_factual_negative": 1,
+      "pharma_001_causal_negative": 1,
+      "water_001_factual_negative": 1,
+      "water_001_causal_negative": 1,
+      "education_001_factual_negative": 1,
+      "education_001_causal_negative": 1,
+      "foodsafety_001_factual_negative": 1,
+      "foodsafety_001_causal_negative": 1,
+      "conservation_001_factual_negative": 1,
+      "conservation_001_causal_negative": 1,
+      "bridge_001_factual_negative": 1,
+      "bridge_001_causal_negative": 1,
+      "launch_001_factual_negative": 1,
+      "launch_001_causal_negative": 1,
+      "reinsurance_001_factual_negative": 1,
+      "reinsurance_001_causal_negative": 1,
+      "irrigation_001_factual_negative": 1,
+      "irrigation_001_causal_negative": 1,
+      "playout_001_factual_negative": 1,
+      "playout_001_causal_negative": 1,
+      "care_001_factual_negative": 1,
+      "care_001_causal_negative": 1,
+      "backup_001_factual_negative": 1,
+      "backup_001_causal_negative": 1,
+      "shelter_001_factual_negative": 1,
+      "shelter_001_causal_negative": 1,
+      "textile_001_factual_negative": 1,
+      "textile_001_causal_negative": 1
+    },
+    "seed_private_dossier_persistent": true,
+    "neutral_control_dossier_persistent": true,
+    "corrective_dossier_persistent_from_available_round": true
+  },
+  "status": {
+    "state": "complete",
+    "completed_at_utc": "2026-08-11T00:05:56.017289+00:00",
+    "planned_seed_generations": 198,
+    "planned_conversation_attempts": {
+      "injection_max_if_all_seeds_replayable": 7128,
+      "no_injection_baseline": 396,
+      "independent_control": 0,
+      "total_max_if_all_seeds_replayable": 7524
+    },
+    "observed_rows": {
+      "seeds": 198,
+      "agent_round_records": 120384,
+      "conversation_results": 7524
+    },
+    "observed_files": {
+      "seeds": {
+        "path": "seeds.jsonl",
+        "rows": 198,
+        "sha256": "ad109e072d2431abc179721dede3afca0658068b69462726c585dcadf1d6daf8"
+      },
+      "records": {
+        "path": "records.jsonl",
+        "rows": 120384,
+        "sha256": "2e7668622a29dcec8fdc88934ad3d9546dcff3678ddc6707c63504622e1a24ea"
+      },
+      "results": {
+        "path": "results.jsonl",
+        "rows": 7524,
+        "sha256": "3282ecd553c7fceaa7eda220e0e18cbdaa33c228b70a36afb8847e8792826b41"
+      }
+    },
+    "output_integrity_check_version": "1.2",
+    "replayable_seed_generations": 198,
+    "unreplayable_seed_generations": 0,
+    "reconciled_expected_rows": {
+      "seeds": 198,
+      "agent_round_records": 120384,
+      "conversation_results": 7524
+    },
+    "observed_conversations": {
+      "injection": 7128,
+      "injection_by_condition": {
+        "injection_prompt_receipt_control": 1188,
+        "injection_tool_direct": 1188,
+        "injection_tool_none": 1188,
+        "injection_tool_placebo": 1188,
+        "injection_tool_relay": 1188,
+        "injection_tool_testimony": 1188
+      },
+      "no_injection_baseline": 396,
+      "independent_control": 0,
+      "total": 7524
+    },
+    "response_quality": {
+      "agent_round_records": 120384,
+      "parse_failed": 6,
+      "parse_repaired": 0,
+      "generation_failed": 6,
+      "carried_forward": 6,
+      "tool_trace_records": 32076,
+      "tool_calls_executed": 20196,
+      "tool_traces_replayed": 11880,
+      "tool_api_call_attempts": 40392,
+      "zero_parse_failures": false
+    }
+  },
+  "composite_recovery": {
+    "version": "1.0",
+    "selection_rule": "Technical-failure replacement fixed solely by Azure 401 boundary; no outcome-based selection.",
+    "original_source": {
+      "directory": "outputs/raw/20260809_212427_azure_confirmatory_scope33_gpt54mini_v32",
+      "manifest_state": "running",
+      "included_scenario_ids": [
+        "vendor_001",
+        "incident_001",
+        "shipment_001",
+        "clinic_001",
+        "facility_001",
+        "staffing_001",
+        "datacenter_001",
+        "permit_001",
+        "supplier_001",
+        "transit_001",
+        "grant_001",
+        "clinical_001",
+        "design_001",
+        "assay_001",
+        "energy_001",
+        "drydock_001",
+        "interp_001",
+        "aviation_001",
+        "telecom_001",
+        "pharma_001",
+        "water_001",
+        "education_001",
+        "foodsafety_001",
+        "conservation_001",
+        "bridge_001",
+        "launch_001",
+        "reinsurance_001",
+        "irrigation_001"
+      ],
+      "excluded_scenario_ids": [
+        "playout_001",
+        "care_001",
+        "backup_001",
+        "shelter_001",
+        "textile_001"
+      ],
+      "file_sha256": {
+        "seeds.jsonl": "00ec123741f08d6b88a6df267d7cefa5e2353fd299c5387ddfef5923072464b6",
+        "records.jsonl": "8f934a965be68df7272682a57c0ecdb967e2ccb0bc6503cc32eb1475c71d6c30",
+        "results.jsonl": "3de1bda6a0bce5f9dc3b52d44bc84357b1a937ce6420943b9449c18ede340879",
+        "run_manifest.json": "fba7b5f95e81fb1541d1d62124a9f1c2809e7db2dd28281bf2856a20aa28be1b"
+      }
+    },
+    "recovery_source": {
+      "directory": "outputs/raw/20260810_151924_azure_recovery5_gpt54mini_v32",
+      "manifest_state": "complete",
+      "included_scenario_ids": [
+        "playout_001",
+        "care_001",
+        "backup_001",
+        "shelter_001",
+        "textile_001"
+      ],
+      "file_sha256": {
+        "seeds.jsonl": "c35bbced50418e78d4da39bc3f0274f93daaa972f9b2b23a061c6cac0f3fe1b0",
+        "records.jsonl": "cb6c55008a5a52ddff5f3410c3da7406cb72cf709f52ef9e77d4b8af252be886",
+        "results.jsonl": "af2e3288adfc8c7a4b90d4285b6945192fce494eb24d9ef9e613341e0c10e336",
+        "run_manifest.json": "091a9880413b003b41edfa13cbe4957ba658e636968e198e16110adbce0638a1"
+      }
+    },
+    "merge_counts": {
+      "seeds.jsonl": {
+        "original_interrupted_valid_prefix": 168,
+        "recovery_replacement": 30
+      },
+      "records.jsonl": {
+        "original_interrupted_valid_prefix": 102144,
+        "recovery_replacement": 18240
+      },
+      "results.jsonl": {
+        "original_interrupted_valid_prefix": 6384,
+        "recovery_replacement": 1140
+      }
+    }
+  }
+}
