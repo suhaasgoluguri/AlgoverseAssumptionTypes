@@ -6,18 +6,22 @@ venv/
 .DS_Store
 *.egg-info/
 .ipynb_checkpoints/
-# Nothing under outputs/ is tracked. Run data is large and machine-specific,
-# every artifact here is regenerable from the corpus plus a run manifest, and
-# the runs themselves are distributed alongside the paper.
+# outputs/ is ignored by default: run data is large and machine-specific.
+# The analysis artifacts behind the paper's numbers are tracked by exception
+# (added with -f); see "Reproducing the paper's tables" in README.md. The
+# per-agent-round records.jsonl files stay out at ~300 MB each.
 outputs/
 
 # Generated HTML reports. Rebuilt from the run they cite.
 reports/
 
-# Nothing under docs/ is tracked. What remained was team-facing rather than
-# reviewer-facing: a deferred-decision log, an internal status write-up, a
-# self-audit, and page rasters of a superseded pilot analysis.
+# docs/ is ignored by default: what lived here was team-facing rather than
+# reviewer-facing (a deferred-decision log, an internal status write-up, a
+# self-audit, page rasters of a superseded pilot analysis). docs/figures/ is
+# tracked by exception -- it holds the table and figure generators and their
+# committed output, which the paper depends on.
 docs/
+!docs/figures/
 
 # Run logs, anywhere in the tree. Shell redirections of console progress, not
 # pipeline output: the structured form of the same run is in records.jsonl and

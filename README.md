@@ -1,19 +1,36 @@
-# Assumption Propagation in Multi-Agent LLM Systems
+# When Testimony Is Not Enough: Corrective-Evidence Delivery in Multi-Agent LLM Teams
 
-This repository studies how corrective evidence reaches a four-agent team
-after one agent receives a categorical, unsupported private assessment. The
-current primary protocol is `tool_v2`: no correction, verifier testimony,
-the verifier's testimony plus an exact relay of the tool result, or direct
-recipient delivery operationalized as a forced tool result for each
-non-verifier. The confirmatory subject model is the frozen Azure deployment
-`azure:gpt-5.4-mini`.
+This repository contains the code and analysis for *When Testimony Is Not
+Enough: Corrective-Evidence Delivery in Multi-Agent LLM Teams*. Four LLM
+agents solve a hidden-profile task in which one agent's private dossier
+carries an unsupported false assessment and a second agent receives an
+external record refuting it. We vary how that record reaches the two
+remaining agents across six delivery arms, and independently whether peer
+message headers name each speaker's assigned option. The primary model is
+`azure:gpt-5.4-mini`; `azure:deepseek-v4-pro` is a cross-model check reported
+separately and never pooled with the primary run.
 
-Confirmatory collection crosses anonymous peer headers (`Agent 2`) with assigned
-headers (`Agent 2 (assigned: Borealis)`) across mesh, chain, and star. Assigned
-headers expose which candidate the speaker reviewed, but not the private
-finding. The primary correction-scope claim remains the clean mesh + assigned
-cell; topology and attribution comparisons are secondary, and their interaction
-is exploratory.
+## Vocabulary
+
+The code predates the paper's terminology. The mapping:
+
+| Repository | Paper |
+|---|---|
+| `corrector_agent` (schemas, records) | the verifier |
+| ordinary-neutral | ordinary agents |
+| scope ladder / correction scope | delivery arms |
+| hidden corrected anchor | the shared verifier response replayed across arms |
+
+`tool_v2` and `prompt_v1` are internal protocol names. Everything reported in
+the paper is `tool_v2`; `prompt_v1` is an earlier prompt-only protocol kept
+only so historical runs remain analyzable, and it is never pooled with
+`tool_v2`. See *Reproducibility notes* at the end.
+
+All reported runs use `PROMPT_VERSION = v3.2` (rationale emitted before
+answer), recorded in each run's `run_manifest.json`. This is unrelated to the
+`prompt_v1` protocol name despite the shared word.
+
+## Protocol
 
 The primary comparison uses a fully connected mesh and four synchronous
 rounds. The seed's assessment persists from round 0. After one clean
@@ -26,6 +43,13 @@ same verifier response. The no-correction arm shares the matched pre-release
 history but not the corrected response. This prevents route effects from being
 confounded with resampling the conversation carrier.
 
+Confirmatory collection crosses anonymous peer headers (`Agent 2`) with assigned
+headers (`Agent 2 (assigned: Borealis)`) across mesh, chain, and star. Assigned
+headers expose which candidate the speaker reviewed, but not the private
+finding. The primary correction-scope claim remains the clean mesh + assigned
+cell; topology and attribution comparisons are secondary, and their interaction
+is exploratory.
+
 The direct arm is an actual two-step model/tool exchange: the first completion
 is forced to request `read_case_record`, the backend returns the canonical JSON
 as a `role=tool` message, and a second completion produces the answer. Prompt
@@ -34,9 +58,6 @@ versus replay status, API attempts, finish reasons, token usage, and model
 outputs are logged. A copied hidden-anchor trace has zero new calls/tokens and
 is explicitly marked as replayed; it is never counted as a fresh measured-arm
 tool execution.
-For backward compatibility, schemas still call the designated verifier
-`corrector_agent`; analysis reports it as the verifier/correction carrier and
-keeps it out of ordinary-neutral outcomes.
 
 ## Repository map
 
@@ -53,8 +74,9 @@ keeps it out of ordinary-neutral outcomes.
 - `src/assumption_propagation/metrics.py` and `analysis.py`: answer-level
   outcomes, within one conversation and across a run.
 
-There are currently 33 executable scenarios with 99 matched variants: one
-factual, causal, and framing treatment for every base scenario.
+There are 33 executable scenarios with 66 confirmatory variants (factual and
+causal), plus 33 framing variants retained for labelled follow-up work and
+excluded from the confirmatory run.
 The primary evidence-scope protocol uses factual and causal variants only;
 `--scope-ladder` therefore excludes framing by default. Framing remains in the
 corpus for explicitly labelled follow-up work and can be requested with
@@ -127,10 +149,11 @@ the four-round horizon; direct delivery still reaches every non-verifier. The
 analysis reports actual exposure and does not interpret sparse cells as pure
 delivery-format effects.
 
-`tool_v2` is the default when `--scope-ladder` is supplied. The older
-prompt-only conditions remain reproducible with `--scope-protocol prompt_v1`
-for historical comparisons. Prompt-v1 and tool-v2 runs use distinct condition
-IDs and must never be pooled.
+The run launchers are **PowerShell** (`.ps1`) and assume a Windows-style
+`.venv\Scripts\python.exe`. On Linux or macOS either run them under
+`pwsh`, or read the argument list out of the file and invoke
+`scripts/run_pilot.py` directly -- the launchers add preflight and
+post-run gates, not behaviour.
 
 Run launchers live in `scripts/`. Each one wraps `run_pilot.py` with a fixed
 argument set, then gates the output it produced and chains the two analysis
@@ -175,9 +198,64 @@ topology-specific outcome coverage, a missing-as-incorrect point estimate, and
 missing-outcome bounds. The conditional aggregates are secondary
 post-treatment summaries and must not replace that all-attempt report.
 
+## Reproducing the paper's tables and figures
+
+The analysis artifacts behind every number in Section 4 are committed under
+`outputs/raw/`. Three runs are used:
+
+| Directory | Role |
+|---|---|
+| `20260810_merged_confirmatory_scope33_gpt54mini_v32` | primary, `azure:gpt-5.4-mini` |
+| `20260807_193819_azure_confirmatory_scope33_deepseekv4pro_v32` | cross-model check, `azure:deepseek-v4-pro` |
+| `20260817_merge_scenarios_noauthority_gpt54mini` | no-authority ablation |
+
+```bash
+uv sync
+uv run python docs/figures/make_tables.py          # all nine tab_*.tex
+uv run python docs/figures/make_fig_results.py     # fig_results.{pdf,png}
+uv run python docs/figures/make_fig_attribution.py # fig_attribution.{pdf,png}
+uv run python docs/figures/make_fig_setup_rounds.py
+```
+
+Outputs are written next to the generators in `docs/figures/`, overwriting the
+committed copies. The nine `.tex` tables regenerate byte-identically from the
+committed artifacts.
+
+**One input is not shipped.** `make_tables.py` reads `records.jsonl` from the
+primary and cross-model runs -- 310 MB and 297 MB, the full per-agent-round
+transcripts. It opens them at module scope, so without them the script raises
+`FileNotFoundError` and writes *no* tables rather than a subset. Everything
+else it needs is committed: `results.jsonl`, `scenario_snapshot.json`,
+`analysis/conversations.jsonl`, `analysis/aggregates.jsonl`, and the
+`statistics_*.json` files.
+
+`analysis/statistics_secondary.json` is regenerated rather than original; it
+is produced by
+
+```bash
+uv run python scripts/analyze_statistics.py <run-dir> \
+    --by-attribution --by-topology --json <run-dir>/analysis/statistics_secondary.json
+```
+
+Each run's `run_manifest.json` records the sha256 of `results.jsonl` under
+`status.observed_files`, and `.gitattributes` pins `outputs/raw/**` to `-text`
+so those hashes survive checkout on any platform.
+
 ## Verification
 
 ```bash
 uv run pytest -q
 uv run ruff check src scripts tests
 ```
+
+## Reproducibility notes
+
+`tool_v2` is the default when `--scope-ladder` is supplied, and is the only
+protocol any reported result uses. The older prompt-only conditions remain
+runnable with `--scope-protocol prompt_v1` so historical runs stay
+analyzable; prompt-v1 and tool-v2 use distinct condition IDs and must never
+be pooled.
+
+For backward compatibility, schemas still call the designated verifier
+`corrector_agent`; analysis reports it as the verifier and keeps it out of
+ordinary-agent outcomes.
