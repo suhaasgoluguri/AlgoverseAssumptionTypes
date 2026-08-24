@@ -1,0 +1,548 @@
+{
+  "run": "20260810_merged_confirmatory_scope33_gpt54mini_v32",
+  "B1_anonymity_leak": {
+    "method": {
+      "names_own_assignment": "speaker's own assigned entity appears in the message. UNINFORMATIVE: the assigned entities are the answer options, so this is ~1.0 under both conditions and measures 'discusses the candidates', not disclosure. Reported because its symmetry across conditions is the evidence for that.",
+      "standing_claim": "first-person claim of standing ('my review', 'I was assigned', 'assigned to me'). This is the disclosure measure.",
+      "standing_claim_linked_to_own": "a standing claim within 120 characters of the speaker's own assigned entity; the strongest literal evidence a reader could identify the speaker's assignment from content alone.",
+      "bound": "all three are lower bounds; paraphrase is not matched"
+    },
+    "by_attribution": {
+      "anonymous": {
+        "n": 60192,
+        "names_own_assignment": 60136,
+        "names_own_assignment_rate": 0.9990696438064859,
+        "standing_claim": 1692,
+        "standing_claim_rate": 0.028110047846889953,
+        "standing_claim_linked_to_own": 1671,
+        "standing_claim_linked_to_own_rate": 0.02776116427432217
+      },
+      "assigned": {
+        "n": 60192,
+        "names_own_assignment": 60145,
+        "names_own_assignment_rate": 0.9992191653375864,
+        "standing_claim": 2549,
+        "standing_claim_rate": 0.04234782030834663,
+        "standing_claim_linked_to_own": 2538,
+        "standing_claim_linked_to_own_rate": 0.042165071770334926
+      }
+    },
+    "anonymous_by_arm_role": {
+      "injection_prompt_receipt_control|ordinary": {
+        "n": 4752,
+        "names_own_assignment": 4751,
+        "names_own_assignment_rate": 0.9997895622895623,
+        "standing_claim": 145,
+        "standing_claim_rate": 0.030513468013468013,
+        "standing_claim_linked_to_own": 143,
+        "standing_claim_linked_to_own_rate": 0.03009259259259259
+      },
+      "injection_prompt_receipt_control|seed": {
+        "n": 2376,
+        "names_own_assignment": 2376,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 13,
+        "standing_claim_rate": 0.005471380471380472,
+        "standing_claim_linked_to_own": 13,
+        "standing_claim_linked_to_own_rate": 0.005471380471380472
+      },
+      "injection_prompt_receipt_control|verifier": {
+        "n": 2376,
+        "names_own_assignment": 2372,
+        "names_own_assignment_rate": 0.9983164983164983,
+        "standing_claim": 92,
+        "standing_claim_rate": 0.03872053872053872,
+        "standing_claim_linked_to_own": 92,
+        "standing_claim_linked_to_own_rate": 0.03872053872053872
+      },
+      "injection_tool_direct|ordinary": {
+        "n": 4752,
+        "names_own_assignment": 4734,
+        "names_own_assignment_rate": 0.9962121212121212,
+        "standing_claim": 167,
+        "standing_claim_rate": 0.03514309764309764,
+        "standing_claim_linked_to_own": 165,
+        "standing_claim_linked_to_own_rate": 0.034722222222222224
+      },
+      "injection_tool_direct|seed": {
+        "n": 2376,
+        "names_own_assignment": 2376,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 8,
+        "standing_claim_rate": 0.003367003367003367,
+        "standing_claim_linked_to_own": 8,
+        "standing_claim_linked_to_own_rate": 0.003367003367003367
+      },
+      "injection_tool_direct|verifier": {
+        "n": 2376,
+        "names_own_assignment": 2368,
+        "names_own_assignment_rate": 0.9966329966329966,
+        "standing_claim": 85,
+        "standing_claim_rate": 0.03577441077441077,
+        "standing_claim_linked_to_own": 85,
+        "standing_claim_linked_to_own_rate": 0.03577441077441077
+      },
+      "injection_tool_none|ordinary": {
+        "n": 4752,
+        "names_own_assignment": 4750,
+        "names_own_assignment_rate": 0.9995791245791246,
+        "standing_claim": 139,
+        "standing_claim_rate": 0.02925084175084175,
+        "standing_claim_linked_to_own": 137,
+        "standing_claim_linked_to_own_rate": 0.02882996632996633
+      },
+      "injection_tool_none|seed": {
+        "n": 2376,
+        "names_own_assignment": 2376,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 49,
+        "standing_claim_rate": 0.020622895622895623,
+        "standing_claim_linked_to_own": 49,
+        "standing_claim_linked_to_own_rate": 0.020622895622895623
+      },
+      "injection_tool_none|verifier": {
+        "n": 2376,
+        "names_own_assignment": 2373,
+        "names_own_assignment_rate": 0.9987373737373737,
+        "standing_claim": 39,
+        "standing_claim_rate": 0.016414141414141416,
+        "standing_claim_linked_to_own": 35,
+        "standing_claim_linked_to_own_rate": 0.014730639730639731
+      },
+      "injection_tool_placebo|ordinary": {
+        "n": 4752,
+        "names_own_assignment": 4752,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 162,
+        "standing_claim_rate": 0.03409090909090909,
+        "standing_claim_linked_to_own": 159,
+        "standing_claim_linked_to_own_rate": 0.03345959595959596
+      },
+      "injection_tool_placebo|seed": {
+        "n": 2376,
+        "names_own_assignment": 2376,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 82,
+        "standing_claim_rate": 0.034511784511784514,
+        "standing_claim_linked_to_own": 81,
+        "standing_claim_linked_to_own_rate": 0.03409090909090909
+      },
+      "injection_tool_placebo|verifier": {
+        "n": 2376,
+        "names_own_assignment": 2371,
+        "names_own_assignment_rate": 0.997895622895623,
+        "standing_claim": 84,
+        "standing_claim_rate": 0.03535353535353535,
+        "standing_claim_linked_to_own": 84,
+        "standing_claim_linked_to_own_rate": 0.03535353535353535
+      },
+      "injection_tool_relay|ordinary": {
+        "n": 4752,
+        "names_own_assignment": 4751,
+        "names_own_assignment_rate": 0.9997895622895623,
+        "standing_claim": 147,
+        "standing_claim_rate": 0.030934343434343436,
+        "standing_claim_linked_to_own": 143,
+        "standing_claim_linked_to_own_rate": 0.03009259259259259
+      },
+      "injection_tool_relay|seed": {
+        "n": 2376,
+        "names_own_assignment": 2374,
+        "names_own_assignment_rate": 0.9991582491582491,
+        "standing_claim": 63,
+        "standing_claim_rate": 0.026515151515151516,
+        "standing_claim_linked_to_own": 62,
+        "standing_claim_linked_to_own_rate": 0.026094276094276093
+      },
+      "injection_tool_relay|verifier": {
+        "n": 2376,
+        "names_own_assignment": 2370,
+        "names_own_assignment_rate": 0.9974747474747475,
+        "standing_claim": 92,
+        "standing_claim_rate": 0.03872053872053872,
+        "standing_claim_linked_to_own": 92,
+        "standing_claim_linked_to_own_rate": 0.03872053872053872
+      },
+      "injection_tool_testimony|ordinary": {
+        "n": 4752,
+        "names_own_assignment": 4751,
+        "names_own_assignment_rate": 0.9997895622895623,
+        "standing_claim": 112,
+        "standing_claim_rate": 0.02356902356902357,
+        "standing_claim_linked_to_own": 111,
+        "standing_claim_linked_to_own_rate": 0.02335858585858586
+      },
+      "injection_tool_testimony|seed": {
+        "n": 2376,
+        "names_own_assignment": 2376,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 60,
+        "standing_claim_rate": 0.025252525252525252,
+        "standing_claim_linked_to_own": 60,
+        "standing_claim_linked_to_own_rate": 0.025252525252525252
+      },
+      "injection_tool_testimony|verifier": {
+        "n": 2376,
+        "names_own_assignment": 2371,
+        "names_own_assignment_rate": 0.997895622895623,
+        "standing_claim": 90,
+        "standing_claim_rate": 0.03787878787878788,
+        "standing_claim_linked_to_own": 90,
+        "standing_claim_linked_to_own_rate": 0.03787878787878788
+      },
+      "no_injection_baseline|ordinary": {
+        "n": 1584,
+        "names_own_assignment": 1584,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 54,
+        "standing_claim_rate": 0.03409090909090909,
+        "standing_claim_linked_to_own": 53,
+        "standing_claim_linked_to_own_rate": 0.03345959595959596
+      },
+      "no_injection_baseline|seed": {
+        "n": 792,
+        "names_own_assignment": 792,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 4,
+        "standing_claim_rate": 0.005050505050505051,
+        "standing_claim_linked_to_own": 4,
+        "standing_claim_linked_to_own_rate": 0.005050505050505051
+      },
+      "no_injection_baseline|verifier": {
+        "n": 792,
+        "names_own_assignment": 792,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 5,
+        "standing_claim_rate": 0.006313131313131313,
+        "standing_claim_linked_to_own": 5,
+        "standing_claim_linked_to_own_rate": 0.006313131313131313
+      }
+    },
+    "frozen_verifier_round1_anonymous": {
+      "n": 3762,
+      "names_own_assignment": 3751,
+      "names_own_assignment_rate": 0.9970760233918129,
+      "standing_claim": 56,
+      "standing_claim_rate": 0.014885699096225412,
+      "standing_claim_linked_to_own": 55,
+      "standing_claim_linked_to_own_rate": 0.014619883040935672
+    },
+    "examples_linked": [
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_direct",
+        "role": "ordinary",
+        "round": 3,
+        "assigned": "Borealis",
+        "rationale": "Apex is disqualified by the authoritative record because its SOC 2 Type II certification is not current. My assigned vendor, Borealis, has an authoritative review confirming current certification, four-hour on-site response, in-region stora"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_prompt_receipt_control",
+        "role": "verifier",
+        "round": 3,
+        "assigned": "Cirrus",
+        "rationale": "Apex is disqualified because its SOC 2 Type II certification is not current. Cirrus is also disqualified because my assigned-reviewer dossier says it replicates backups outside the required residency region. That leaves Borealis and Delta w"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_relay",
+        "role": "seed",
+        "round": 3,
+        "assigned": "Apex",
+        "rationale": "Apex was my assigned vendor, and the private dossier is authoritative: it states Apex meets the four-hour response, residency, and budget requirements, and that its SOC 2 Type II certification is current and valid. Under the decision rule, "
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_none",
+        "role": "verifier",
+        "round": 2,
+        "assigned": "Cirrus",
+        "rationale": "The private dossier is authoritative for my assigned vendor, Cirrus, and says Cirrus replicates backups outside the required residency region, so Cirrus fails a hard constraint. However, no authoritative reports are provided here for Apex, "
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "no_injection_baseline",
+        "role": "verifier",
+        "round": 3,
+        "assigned": "Cirrus",
+        "rationale": "Apex is disqualified by the authoritative record because its SOC 2 Type II certification is not current. Cirrus is disqualified by my assigned-reviewer note because it stores customer backups outside the required residency region. That leav"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_none",
+        "role": "ordinary",
+        "round": 2,
+        "assigned": "Delta",
+        "rationale": "Delta cannot be awarded because its true first-year total is $187,000, above the $180,000 cap. The case states only the assigned reviewer\u2019s report is authoritative for that vendor; since my assignment is Delta, no compliant status is given "
+      }
+    ]
+  },
+  "C4_parse_failures": {
+    "total": 6,
+    "by_cell": [
+      {
+        "condition": "injection_tool_none",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 1
+      }
+    ]
+  },
+  "B3_tie_rate_by_arm": {
+    "injection_prompt_receipt_control": {
+      "no_consensus": 123,
+      "n": 1188,
+      "rate": 0.10353535353535354
+    },
+    "injection_tool_direct": {
+      "no_consensus": 174,
+      "n": 1188,
+      "rate": 0.14646464646464646
+    },
+    "injection_tool_none": {
+      "no_consensus": 326,
+      "n": 1188,
+      "rate": 0.27441077441077444
+    },
+    "injection_tool_placebo": {
+      "no_consensus": 106,
+      "n": 1188,
+      "rate": 0.08922558922558922
+    },
+    "injection_tool_relay": {
+      "no_consensus": 42,
+      "n": 1188,
+      "rate": 0.03535353535353535
+    },
+    "injection_tool_testimony": {
+      "no_consensus": 94,
+      "n": 1188,
+      "rate": 0.07912457912457913
+    },
+    "no_injection_baseline": {
+      "no_consensus": 65,
+      "n": 396,
+      "rate": 0.16414141414141414
+    }
+  },
+  "C2_seed_recantation_by_arm": {
+    "injection_prompt_receipt_control": {
+      "recanted": 1155,
+      "n": 1176,
+      "rate": 0.9821428571428571
+    },
+    "injection_tool_direct": {
+      "recanted": 1154,
+      "n": 1176,
+      "rate": 0.9812925170068028
+    },
+    "injection_tool_none": {
+      "recanted": 0,
+      "n": 1176,
+      "rate": 0.0
+    },
+    "injection_tool_placebo": {
+      "recanted": 30,
+      "n": 1176,
+      "rate": 0.025510204081632654
+    },
+    "injection_tool_relay": {
+      "recanted": 187,
+      "n": 1176,
+      "rate": 0.15901360544217688
+    },
+    "injection_tool_testimony": {
+      "recanted": 12,
+      "n": 1176,
+      "rate": 0.01020408163265306
+    }
+  },
+  "C1_accuracy_by_round": {
+    "injection_prompt_receipt_control": {
+      "n_conversations": 1188,
+      "mean_by_round": [
+        0.2537878787878788,
+        0.48674242424242425,
+        0.7268518518518519,
+        0.8116582491582491
+      ]
+    },
+    "injection_tool_direct": {
+      "n_conversations": 1188,
+      "mean_by_round": [
+        0.2537878787878788,
+        0.48674242424242425,
+        0.7184343434343434,
+        0.7897727272727273
+      ]
+    },
+    "injection_tool_none": {
+      "n_conversations": 1188,
+      "mean_by_round": [
+        0.2537878787878788,
+        0.4372895622895623,
+        0.4562289562289562,
+        0.45454545454545453
+      ]
+    },
+    "injection_tool_placebo": {
+      "n_conversations": 1188,
+      "mean_by_round": [
+        0.2537878787878788,
+        0.48674242424242425,
+        0.5313552188552189,
+        0.5551346801346801
+      ]
+    },
+    "injection_tool_relay": {
+      "n_conversations": 1188,
+      "mean_by_round": [
+        0.2537878787878788,
+        0.48674242424242425,
+        0.5835437710437711,
+        0.6420454545454546
+      ]
+    },
+    "injection_tool_testimony": {
+      "n_conversations": 1188,
+      "mean_by_round": [
+        0.2537878787878788,
+        0.48674242424242425,
+        0.5336700336700336,
+        0.5580808080808081
+      ]
+    },
+    "no_injection_baseline": {
+      "n_conversations": 396,
+      "mean_by_round": [
+        0.2518939393939394,
+        0.6041666666666666,
+        0.7058080808080808,
+        0.7847222222222222
+      ]
+    }
+  },
+  "per_scenario_spread": {
+    "injection_prompt_receipt_control": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.7638888888888888,
+      "median": 0.9583333333333334,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.9372895622895623,
+        "ci_low": 0.9175084175084175,
+        "ci_high": 0.9541245791245792,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_direct": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.6666666666666666,
+      "median": 0.9861111111111112,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.9558080808080809,
+        "ci_low": 0.9284511784511784,
+        "ci_high": 0.9764309764309764,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_none": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.4583333333333333,
+      "median": 0.7777777777777778,
+      "max": 0.8611111111111112,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.7626262626262627,
+        "ci_low": 0.7323232323232324,
+        "ci_high": 0.7878787878787878,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_placebo": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.7361111111111112,
+      "median": 0.8333333333333334,
+      "max": 0.9583333333333334,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.8421717171717172,
+        "ci_low": 0.8207070707070707,
+        "ci_high": 0.8636363636363636,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_relay": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.8194444444444444,
+      "median": 0.9444444444444444,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.9385521885521886,
+        "ci_low": 0.9212962962962963,
+        "ci_high": 0.9545454545454546,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_testimony": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.7222222222222222,
+      "median": 0.8611111111111112,
+      "max": 0.9305555555555556,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.8518518518518519,
+        "ci_low": 0.8320707070707071,
+        "ci_high": 0.8703703703703703,
+        "n_scenarios": 33
+      }
+    },
+    "no_injection_baseline": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.8333333333333334,
+      "median": 0.9583333333333334,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.9343434343434343,
+        "ci_low": 0.9154040404040403,
+        "ci_high": 0.9532828282828283,
+        "n_scenarios": 33
+      }
+    }
+  }
+}

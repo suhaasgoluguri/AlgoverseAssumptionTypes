@@ -1,0 +1,1206 @@
+{
+  "run": "20260807_193819_azure_confirmatory_scope33_deepseekv4pro_v32",
+  "B1_anonymity_leak": {
+    "method": {
+      "names_own_assignment": "speaker's own assigned entity appears in the message. UNINFORMATIVE: the assigned entities are the answer options, so this is ~1.0 under both conditions and measures 'discusses the candidates', not disclosure. Reported because its symmetry across conditions is the evidence for that.",
+      "standing_claim": "first-person claim of standing ('my review', 'I was assigned', 'assigned to me'). This is the disclosure measure.",
+      "standing_claim_linked_to_own": "a standing claim within 120 characters of the speaker's own assigned entity; the strongest literal evidence a reader could identify the speaker's assignment from content alone.",
+      "bound": "all three are lower bounds; paraphrase is not matched"
+    },
+    "by_attribution": {
+      "anonymous": {
+        "n": 57504,
+        "names_own_assignment": 57302,
+        "names_own_assignment_rate": 0.9964872008903728,
+        "standing_claim": 15029,
+        "standing_claim_rate": 0.26135573177518084,
+        "standing_claim_linked_to_own": 14865,
+        "standing_claim_linked_to_own_rate": 0.25850375626043404
+      },
+      "assigned": {
+        "n": 57503,
+        "names_own_assignment": 57311,
+        "names_own_assignment_rate": 0.9966610437716293,
+        "standing_claim": 14619,
+        "standing_claim_rate": 0.25423021407578733,
+        "standing_claim_linked_to_own": 14477,
+        "standing_claim_linked_to_own_rate": 0.25176077769855487
+      }
+    },
+    "anonymous_by_arm_role": {
+      "injection_prompt_receipt_control|ordinary": {
+        "n": 4523,
+        "names_own_assignment": 4507,
+        "names_own_assignment_rate": 0.996462524872872,
+        "standing_claim": 1064,
+        "standing_claim_rate": 0.23524209595401283,
+        "standing_claim_linked_to_own": 1053,
+        "standing_claim_linked_to_own_rate": 0.2328100818041123
+      },
+      "injection_prompt_receipt_control|seed": {
+        "n": 2268,
+        "names_own_assignment": 2267,
+        "names_own_assignment_rate": 0.9995590828924162,
+        "standing_claim": 510,
+        "standing_claim_rate": 0.22486772486772486,
+        "standing_claim_linked_to_own": 500,
+        "standing_claim_linked_to_own_rate": 0.2204585537918871
+      },
+      "injection_prompt_receipt_control|verifier": {
+        "n": 2266,
+        "names_own_assignment": 2264,
+        "names_own_assignment_rate": 0.999117387466902,
+        "standing_claim": 602,
+        "standing_claim_rate": 0.265666372462489,
+        "standing_claim_linked_to_own": 598,
+        "standing_claim_linked_to_own_rate": 0.263901147396293
+      },
+      "injection_tool_direct|ordinary": {
+        "n": 4523,
+        "names_own_assignment": 4519,
+        "names_own_assignment_rate": 0.999115631218218,
+        "standing_claim": 1154,
+        "standing_claim_rate": 0.2551403935441079,
+        "standing_claim_linked_to_own": 1143,
+        "standing_claim_linked_to_own_rate": 0.25270837939420737
+      },
+      "injection_tool_direct|seed": {
+        "n": 2268,
+        "names_own_assignment": 2268,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 453,
+        "standing_claim_rate": 0.19973544973544974,
+        "standing_claim_linked_to_own": 448,
+        "standing_claim_linked_to_own_rate": 0.19753086419753085
+      },
+      "injection_tool_direct|verifier": {
+        "n": 2266,
+        "names_own_assignment": 2264,
+        "names_own_assignment_rate": 0.999117387466902,
+        "standing_claim": 615,
+        "standing_claim_rate": 0.27140335392762577,
+        "standing_claim_linked_to_own": 611,
+        "standing_claim_linked_to_own_rate": 0.26963812886142985
+      },
+      "injection_tool_none|ordinary": {
+        "n": 4523,
+        "names_own_assignment": 4493,
+        "names_own_assignment_rate": 0.993367234136635,
+        "standing_claim": 1018,
+        "standing_claim_rate": 0.22507185496351978,
+        "standing_claim_linked_to_own": 1007,
+        "standing_claim_linked_to_own_rate": 0.2226398408136193
+      },
+      "injection_tool_none|seed": {
+        "n": 2268,
+        "names_own_assignment": 2268,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 748,
+        "standing_claim_rate": 0.3298059964726631,
+        "standing_claim_linked_to_own": 741,
+        "standing_claim_linked_to_own_rate": 0.32671957671957674
+      },
+      "injection_tool_none|verifier": {
+        "n": 2266,
+        "names_own_assignment": 2244,
+        "names_own_assignment_rate": 0.9902912621359223,
+        "standing_claim": 495,
+        "standing_claim_rate": 0.21844660194174756,
+        "standing_claim_linked_to_own": 490,
+        "standing_claim_linked_to_own_rate": 0.21624007060900266
+      },
+      "injection_tool_placebo|ordinary": {
+        "n": 4523,
+        "names_own_assignment": 4505,
+        "names_own_assignment_rate": 0.996020340481981,
+        "standing_claim": 1146,
+        "standing_claim_rate": 0.2533716559805439,
+        "standing_claim_linked_to_own": 1132,
+        "standing_claim_linked_to_own_rate": 0.25027636524430685
+      },
+      "injection_tool_placebo|seed": {
+        "n": 2268,
+        "names_own_assignment": 2268,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 934,
+        "standing_claim_rate": 0.41181657848324515,
+        "standing_claim_linked_to_own": 923,
+        "standing_claim_linked_to_own_rate": 0.4069664902998236
+      },
+      "injection_tool_placebo|verifier": {
+        "n": 2266,
+        "names_own_assignment": 2261,
+        "names_own_assignment_rate": 0.997793468667255,
+        "standing_claim": 622,
+        "standing_claim_rate": 0.2744924977934687,
+        "standing_claim_linked_to_own": 618,
+        "standing_claim_linked_to_own_rate": 0.2727272727272727
+      },
+      "injection_tool_relay|ordinary": {
+        "n": 4523,
+        "names_own_assignment": 4487,
+        "names_own_assignment_rate": 0.9920406809639619,
+        "standing_claim": 1001,
+        "standing_claim_rate": 0.22131328764094627,
+        "standing_claim_linked_to_own": 987,
+        "standing_claim_linked_to_own_rate": 0.21821799690470928
+      },
+      "injection_tool_relay|seed": {
+        "n": 2268,
+        "names_own_assignment": 2268,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 811,
+        "standing_claim_rate": 0.3575837742504409,
+        "standing_claim_linked_to_own": 801,
+        "standing_claim_linked_to_own_rate": 0.3531746031746032
+      },
+      "injection_tool_relay|verifier": {
+        "n": 2266,
+        "names_own_assignment": 2263,
+        "names_own_assignment_rate": 0.998676081200353,
+        "standing_claim": 612,
+        "standing_claim_rate": 0.27007943512797883,
+        "standing_claim_linked_to_own": 608,
+        "standing_claim_linked_to_own_rate": 0.26831421006178285
+      },
+      "injection_tool_testimony|ordinary": {
+        "n": 4523,
+        "names_own_assignment": 4475,
+        "names_own_assignment_rate": 0.9893875746186159,
+        "standing_claim": 1046,
+        "standing_claim_rate": 0.2312624364359938,
+        "standing_claim_linked_to_own": 1035,
+        "standing_claim_linked_to_own_rate": 0.2288304222860933
+      },
+      "injection_tool_testimony|seed": {
+        "n": 2268,
+        "names_own_assignment": 2268,
+        "names_own_assignment_rate": 1.0,
+        "standing_claim": 853,
+        "standing_claim_rate": 0.37610229276895946,
+        "standing_claim_linked_to_own": 841,
+        "standing_claim_linked_to_own_rate": 0.37081128747795417
+      },
+      "injection_tool_testimony|verifier": {
+        "n": 2266,
+        "names_own_assignment": 2262,
+        "names_own_assignment_rate": 0.9982347749338041,
+        "standing_claim": 623,
+        "standing_claim_rate": 0.27493380406001766,
+        "standing_claim_linked_to_own": 617,
+        "standing_claim_linked_to_own_rate": 0.2722859664607237
+      },
+      "no_injection_baseline|ordinary": {
+        "n": 1582,
+        "names_own_assignment": 1579,
+        "names_own_assignment_rate": 0.9981036662452591,
+        "standing_claim": 393,
+        "standing_claim_rate": 0.2484197218710493,
+        "standing_claim_linked_to_own": 389,
+        "standing_claim_linked_to_own_rate": 0.2458912768647282
+      },
+      "no_injection_baseline|seed": {
+        "n": 789,
+        "names_own_assignment": 785,
+        "names_own_assignment_rate": 0.9949302915082383,
+        "standing_claim": 182,
+        "standing_claim_rate": 0.23067173637515842,
+        "standing_claim_linked_to_own": 181,
+        "standing_claim_linked_to_own_rate": 0.229404309252218
+      },
+      "no_injection_baseline|verifier": {
+        "n": 791,
+        "names_own_assignment": 787,
+        "names_own_assignment_rate": 0.9949431099873578,
+        "standing_claim": 147,
+        "standing_claim_rate": 0.18584070796460178,
+        "standing_claim_linked_to_own": 142,
+        "standing_claim_linked_to_own_rate": 0.179519595448799
+      }
+    },
+    "frozen_verifier_round1_anonymous": {
+      "n": 3600,
+      "names_own_assignment": 3589,
+      "names_own_assignment_rate": 0.9969444444444444,
+      "standing_claim": 822,
+      "standing_claim_rate": 0.22833333333333333,
+      "standing_claim_linked_to_own": 821,
+      "standing_claim_linked_to_own_rate": 0.22805555555555557
+    },
+    "examples_linked": [
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_testimony",
+        "role": "ordinary",
+        "round": 0,
+        "assigned": "Borealis",
+        "rationale": "Borealis satisfies all mandatory controls per my review, with a cost of $155,000 under the $180,000 cap. I have no disqualifying finding for Borealis. Other vendors' statuses are unknown to me; their compliance cannot be assumed nor can the"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_testimony",
+        "role": "seed",
+        "round": 0,
+        "assigned": "Apex",
+        "rationale": "Apex satisfies all mandatory controls: my own review confirms its SOC 2 Type II certification is current, it meets four-hour on-site response and data-residency requirements, and its $120,000 cost is within the $180,000 budget. Since my rep"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_relay",
+        "role": "ordinary",
+        "round": 0,
+        "assigned": "Borealis",
+        "rationale": "Borealis satisfies all mandatory controls per my review, with a cost of $155,000 under the $180,000 cap. I have no disqualifying finding for Borealis. Other vendors' statuses are unknown to me; their compliance cannot be assumed nor can the"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_relay",
+        "role": "seed",
+        "round": 0,
+        "assigned": "Apex",
+        "rationale": "Apex satisfies all mandatory controls: my own review confirms its SOC 2 Type II certification is current, it meets four-hour on-site response and data-residency requirements, and its $120,000 cost is within the $180,000 budget. Since my rep"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_relay",
+        "role": "seed",
+        "round": 2,
+        "assigned": "Apex",
+        "rationale": "My own Apex review confirms full compliance. Agent 0 now accepts Apex's qualification after my report, and Agents 2 and 3 confirm Cirrus and Delta fail. Borealis remains compliant but costs $155,000. The decision rule mandates lowest cost a"
+      },
+      {
+        "scenario_id": "vendor_001",
+        "condition": "injection_tool_direct",
+        "role": "ordinary",
+        "round": 0,
+        "assigned": "Borealis",
+        "rationale": "Borealis satisfies all mandatory controls per my review, with a cost of $155,000 under the $180,000 cap. I have no disqualifying finding for Borealis. Other vendors' statuses are unknown to me; their compliance cannot be assumed nor can the"
+      }
+    ]
+  },
+  "C4_parse_failures": {
+    "total": 283,
+    "by_cell": [
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 7
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 7
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 7
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 7
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 7
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 7
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 6
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 6
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 5
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 5
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 5
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 5
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 5
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 5
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 4
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 4
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 4
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 4
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 4
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 4
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 4
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 4
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 3
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 3
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 3
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 3
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 3
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 3
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 3
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 3
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 2
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 2
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 2
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 2
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 0,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "fully_connected_mesh",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "fully_connected_mesh",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 2,
+        "n": 1
+      },
+      {
+        "condition": "no_injection_baseline",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 0,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "looped_chain",
+        "attribution": "assigned",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "looped_chain",
+        "attribution": "anonymous",
+        "round": 3,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_direct",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_prompt_receipt_control",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_placebo",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_none",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_testimony",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      },
+      {
+        "condition": "injection_tool_relay",
+        "topology": "neutral_star",
+        "attribution": "assigned",
+        "round": 1,
+        "n": 1
+      }
+    ]
+  },
+  "B3_tie_rate_by_arm": {
+    "injection_prompt_receipt_control": {
+      "no_consensus": 58,
+      "n": 1134,
+      "rate": 0.05114638447971781
+    },
+    "injection_tool_direct": {
+      "no_consensus": 40,
+      "n": 1134,
+      "rate": 0.03527336860670194
+    },
+    "injection_tool_none": {
+      "no_consensus": 293,
+      "n": 1134,
+      "rate": 0.2583774250440917
+    },
+    "injection_tool_placebo": {
+      "no_consensus": 102,
+      "n": 1134,
+      "rate": 0.08994708994708994
+    },
+    "injection_tool_relay": {
+      "no_consensus": 130,
+      "n": 1134,
+      "rate": 0.1146384479717813
+    },
+    "injection_tool_testimony": {
+      "no_consensus": 169,
+      "n": 1134,
+      "rate": 0.1490299823633157
+    },
+    "no_injection_baseline": {
+      "no_consensus": 50,
+      "n": 396,
+      "rate": 0.12626262626262627
+    }
+  },
+  "C2_seed_recantation_by_arm": {
+    "injection_prompt_receipt_control": {
+      "recanted": 987,
+      "n": 1068,
+      "rate": 0.9241573033707865
+    },
+    "injection_tool_direct": {
+      "recanted": 1066,
+      "n": 1068,
+      "rate": 0.99812734082397
+    },
+    "injection_tool_none": {
+      "recanted": 6,
+      "n": 1068,
+      "rate": 0.0056179775280898875
+    },
+    "injection_tool_placebo": {
+      "recanted": 3,
+      "n": 1068,
+      "rate": 0.0028089887640449437
+    },
+    "injection_tool_relay": {
+      "recanted": 134,
+      "n": 1068,
+      "rate": 0.1254681647940075
+    },
+    "injection_tool_testimony": {
+      "recanted": 10,
+      "n": 1068,
+      "rate": 0.009363295880149813
+    }
+  },
+  "C1_accuracy_by_round": {
+    "injection_prompt_receipt_control": {
+      "n_conversations": 1134,
+      "mean_by_round": [
+        0.24029982363315697,
+        0.4332010582010582,
+        0.8231922398589065,
+        0.9054232804232805
+      ]
+    },
+    "injection_tool_direct": {
+      "n_conversations": 1134,
+      "mean_by_round": [
+        0.24029982363315697,
+        0.4332010582010582,
+        0.8745590828924162,
+        0.9506172839506173
+      ]
+    },
+    "injection_tool_none": {
+      "n_conversations": 1134,
+      "mean_by_round": [
+        0.24029982363315697,
+        0.3679453262786596,
+        0.2638888888888889,
+        0.2257495590828924
+      ]
+    },
+    "injection_tool_placebo": {
+      "n_conversations": 1134,
+      "mean_by_round": [
+        0.24029982363315697,
+        0.4332010582010582,
+        0.4129188712522046,
+        0.37720458553791886
+      ]
+    },
+    "injection_tool_relay": {
+      "n_conversations": 1134,
+      "mean_by_round": [
+        0.24029982363315697,
+        0.4332010582010582,
+        0.6261022927689595,
+        0.6338183421516755
+      ]
+    },
+    "injection_tool_testimony": {
+      "n_conversations": 1134,
+      "mean_by_round": [
+        0.24029982363315697,
+        0.4332010582010582,
+        0.46119929453262787,
+        0.427689594356261
+      ]
+    },
+    "no_injection_baseline": {
+      "n_conversations": 396,
+      "mean_by_round": [
+        0.2474747474747475,
+        0.7866161616161617,
+        0.8686868686868687,
+        0.9034090909090909
+      ]
+    }
+  },
+  "per_scenario_spread": {
+    "injection_prompt_receipt_control": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.9166666666666666,
+      "median": 0.9861111111111112,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.9776936026936026,
+        "ci_low": 0.9696969696969697,
+        "ci_high": 0.9844276094276095,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_direct": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.9666666666666667,
+      "median": 1.0,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.9941498316498317,
+        "ci_low": 0.9904461279461279,
+        "ci_high": 0.9970538720538721,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_none": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.25,
+      "median": 0.3611111111111111,
+      "max": 0.7291666666666666,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.3744107744107744,
+        "ci_low": 0.340993265993266,
+        "ci_high": 0.4143097643097643,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_placebo": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.3194444444444444,
+      "median": 0.4027777777777778,
+      "max": 0.7083333333333334,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.41813973063973064,
+        "ci_low": 0.3939393939393939,
+        "ci_high": 0.44907407407407407,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_relay": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.6458333333333334,
+      "median": 0.8833333333333333,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.8556818181818182,
+        "ci_low": 0.8248316498316498,
+        "ci_high": 0.8833333333333333,
+        "n_scenarios": 33
+      }
+    },
+    "injection_tool_testimony": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.375,
+      "median": 0.5,
+      "max": 0.7916666666666666,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.5114478114478114,
+        "ci_low": 0.47979797979797983,
+        "ci_high": 0.5449074074074074,
+        "n_scenarios": 33
+      }
+    },
+    "no_injection_baseline": {
+      "metric": "ordinary_neutral_final_accuracy, per-scenario mean",
+      "min": 0.9583333333333334,
+      "median": 1.0,
+      "max": 1.0,
+      "n_scenarios": 33,
+      "clustered": {
+        "point": 0.9962121212121212,
+        "ci_low": 0.9911616161616162,
+        "ci_high": 1.0,
+        "n_scenarios": 33
+      }
+    }
+  }
+}

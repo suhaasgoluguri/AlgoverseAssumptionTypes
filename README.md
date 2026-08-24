@@ -234,6 +234,20 @@ With `records.jsonl` present, all nine `.tex` tables regenerate
 byte-identically to the committed copies. Outputs are written next to the
 generators in `docs/figures/`, overwriting them.
 
+A further audit covers the manipulation check and the response dynamics that
+the statistics files do not:
+
+```bash
+uv run python scripts/audit_disclosure_and_dynamics.py <run-dir> \
+    --json <run-dir>/analysis/audit_disclosure_and_dynamics.json
+```
+
+It reports the anonymity-leak rate (whether an `anonymous`-condition message
+discloses the speaker's own assignment), deadlock rate by arm, accuracy by
+round, seed recantation by arm, parse failures by cell, and the per-scenario
+spread of the ordinary-agent outcome. Committed output for both runs is under
+each run's `analysis/`. This audit also needs `records.jsonl`.
+
 `analysis/statistics_secondary.json` is regenerated rather than original; it
 is produced by
 
