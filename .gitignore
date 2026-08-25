@@ -55,3 +55,8 @@ data/archive/*.json
 # Replication launcher for a second model family. Three attempts were made and
 # none reached state=complete, so no reported result rests on it.
 scripts/run_tool_v2_azure_deepseekflash.ps1
+
+# Leakage measurement, kept local for now. The raw transcripts it reads are
+# not distributed either, so a tracked copy could not be run from a clone.
+scripts/measure_anonymity_leakage.py
+outputs/raw/**/analysis/anonymity_leakage.json
