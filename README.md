@@ -21,14 +21,11 @@ The code predates the paper's terminology. The mapping:
 | scope ladder / correction scope | delivery arms |
 | hidden corrected anchor | the shared verifier response replayed across arms |
 
-`tool_v2` and `prompt_v1` are internal protocol names. Everything reported in
-the paper is `tool_v2`; `prompt_v1` is an earlier prompt-only protocol kept
-only so historical runs remain analyzable, and it is never pooled with
-`tool_v2`. See *Reproducibility notes* at the end.
+`tool_v2` is the internal protocol name for everything reported in the paper,
+and is the default when `--scope-ladder` is supplied.
 
 All reported runs use `PROMPT_VERSION = v3.2` (rationale emitted before
-answer), recorded in each run's `run_manifest.json`. This is unrelated to the
-`prompt_v1` protocol name despite the shared word.
+answer), recorded in each run's `run_manifest.json`.
 
 ## Protocol
 
@@ -180,12 +177,14 @@ scripts, so a malformed run fails loudly instead of being analyzed:
 Each raw run freezes the exact scenario bytes and protocol source files in its
 run directory, records their hashes and Git/model settings in
 `run_manifest.json`, and refuses to append to an existing run directory.
-Analysis uses the verified run snapshot by default; legacy runs without one
-require an explicit `--data` path.
+Analysis reads that snapshot rather than `data/`, so a reported number is tied
+to the bytes that produced it.
 
-Run data under `outputs/raw/` is not tracked in this repository: it is large
-and machine-specific, and every run is reproducible from the corpus in `data/`
-plus its run manifest. It is distributed alongside the paper instead.
+`outputs/raw/` is ignored by default, and the artifacts every reported number
+rests on are tracked by exception: `results.jsonl`, `scenario_snapshot.json`,
+`run_manifest.json`, the `analysis/` files, and `analysis/disclosure_slice.jsonl.gz`.
+What is not tracked is `records.jsonl`, the full per-agent-round transcripts at
+~300 MB per run; the slice stands in for it wherever message text is needed.
 `scripts/run_tool_v2_mock_smoke.ps1` produces a full run locally at no cost if
 you want to see the record format.
 
@@ -295,17 +294,11 @@ uv run pytest -q
 uv run ruff check src scripts tests
 ```
 
-## Reproducibility notes
+## Naming
 
-`tool_v2` is the default when `--scope-ladder` is supplied, and is the only
-protocol any reported result uses. The older prompt-only conditions remain
-runnable with `--scope-protocol prompt_v1` so historical runs stay
-analyzable; prompt-v1 and tool-v2 use distinct condition IDs and must never
-be pooled.
-
-For backward compatibility, schemas still call the designated verifier
-`corrector_agent`; analysis reports it as the verifier and keeps it out of
-ordinary-agent outcomes.
+Schemas call the designated verifier `corrector_agent`. Analysis reports it as
+the verifier and keeps it out of ordinary-agent outcomes, so the field name and
+the paper's term refer to the same agent.
 
 ## License
 
