@@ -11,11 +11,6 @@ window, because a window crosses sentence boundaries; no-crossing rather than
 nearest-entity, because distance is symmetric where syntax is not. Precision
 is 99.0% (Wilson 95% CI 96.4-99.7) on 200 sampled clauses labelled by hand.
 
-Every rate is PER MESSAGE -- one agent's output in one round -- and is a lower
-bound, since paraphrase is not matched. Read the `assigned` column as a
-reference, not a comparable rate: that header names the assignment, so
-effective disclosure there is 100% by construction.
-
 Usage:
   uv run python scripts/measure_anonymity_leakage.py <run-dir> [--json OUT]
                                     [--examples N] [--audit N] [--sample N]
