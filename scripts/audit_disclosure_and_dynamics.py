@@ -1,8 +1,8 @@
 """Reviewer-requested audits over a completed run.
 
-Six analyses that the shipped statistics files do not already cover:
+Six analyses the shipped statistics files do not cover:
 
-  B1  anonymity leak      does an anonymous-condition message name the
+  B1  anonymity leak      does an anonymous-condition message disclose the
                           speaker's own assigned candidate?
   B3  tie exposure        deadlock rate by arm
   C1  trajectory          accuracy by round, by arm
@@ -10,45 +10,23 @@ Six analyses that the shipped statistics files do not already cover:
   C4  parse failures      which cells they fall in
   spread                  per-scenario distribution of the C1/C2 effect sizes
 
-B1 is a manipulation check, not an outcome. Under `anonymous` a speaker is
-labelled `Agent N` and nothing in the header states what they reviewed.
+B1 is a manipulation check, not an outcome, and needs care: the assigned
+entities are the answer options, so "names its own entity" is ~99.9% under
+both conditions and measures the task rather than disclosure. It is reported
+as `names_own_assignment` and labelled uninformative. The measure with signal
+is a first-person standing claim ("my dossier", "I was assigned") scoped by
+clause to the speaker's own entity, with no other candidate intervening;
+precision 99.0% (Wilson 95% CI 96.4-99.7) on 200 hand-labelled clauses. The
+superseded character-window version is still emitted as
+`standing_claim_linked_proximity` for comparison.
 
-Measuring this needs care. The assigned entities ARE the answer options, so
-"message names its own assigned entity" is ~99.9% under BOTH conditions --
-it measures "discusses the candidates", which is the task, not disclosure.
-That figure is still reported, labelled uninformative, because its symmetry
-across conditions is the evidence that the naive measure says nothing.
-
-The measure that carries signal is a first-person claim of standing: "my
-dossier", "my own review", "I was assigned", "I hold". Those tell a reader
-which candidate the speaker held. Two are reported: any standing claim, and a
-standing claim scoped to the speaker's own assigned entity.
-
-Scoping is by CLAUSE, not by character distance. A 120-character window
-crosses sentence boundaries -- in "Cirrus fails a control. My dossier shows
-..." the claim is not about Cirrus -- and it is symmetric where syntax is
-not, so in "Failover is compliant and my own dossier disqualifies Rebuild" it
-picks Failover by two characters. The clause measure additionally requires
-that no other candidate sit between the claim and the speaker's own entity.
-Precision is 99.0% (Wilson 95% CI 96.4-99.7) on 200 randomly sampled flagged
-clauses labelled by hand. The superseded window measure is still emitted as
-`standing_claim_linked_proximity` so the two can be compared.
-
-Read the `assigned` column as a REFERENCE, not a comparable rate: under that
-mode the peer header is rendered "Agent N (assigned: candidate)", so
-effective disclosure is 100% by construction and the percentage here counts
-only additional in-body restatement. The contrast that matters is the
-anonymous rate against 100%.
-
-All are LOWER BOUNDS -- "the vendor I looked at" discloses the same thing and
-matches nothing here. A judge model would catch paraphrase at the cost of a
-non-reproducible dependency; these counts can be re-derived by anyone holding
-the run directory.
+Rates are per message and are lower bounds, since paraphrase is not matched.
+Read the `assigned` column as a reference, not a comparable rate: that header
+names the assignment, so effective disclosure there is 100% by construction.
 
 Usage:
   uv run python scripts/audit_disclosure_and_dynamics.py <run-dir> [--json OUT]
 """
-
 from __future__ import annotations
 
 import argparse

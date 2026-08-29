@@ -1,24 +1,16 @@
 """Derive the shippable text slice a run's disclosure analyses need.
 
-`records.jsonl` is ~295 MB per run and is not distributed, which would leave
-the anonymity-leak and dynamics measurements unverifiable from a clone: every
-other reported number rests on `results.jsonl`, which IS shipped, but anything
-scored from message text would have to be taken on trust.
-
-This writes `analysis/disclosure_slice.jsonl.gz`, holding only the eleven fields
-those two analyses read. It is a projection, not a summary -- the rationale
-text is verbatim -- so `audit_disclosure_and_dynamics.py` and
-`measure_anonymity_leakage.py` produce identical output from it, which the
---verify flag checks by re-deriving the slice and diffing field by field.
-
-Nothing here is model-generated other than the rationale text the run already
-produced; no prompt, system message, or corrective-record payload is copied,
-so the slice cannot reconstruct the treatment a record received.
+`records.jsonl` is ~300 MB per run and is not distributed, which would leave
+the anonymity-leak and dynamics measurements unverifiable from a clone. This
+writes `analysis/disclosure_slice.jsonl.gz` holding only the fields those two
+analyses read, rationale text verbatim, at ~5 MB. Both produce identical
+output from it; --verify re-derives the projection and diffs it field by
+field. No prompt or corrective-record payload is copied, so the slice cannot
+reconstruct the treatment a record received.
 
 Usage:
   uv run python scripts/make_disclosure_slice.py <run-dir> [--verify]
 """
-
 from __future__ import annotations
 
 import argparse

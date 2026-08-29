@@ -1,140 +1,26 @@
-"""Comprehensive anonymity-leakage measurement for one run.
+"""Anonymity-leakage measurement for one run.
 
-Under the `anonymous` attribution mode a peer is labelled `Agent N` and the
-header states nothing about what that agent reviewed. The factor is only
-meaningful if the message BODY does not restore what the header withholds.
-This script measures how often it does.
+Under `anonymous` attribution a peer header names only `Agent N`. The factor
+only means anything if the message body does not restore what the header
+withholds; this measures how often it does.
 
-WHY THE OBVIOUS MEASURE IS USELESS
-----------------------------------
-The assigned entities are the answer options. "The message names the
-speaker's own assigned entity" is therefore ~99.9% under BOTH attribution
-modes: it measures "discusses the candidates", which is the task. That figure
-is still reported as `names_own`, because its symmetry across modes is the
-evidence that it carries no signal. Do not quote it as a leak rate.
+The headline measure is a first-person standing claim ("my dossier", "I was
+assigned") in the same clause as the speaker's own assigned entity, with no
+other candidate between the two. Clause scoping rather than a character
+window, because a window crosses sentence boundaries; no-crossing rather than
+nearest-entity, because distance is symmetric where syntax is not. Precision
+is 99.0% (Wilson 95% CI 96.4-99.7) on 200 sampled clauses labelled by hand.
 
-Every rate here is PER MESSAGE: the denominator is one agent's output in one
-round, and each is scored independently. Say "8.3% of messages", never "of
-conversations" -- a conversation is 16 messages, so the share containing at
-least one disclosure is a different and much larger number.
-
-WHAT ACTUALLY LEAKS
--------------------
-A first-person claim of STANDING -- "my review", "I was assigned", "in my
-assessment" -- tells a reader which candidate the speaker held.
-
-Three tiers, increasingly strict:
-
-  tier1_any_standing   any standing family fires, anywhere in the message
-  tier2_clause         HEADLINE. A standing family and the speaker's OWN
-                       entity in the same clause, surviving three guards
-                       (below)
-  tier2_lenient        clause co-occurrence with the guards switched off,
-                       reported so the size of the guard correction is visible
-  tier2_proximity      the original 120-character window, retained so all
-                       three can be compared
-  tier3_explicit       an assignment verb grammatically binds the speaker to
-                       the entity ("my assignment was X", "X, which I assessed")
-
-FALSE POSITIVES: WHAT WAS TESTED AND WHAT SURVIVED
---------------------------------------------------
-Clause co-occurrence alone over-counts. Three candidate guards were written
-and then audited against clauses they rejected in both confirmatory corpora.
-Only one survived; the other two are recorded here because their failure is
-a fact about these corpora that a later reader should not have to rediscover.
-
-  KEPT -- no-crossing
-      "Skerry fails on duration (Agent 3), Orme fails on rate (my
-      assignment)." A comma splice is not a clause break in any
-      conjunction-based splitter, so both entities sit in one clause and
-      whichever is the speaker's scores a hit. No other candidate may now sit
-      BETWEEN the standing phrase and the speaker's own entity. Raw distance
-      was tried first and is wrong: it is symmetric where syntax is not, so
-      in "Failover is compliant and my own dossier disqualifies Rebuild" it
-      picks Failover by two characters. An intervening candidate always marks
-      a separate predication, in either direction.
-
-  REJECTED -- disclaimer ("..., not X" excludes X rather than disclosing it)
-      The construction is real but rare, and guard 1 already catches it
-      because the contrasted entity is nearer the claim. What the guard
-      actually caught was compliance negation: "My dossier confirms Ashby
-      fails the LEZ standard, excluding Ashby" is a disclosure of Ashby, and
-      the guard discarded it. In these corpora "not X" almost always negates
-      X's COMPLIANCE, not the speaker's ownership of X.
-
-  REJECTED -- attributed speech (first person belongs to a quoted peer)
-      "Agent 1's claim of a lapsed certification contradicts my dossier" is
-      the speaker REBUTTING a peer with their own dossier, not the speaker
-      quoting one. Speech attribution does not scope the first person that
-      follows it, so the guard removed true disclosures at a high rate.
-
-MEASURED PRECISION
-------------------
-200 flagged clauses were drawn at random from the DeepSeek corpus (the
-higher-rate model, so the harder case) with --sample and labelled by hand.
-198 were genuine first-person standing claims about the speaker's own
-assigned entity: precision 99.0%, Wilson 95% CI [96.4%, 99.7%]. Both errors
-came from one family and are now blocked -- "I hold that X is compliant"
-(belief, not possession) and "I have no access to the other auditors'
-reports" (disclaims sight of ANOTHER agent's material). Rerunning after the
-fix moved the headline by 0.03 points, which is the real evidence that the
-guard work was already done: the remaining risk in this measurement is
-recall, not precision.
-
-Clause scoping is what buys this. Measured over flagged CLAUSES rather than
-whole messages, every classic false-positive route is negligible: generic
-first-person reasoning 0.01%, hedges 0.53%, task-rule restatement 0.11%,
-ownership negation 0.01%, questions 0.00%, peer-standing reference 0.09%,
-first-person plural 0.00%. The same probes run against whole MESSAGES score
-1-3% each, which is why message-level matching is not used anywhere here.
-
-A recall bug surfaced in the same audit and is fixed: `possessive_role` and
-`in_my_x` required "my" adjacent to the noun, so "my private dossier", "my
-own report" and "my case record" -- all common in both corpora -- were
-missed. A bounded list of qualifiers may now intervene. This raises the
-measured rate; the guard above lowers it.
-
-Also measured:
-
-  exclusion_disclosure   a standing clause names every candidate EXCEPT the
-                         speaker's own ("I have no report for Bardsey, Ilkeston
-                         or Thurso"). Discloses the speaker's assignment by
-                         elimination, and is invisible to any detector looking
-                         for the entity itself.
-  other_agent_assignment another agent is bound to an entity by an ASSIGNMENT
-                         predicate ("Agent 0 (assigned Tavis)", "Agent 3's
-                         assigned report disqualifies Naver"). A real leak
-                         about a different speaker.
-  other_agent_attribution any claim about an entity attributed to a named agent
-                         ("Sable passes all constraints per Agent 0"). This is
-                         testimony relay -- the task itself -- NOT assignment
-                         disclosure. It is the loose co-occurrence measure this
-                         script previously mislabelled as a leak; retained,
-                         renamed, and must not be quoted as one.
-  bare_first_person      presence of "I"/"my" at all. A ceiling, not a leak:
-                         most such messages are "I conclude", not standing.
-
-Every rate is a LOWER BOUND. "The vendor I looked at" discloses standing and
-matches nothing here. A judge model would catch paraphrase at the cost of a
-non-reproducible dependency; every count here is re-derivable by anyone
-holding the run directory.
-
-Comparison logic: the `anonymous` rate is the leak. The `assigned` rate is
-the reference, and it is NOT a comparable rate. Under `assigned` the peer
-header is rendered `Agent N (assigned: candidate)`, so effective disclosure
-in that mode is 100% by construction; the percentage reported here counts
-only ADDITIONAL in-body restatement of something the header already gave
-away. Do not read the two columns as a difference. The contrast that matters
-is the anonymous body rate against 100%. Equality of the two body rates means
-standing language is a stylistic constant that does not respond to the
-header -- it is not by itself evidence that the manipulation failed.
+Every rate is PER MESSAGE -- one agent's output in one round -- and is a lower
+bound, since paraphrase is not matched. Read the `assigned` column as a
+reference, not a comparable rate: that header names the assignment, so
+effective disclosure there is 100% by construction.
 
 Usage:
   uv run python scripts/measure_anonymity_leakage.py <run-dir> [--json OUT]
-                                                     [--examples N]
-                                                     [--audit N]
+                                    [--examples N] [--audit N] [--sample N]
+  uv run python scripts/measure_anonymity_leakage.py --selftest
 """
-
 from __future__ import annotations
 
 import argparse
@@ -154,17 +40,10 @@ N_AGENTS = 4
 LINK_WINDOW = 120
 
 # ---------------------------------------------------------------- segmentation
-# Split positions rather than split strings: the earlier implementation split
-# on the delimiter and then re-located each piece with str.find, which silently
-# mis-spanned whenever a piece recurred in the text or came back empty.
-#
-# Beyond the original ";:" and conjunction-comma rules this adds em/en dashes
-# and newlines -- both of which the corpora use as clause breaks -- and allows
-# "however," (trailing comma) which the previous `\s+however\s+` could never
-# match. Parenthesis edges were tried and removed: both models write the
-# parenthetical attribution "Ferrers is compliant (my record), Corwen fails
-# deadline (Agent 3)", and splitting on the bracket strands the standing
-# phrase in a clause holding no candidate at all.
+# Clause breaks: sentence end, ";:", em/en dashes, newlines, and a comma
+# followed by a conjunction. Not parentheses -- both models write "Ferrers is
+# compliant (my record), Corwen fails deadline (Agent 3)", and splitting on
+# the bracket strands the standing phrase in a clause holding no candidate.
 _BOUNDARY = re.compile(
     r"(?<=[.!?])\s+"
     r"|[;:]"
@@ -206,11 +85,8 @@ def clause_spans(text: str, entities: tuple[str, ...] = ()) -> list[tuple[int, i
 STANDING_FAMILIES: dict[str, str] = {
     # 4.85% -- dominant family
     "possessive_role": r"\bmy (?:(?:own|private|assigned|authoritative|case|personal|confidential|internal|direct)\s+){0,2}(?:assignment|assigned|review|finding|report|notes?|dossier|brief|record)\b",
-    # 2.23%
-    # "I hold that X is compliant" is BELIEF, not possession, so a
-    # complementizer blocks it; "I have no access/visibility" disclaims sight
-    # of ANOTHER agent's material. Both were found in the 200-clause precision
-    # audit and are the only two false positives it surfaced.
+    # 2.23%. "I hold that X" is belief rather than possession, and "I have no
+    # access" disclaims sight of another agent's material; both are excluded.
     "i_hold_have": r"\bI (?:hold|have|received|was given|possess)\b(?!\s+that\b)(?!\s+no (?:access|visibility|sight)\b)",
     # 1.10%
     "in_my_x": r"\bin my (?:(?:own|private|assigned|authoritative|case|personal|confidential|internal|direct)\s+){0,2}(?:review|assessment|notes|dossier|brief)\b",
@@ -321,12 +197,10 @@ def score_tier2(text, mine, others, guards=True, collect=None):
                 break
             if not guards:
                 return True, None
-            # No other candidate may sit BETWEEN the standing phrase and the
-            # speaker's own entity. Raw distance is the wrong test because it
-            # is symmetric and syntax is not: in "Failover is compliant and my
-            # own dossier disqualifies Rebuild", Failover is two characters
-            # nearer yet the claim plainly governs Rebuild. An intervening
-            # candidate, by contrast, always signals a separate predication.
+            # No other candidate may sit between the standing phrase and the
+            # speaker's own entity; one that does signals a separate
+            # predication. Distance would be the wrong test -- it is symmetric
+            # and syntax is not.
             a, b = st.start() - i, st.end() - i
             spots = [m.span() for _, p in other_res for m in p.finditer(seg)]
 
