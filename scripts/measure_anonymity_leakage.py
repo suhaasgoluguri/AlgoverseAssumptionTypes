@@ -538,6 +538,11 @@ def main() -> None:
     verifier_r1_uniq = collections.defaultdict(Bucket)
     seen_fv: set = set()                             # (scenario, att, wording)
     examples: list[dict] = []
+    # A conversation is contaminated if ANY of its 16 messages discloses. The
+    # per-message rate is the one to quote for how often an agent leaks; the
+    # per-conversation rate is the one that says how much of the anonymous
+    # condition a reader can still treat as anonymous. They differ by a lot.
+    conv_any: dict[tuple, bool] = {}
     audit: dict[str, list[str]] = collections.defaultdict(list)
     flagged_clauses: list[tuple[str, str, str]] = []
     skipped = 0
@@ -600,6 +605,8 @@ def main() -> None:
                 b.rej[reject] += 1
             for f in fams:
                 b.fam[f] += 1
+        ckey = (att, r.get("seed_instance_id"), arm, r.get("topology"))
+        conv_any[ckey] = conv_any.get(ckey, False) or bool(tier2)
         if att == "anonymous" and tier2 and len(examples) < args.examples:
             examples.append({
                 "scenario_id": r["scenario_id"], "condition": arm, "role": role,
@@ -688,6 +695,20 @@ def main() -> None:
         "by_attribution_topology": {
             f"{a}|{t}": b.as_dict()
             for (a, t), b in sorted(by_topology.items(), key=lambda kv: tuple(str(x) for x in kv[0]))
+        },
+        "by_conversation": {
+            att: {
+                "n_conversations": sum(1 for k in conv_any if k[0] == att),
+                "conversations_with_any_disclosure":
+                    sum(1 for k, v in conv_any.items() if k[0] == att and v),
+                "rate": (sum(1 for k, v in conv_any.items() if k[0] == att and v)
+                         / max(sum(1 for k in conv_any if k[0] == att), 1)),
+                "note": "share of conversations containing AT LEAST ONE "
+                        "disclosing message. Quote the per-message rate for how "
+                        "often an agent leaks; quote this for how much of the "
+                        "anonymous condition remained anonymous.",
+            }
+            for att in sorted({k[0] for k in conv_any}, key=str)
         },
         "per_scenario_tier2_spread": {
             k: spread(k) for k in sorted(overall, key=str)

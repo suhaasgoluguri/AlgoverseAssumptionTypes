@@ -6,7 +6,7 @@
 |---|---|
 | `scenarios_hidden_profile_candidates.json` | The 33-scenario corpus. Every current result comes from this, and it is the default for `run_pilot.py`. |
 | `scenarios_no_authority.json` | Ablation over the same 33: the pooling rule's authority sentence is removed, so no clause tells an agent that an assigned reviewer's report is authoritative and sufficient. |
-| `scenarios_no_transfer_clause.json` | Ablation over the same 33: the authority sentence is kept but its transfer clause ("whether you hold it directly or hear it from that reviewer") is dropped, so authority no longer visibly survives relay. |
+| `scenarios_no_transfer_clause.json` | Ablation over the same 33: the authority sentence is kept but its transfer clause ("whether you hold it directly or hear it from that reviewer") is dropped, so authority no longer visibly survives relay. **Prepared but never run** -- no result in the paper uses it, and no run manifest names it. It is kept because the corpus is part of the design record, not because anything reads it. |
 | `archive/scenarios_fixed.json` | Superseded 20-scenario Track A set. Tracked only because `scripts/audit_scenarios.py` and `tests/test_scenarios_fixed.py` audit it; its rules describe the Track A design and do not apply to the active corpus. |
 
 ## Superseded corpora are not tracked

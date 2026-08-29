@@ -5,7 +5,7 @@ the anonymity-leak and dynamics measurements unverifiable from a clone: every
 other reported number rests on `results.jsonl`, which IS shipped, but anything
 scored from message text would have to be taken on trust.
 
-This writes `analysis/disclosure_slice.jsonl.gz`, holding only the ten fields
+This writes `analysis/disclosure_slice.jsonl.gz`, holding only the eleven fields
 those two analyses read. It is a projection, not a summary -- the rationale
 text is verbatim -- so `audit_disclosure_and_dynamics.py` and
 `measure_anonymity_leakage.py` produce identical output from it, which the
@@ -31,9 +31,9 @@ from pathlib import Path
 # measure_anonymity_leakage.py read off a record. Keep this list in sync with
 # them; --verify fails loudly if a consumer starts reading something else.
 FIELDS = (
-    "scenario_id", "agent_id", "seed_agent_id", "corrector_agent_id",
-    "round", "attribution", "condition", "topology", "parse_failed",
-    "rationale",
+    "scenario_id", "seed_instance_id", "agent_id", "seed_agent_id",
+    "corrector_agent_id", "round", "attribution", "condition", "topology",
+    "parse_failed", "rationale",
 )
 SLICE_NAME = "disclosure_slice.jsonl.gz"
 
