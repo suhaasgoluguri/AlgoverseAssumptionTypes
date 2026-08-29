@@ -56,7 +56,9 @@ data/archive/*.json
 # none reached state=complete, so no reported result rests on it.
 scripts/run_tool_v2_azure_deepseekflash.ps1
 
-# Leakage measurement, kept local for now. The raw transcripts it reads are
-# not distributed either, so a tracked copy could not be run from a clone.
-scripts/measure_anonymity_leakage.py
-outputs/raw/**/analysis/anonymity_leakage.json
+# The disclosure text slice is tracked by exception (added with -f). It is the
+# projection of records.jsonl that the anonymity-leak and dynamics analyses
+# read -- ten fields, rationale text verbatim -- at ~5 MB gz against ~300 MB.
+# Without it those two measurements could not be reproduced from a clone,
+# while every other reported number rests on the tracked results.jsonl.
+# scripts/make_disclosure_slice.py --verify re-derives and diffs it.

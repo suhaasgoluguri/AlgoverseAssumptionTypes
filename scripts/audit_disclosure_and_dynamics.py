@@ -20,15 +20,30 @@ That figure is still reported, labelled uninformative, because its symmetry
 across conditions is the evidence that the naive measure says nothing.
 
 The measure that carries signal is a first-person claim of standing: "my
-review", "I was assigned", "assigned to me". Those appear in a small minority
-of messages and are what actually tells a reader which candidate the speaker
-held. Two are reported: any standing claim, and a standing claim occurring
-within 120 characters of the speaker's own assigned entity.
+dossier", "my own review", "I was assigned", "I hold". Those tell a reader
+which candidate the speaker held. Two are reported: any standing claim, and a
+standing claim scoped to the speaker's own assigned entity.
 
-All three are LOWER BOUNDS -- "the vendor I looked at" discloses the same
-thing and matches nothing here. A judge model would catch paraphrase at the
-cost of a non-reproducible dependency; these counts can be re-derived by
-anyone holding the run directory.
+Scoping is by CLAUSE, not by character distance. A 120-character window
+crosses sentence boundaries -- in "Cirrus fails a control. My dossier shows
+..." the claim is not about Cirrus -- and it is symmetric where syntax is
+not, so in "Failover is compliant and my own dossier disqualifies Rebuild" it
+picks Failover by two characters. The clause measure additionally requires
+that no other candidate sit between the claim and the speaker's own entity.
+Precision is 99.0% (Wilson 95% CI 96.4-99.7) on 200 randomly sampled flagged
+clauses labelled by hand. The superseded window measure is still emitted as
+`standing_claim_linked_proximity` so the two can be compared.
+
+Read the `assigned` column as a REFERENCE, not a comparable rate: under that
+mode the peer header is rendered "Agent N (assigned: candidate)", so
+effective disclosure is 100% by construction and the percentage here counts
+only additional in-body restatement. The contrast that matters is the
+anonymous rate against 100%.
+
+All are LOWER BOUNDS -- "the vendor I looked at" discloses the same thing and
+matches nothing here. A judge model would catch paraphrase at the cost of a
+non-reproducible dependency; these counts can be re-derived by anyone holding
+the run directory.
 
 Usage:
   uv run python scripts/audit_disclosure_and_dynamics.py <run-dir> [--json OUT]
@@ -38,6 +53,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import gzip
 import json
 import random
 import re
@@ -47,19 +63,73 @@ from pathlib import Path
 
 # First-person claims of standing. A speaker under `anonymous` who says "my
 # review" tells a reader which candidate they held, which the header withholds.
+#
+# The noun list must include `dossier`, and a bounded set of qualifiers may
+# stand between "my" and the noun. An earlier revision required adjacency and
+# omitted `dossier`, which missed the single most common construction in both
+# corpora -- "My own dossier confirms X" -- and understated the leak roughly
+# threefold. "I hold that X is compliant" is belief rather than possession and
+# "I have no access" disclaims sight of ANOTHER agent's material, so both are
+# excluded.
+_QUAL = (r"(?:(?:own|private|assigned|authoritative|case|personal|"
+         r"confidential|internal|direct)\s+){0,2}")
 STANDING = re.compile(
-    r"\bmy (?:assignment|review|assigned|finding|report|notes?)\b"
-    r"|\bI (?:was |am )?assigned\b"
-    r"|\bassigned to me\b"
-    r"|\bI (?:reviewed|assessed|checked|examined|evaluated|verified)\b",
+    rf"\bmy {_QUAL}(?:assignment|review|assigned|finding|report|notes?|"
+    rf"dossier|brief|record)\b"
+    rf"|\bin my {_QUAL}(?:review|assessment|notes|dossier|brief)\b"
+    r"|\bI (?:was |am |had been )?assigned\b"
+    r"|\bassigned to me\b|\bmy assignment was\b"
+    r"|\bI (?:reviewed|assessed|checked|examined|evaluated|verified|inspected)\b"
+    r"|\bI (?:hold|have|received|was given|possess)\b"
+    r"(?!\s+that\b)(?!\s+no (?:access|visibility|sight)\b)"
+    r"|\bas the (?:assigned )?(?:reviewer|panellist|panelist|assessor|verifier)\b"
+    r"|\bthe (?:one|vendor|supplier|candidate|option|site)\s+I\b",
     re.IGNORECASE,
 )
 LINK_WINDOW = 120
+
+# Linking a standing claim to an entity by character distance crosses sentence
+# and clause boundaries: in "Cirrus fails a control. My dossier shows..." the
+# claim is not about Cirrus. Segment into clauses instead, and require that no
+# OTHER candidate sit between the claim and the speaker's own entity -- raw
+# distance is symmetric where syntax is not. A candidate merely conjoined to
+# the speaker's own ("my report confirms Aldgate and Wren are compliant") is
+# one object, not a separate predication, so it does not sever the link.
+_BOUNDARY = re.compile(
+    r"(?<=[.!?])\s+|[;:]|[—–]|\s-\s|\n+"
+    r"|,\s+(?:and|but|so|yet|while|whereas|however|although|though|because|"
+    r"since|which|who)\b"
+    r"|\s+(?:but|however|whereas|although|though)\b",
+    re.IGNORECASE,
+)
+COORDINATION = re.compile(r"\s*(?:,\s*)?(?:and|or|&|,|nor|plus)?\s*", re.IGNORECASE)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from assumption_propagation.prompts import assignment_label  # noqa: E402
 
 N_AGENTS = 4
+
+
+def open_records(run: Path):
+    """Yield records from the full transcripts, or from the shipped slice.
+
+    `records.jsonl` is ~300 MB per run and is not distributed. The slice
+    written by scripts/make_disclosure_slice.py carries the same fields this
+    script reads, verbatim, so the numbers are identical either way; it is what
+    makes this measurement reproducible from a clone.
+    """
+    full = run / "records.jsonl"
+    if full.is_file():
+        with full.open(encoding="utf-8") as fh:
+            for line in fh:
+                yield json.loads(line)
+        return
+    sl = run / "analysis" / "disclosure_slice.jsonl.gz"
+    if not sl.is_file():
+        sys.exit(f"need {full} or {sl}; neither is present")
+    with gzip.open(sl, "rt", encoding="utf-8") as fh:
+        for line in fh:
+            yield json.loads(line)
 
 
 def load_assignments(run_dir: Path) -> dict[str, dict[str, str]]:
@@ -89,6 +159,69 @@ def role_of(rec) -> str:
     if rec["agent_id"] == rec.get("corrector_agent_id"):
         return "verifier"
     return "ordinary"
+
+
+def clause_spans(text: str, entities: tuple[str, ...] = ()) -> list[tuple[int, int, str]]:
+    """(start, end, text) per clause. A bare comma introducing a candidate is
+    also a break: "Ferrers is compliant (my record), Corwen fails deadline"."""
+    pattern = _BOUNDARY
+    if entities:
+        alt = "|".join(re.escape(e) for e in sorted(entities, key=len, reverse=True))
+        pattern = re.compile(_BOUNDARY.pattern + rf"|,\s+(?=(?:{alt})\b)", re.IGNORECASE)
+    spans, pos = [], 0
+    for mo in pattern.finditer(text):
+        if mo.start() > pos:
+            spans.append((pos, mo.start(), text[pos:mo.start()]))
+        pos = max(pos, mo.end())
+    if pos < len(text):
+        spans.append((pos, len(text), text[pos:]))
+    return spans
+
+
+def standing_linked(text: str, mine: str, others: list[str]) -> bool:
+    """A standing claim and the speaker's own entity in one clause, with no
+    other candidate intervening."""
+    own_re = re.compile(rf"\b{re.escape(mine)}\b", re.IGNORECASE)
+    other_res = [re.compile(rf"\b{re.escape(e)}\b", re.IGNORECASE) for e in others if e]
+    spans = clause_spans(text, tuple(e for e in (mine, *others) if e))
+    for st in STANDING.finditer(text):
+        for i, j, seg in spans:
+            if not (i <= st.start() < j):
+                continue
+            own = list(own_re.finditer(seg))
+            if not own:
+                break
+            a, b = st.start() - i, st.end() - i
+            spots = [x.span() for p in other_res for x in p.finditer(seg)]
+
+            def blocks(q, o):
+                lo, hi = (q[1], o[0]) if q[1] <= o[0] else (o[1], q[0])
+                return not COORDINATION.fullmatch(seg[lo:hi])
+
+            if any(not any(blocks(q, o.span()) for q in spots
+                           if (b <= q[0] < o.start() if o.start() >= b
+                               else o.end() <= q[0] < a))
+                   for o in own):
+                return True
+            break
+    return False
+
+
+def other_assignments(rec, assign) -> list[str]:
+    """Every OTHER agent's assigned entity, for the no-crossing test."""
+    a = assign.get(rec["scenario_id"])
+    if not a:
+        return []
+    mine = own_assignment(rec, assign)
+    all_ents = [a["seed"], a["corrector"], *(a["neutral"] or [])]
+    out, dropped = [], False
+    for e in all_ents:
+        if e == mine and not dropped:
+            dropped = True
+            continue
+        if e:
+            out.append(e)
+    return out
 
 
 def own_assignment(rec, assign) -> str | None:
@@ -136,27 +269,30 @@ def main() -> None:
     ap.add_argument("--json", type=Path, default=None)
     args = ap.parse_args()
     run = args.run_dir
-    if not (run / "records.jsonl").is_file():
+    if not ((run / "records.jsonl").is_file()
+            or (run / "analysis" / "disclosure_slice.jsonl.gz").is_file()):
         sys.exit(
-            f"{run}/records.jsonl not found. This audit needs the full "
-            "per-agent-round transcripts, which are not distributed with the "
-            "repository; request them alongside the paper."
+            f"{run}: need records.jsonl or analysis/disclosure_slice.jsonl.gz. "
+            "The full per-agent-round transcripts are ~300 MB and are not "
+            "distributed; the slice, which carries the fields this audit reads "
+            "verbatim, is shipped in their place."
         )
 
     assign = load_assignments(run)
     out: dict[str, object] = {"run": run.name}
 
     # ---------------- B1: anonymity leak, and C4: parse failures -------------
-    # each bucket: [names_own, standing, linked, n]
-    leak = collections.defaultdict(lambda: [0, 0, 0, 0])     # (arm, role)
-    leak_cond = collections.defaultdict(lambda: [0, 0, 0, 0])  # attribution
-    verifier_msgs = [0, 0, 0, 0]                             # frozen verifier round-1
+    # each bucket: [names_own, standing, linked, proximity, n]
+    leak = collections.defaultdict(lambda: [0, 0, 0, 0, 0])     # (arm, role)
+    leak_cond = collections.defaultdict(lambda: [0, 0, 0, 0, 0])  # attribution
+    verifier_msgs = [0, 0, 0, 0, 0]                          # frozen verifier round-1
+    verifier_uniq = [0, 0, 0, 0, 0]                          # ... deduplicated
+    seen_fv: set = set()
     parse_cells = collections.Counter()
     parse_total = 0
     examples: list[dict] = []
 
-    for line in (run / "records.jsonl").open(encoding="utf-8"):
-        r = json.loads(line)
+    for r in open_records(run):
         if r.get("parse_failed"):
             parse_total += 1
             parse_cells[(r.get("condition"), r.get("topology"),
@@ -170,22 +306,26 @@ def main() -> None:
         m = re.search(rf"\b{re.escape(mine)}\b", text, re.IGNORECASE)
         names_own = m is not None
         standing = STANDING.search(text)
-        # "linked": a standing claim sitting next to the speaker's own entity.
-        linked = False
+        # "linked": a standing claim scoped to the speaker's own entity.
+        linked = bool(standing and m) and standing_linked(
+            text, mine, other_assignments(r, assign))
+        # legacy character-window measure, retained for comparison only
+        proximity = False
         if standing and m:
             for hit in re.finditer(rf"\b{re.escape(mine)}\b", text, re.IGNORECASE):
                 for sc in STANDING.finditer(text):
                     if abs(sc.start() - hit.start()) <= LINK_WINDOW:
-                        linked = True
+                        proximity = True
                         break
-                if linked:
+                if proximity:
                     break
 
         def bump(bucket):
             bucket[0] += names_own
             bucket[1] += standing is not None
             bucket[2] += linked
-            bucket[3] += 1
+            bucket[3] += proximity
+            bucket[4] += 1
 
         attribution = r.get("attribution")
         bump(leak_cond[attribution])
@@ -199,9 +339,16 @@ def main() -> None:
                 })
             if role_of(r) == "verifier" and r.get("round") == 1:
                 bump(verifier_msgs)
+                # One generation is replayed identically across the delivery
+                # arms, so the raw bucket counts a single wording several times
+                # and over-weights whatever that wording happens to say.
+                key = (r["scenario_id"], " ".join(text.split()))
+                if key not in seen_fv:
+                    seen_fv.add(key)
+                    bump(verifier_uniq)
 
     def rates(v):
-        n = v[3]
+        n = v[4]
         return {
             "n": n,
             "names_own_assignment": v[0],
@@ -210,6 +357,8 @@ def main() -> None:
             "standing_claim_rate": (v[1] / n) if n else None,
             "standing_claim_linked_to_own": v[2],
             "standing_claim_linked_to_own_rate": (v[2] / n) if n else None,
+            "standing_claim_linked_proximity": v[3],
+            "standing_claim_linked_proximity_rate": (v[3] / n) if n else None,
         }
 
     out["B1_anonymity_leak"] = {
@@ -222,11 +371,21 @@ def main() -> None:
             "standing_claim": "first-person claim of standing ('my review', 'I "
                 "was assigned', 'assigned to me'). This is the disclosure "
                 "measure.",
-            "standing_claim_linked_to_own": "a standing claim within "
-                f"{LINK_WINDOW} characters of the speaker's own assigned entity; "
-                "the strongest literal evidence a reader could identify the "
-                "speaker's assignment from content alone.",
-            "bound": "all three are lower bounds; paraphrase is not matched",
+            "standing_claim_linked_to_own": "a standing claim in the SAME "
+                "CLAUSE as the speaker's own assigned entity, with no other "
+                "candidate intervening; the strongest literal evidence a reader "
+                "could identify the speaker's assignment from content alone. "
+                "Precision 99.0% (Wilson 95% CI 96.4-99.7) on 200 randomly "
+                "sampled flagged clauses labelled by hand.",
+            "standing_claim_linked_proximity": "superseded: the same claim "
+                f"within {LINK_WINDOW} characters, which crosses sentence and "
+                "clause boundaries. Retained only so the two can be compared.",
+            "frozen_verifier_round1_anonymous_distinct_wordings": "the same "
+                "rows deduplicated on wording. The verifier message is "
+                "generated once and replayed across the delivery arms, so the "
+                "raw bucket counts one wording several times; this is the rate "
+                "per distinct message and the one to quote.",
+            "bound": "all are lower bounds; paraphrase is not matched",
         },
         "by_attribution": {
             k: rates(v) for k, v in sorted(leak_cond.items(), key=lambda kv: str(kv[0]))
@@ -236,6 +395,7 @@ def main() -> None:
             for (a, ro), v in sorted(leak.items(), key=lambda kv: (str(kv[0][0]), kv[0][1]))
         },
         "frozen_verifier_round1_anonymous": rates(verifier_msgs),
+        "frozen_verifier_round1_anonymous_distinct_wordings": rates(verifier_uniq),
         "examples_linked": examples,
     }
     out["C4_parse_failures"] = {

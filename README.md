@@ -246,7 +246,35 @@ It reports the anonymity-leak rate (whether an `anonymous`-condition message
 discloses the speaker's own assignment), deadlock rate by arm, accuracy by
 round, seed recantation by arm, parse failures by cell, and the per-scenario
 spread of the ordinary-agent outcome. Committed output for both runs is under
-each run's `analysis/`. This audit also needs `records.jsonl`.
+each run's `analysis/`.
+
+This audit does **not** need `records.jsonl`. It falls back to
+`analysis/disclosure_slice.jsonl.gz`, which is committed for both confirmatory
+runs: a verbatim projection of the transcripts down to the ten fields the
+disclosure analyses read, ~5 MB gz against ~300 MB. The numbers are identical
+either way, and where the transcripts are present the projection can be
+re-derived and diffed:
+
+```bash
+uv run python scripts/make_disclosure_slice.py <run-dir> --verify
+```
+
+The finer-grained leak measurement runs off the same slice:
+
+```bash
+uv run python scripts/measure_anonymity_leakage.py <run-dir> \
+    --json <run-dir>/analysis/anonymity_leakage.json
+uv run python scripts/measure_anonymity_leakage.py --selftest   # 21 cases
+```
+
+It adds disclosure-by-elimination, assignment attributed to another agent,
+per-round and per-topology splits, and `--sample N` to draw flagged clauses
+for hand-labelling. Its headline measure scopes a first-person standing claim
+to the speaker's own entity by clause, requiring no other candidate to
+intervene; precision is 99.0% (Wilson 95% CI 96.4-99.7) on 200 sampled
+clauses labelled by hand. Read the `assigned` column as a reference rather
+than a comparable rate -- that mode's header names the assignment, so
+effective disclosure there is 100% by construction.
 
 `analysis/statistics_secondary.json` is regenerated rather than original; it
 is produced by
