@@ -3,6 +3,8 @@ name = "assumption-propagation"
 version = "0.1.0"
 description = "Explicit inferential assumption propagation in multi-agent LLM systems"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
     "anthropic>=0.117,<1",
     "pydantic>=2.7",

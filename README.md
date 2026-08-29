@@ -306,3 +306,18 @@ be pooled.
 For backward compatibility, schemas still call the designated verifier
 `corrector_agent`; analysis reports it as the verifier and keeps it out of
 ordinary-agent outcomes.
+
+## License
+
+MIT, in `LICENSE`, covering the code and the data alike. The run artifacts
+under `outputs/raw/` include model-generated text: each run's
+`analysis/disclosure_slice.jsonl.gz` carries the agents' rationales verbatim
+as the models produced them, served through Azure. They are published as
+measurement data for replication and are AI-generated throughout.
+
+Both providers disclaim ownership of that output. The Microsoft Product Terms
+state that "Output Content is Customer Data. Microsoft does not own Customer's
+Output Content", and the DeepSeek model license that "DeepSeek claims no
+rights in the Output You generate using the Model." Neither imposes an
+attribution or pass-through requirement on output, so no third-party terms
+travel with this corpus.

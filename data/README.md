@@ -1,5 +1,12 @@
 # Scenario corpora
 
+The scenarios here are authored, not model-generated. Model-generated text does
+appear elsewhere in this repository: each run's
+`analysis/disclosure_slice.jsonl.gz` carries the agents' rationales verbatim as
+the models produced them, served through Azure. Those are AI-generated
+throughout and are published as measurement data for replication, not as
+human-written text.
+
 ## Active
 
 | File | Role |
