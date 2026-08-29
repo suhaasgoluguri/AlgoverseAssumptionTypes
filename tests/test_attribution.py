@@ -53,7 +53,7 @@ def test_every_brief_in_the_corpus_yields_an_assignment(entries):
     """A header that silently says nothing would make the factor meaningless.
 
     The label is parsed at runtime rather than stored, so the committed scenario
-    bytes -- and the preregistered sha256 -- stay unchanged. That only works if
+    bytes -- and the recorded sha256 -- stay unchanged. That only works if
     every brief follows the expected opening.
     """
     missing = []

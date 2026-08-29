@@ -72,7 +72,7 @@ def assignment_label(brief: str | None) -> str | None:
     """The candidate a role was assigned, read from the opening of its brief.
 
     Parsed rather than stored so the committed scenario bytes -- and therefore
-    the preregistered sha256 -- stay unchanged. Returns None when the brief does
+    the recorded sha256 -- stay unchanged. Returns None when the brief does
     not follow that form, so callers fail loudly instead of rendering an empty
     label for half the group.
     """

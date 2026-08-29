@@ -1,6 +1,6 @@
 """Results figure: the delivery ladder across models, and the attribution trade-off.
 
-Values are the preregistered primary cell (fully connected mesh) with both
+Values are the primary cell (fully connected mesh) with both
 neutral agents pooled, as reported in Section 4. Regenerate with:
 
     python docs/figures/make_fig_results.py

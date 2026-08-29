@@ -182,7 +182,7 @@ for key, label in ARMS:
 
 write("tab_outcomes.tex", r"""\begin{table}[t]
 \centering
-\caption{All measured outcomes by delivery arm in the preregistered primary
+\caption{All measured outcomes by delivery arm in the primary
 cell (fully connected mesh, assigned attribution, GPT-5.4-mini), in percent.
 Ordinary accuracy and trap adoption pool the two ordinary agents' round-3
 answers; group accuracy, deferral and tie describe the group's plurality
@@ -208,12 +208,12 @@ AC = SEC["scope_ladder"]["adjacent_contrasts"]
 HOLM = SEC["scope_ladder"]["primary_inference"]["holm_adjusted_p_values"]
 
 CONTRASTS = [
-    ("testimony_minus_none", "C1", "Testimony $-$ no correction", True),
-    ("relay_minus_testimony", "C2", "Exact relay $-$ testimony", True),
-    ("direct_tool_minus_relay", "C3", "Direct tool $-$ exact relay", True),
-    ("direct_tool_minus_prompt_receipt", "", "Direct tool $-$ prompt receipt", False),
-    ("placebo_minus_testimony", "", "Tool placebo $-$ testimony", False),
-    ("direct_tool_minus_placebo", "", "Direct tool $-$ tool placebo", False),
+    ("testimony_minus_none", "C1", "Testimony $-$ no correction"),
+    ("relay_minus_testimony", "C2", "Exact relay $-$ testimony"),
+    ("direct_tool_minus_relay", "C3", "Direct tool $-$ exact relay"),
+    ("direct_tool_minus_prompt_receipt", "", "Direct tool $-$ prompt receipt"),
+    ("placebo_minus_testimony", "", "Tool placebo $-$ testimony"),
+    ("direct_tool_minus_placebo", "", "Direct tool $-$ tool placebo"),
 ]
 
 
@@ -222,7 +222,7 @@ def pval(p):
 
 
 rows = []
-for key, tag, label, preregd in CONTRASTS:
+for key, tag, label in CONTRASTS:
     acc = AC[key]["ordinary_neutral_accuracy"]
     grp = AC[key]["group_accuracy"]
     name = f"{tag} $\\cdot$ {label}" if tag else f"\\quad {label}"
@@ -235,11 +235,11 @@ for key, tag, label, preregd in CONTRASTS:
 
 write("tab_contrasts.tex", r"""\begin{table}[t]
 \centering
-\caption{Preregistered contrasts and mechanism controls on ordinary-agent
+\caption{Primary contrasts and mechanism controls on ordinary-agent
 accuracy, primary cell, in percentage points with 95\% paired cluster
 bootstrap intervals over 33 scenarios. Holm correction is applied across the
-three preregistered contrasts C1--C3 only; the mechanism controls were not
-part of that family and are reported uncorrected.}
+three primary contrasts C1--C3 only, which were fixed before collection; the
+mechanism controls were not part of that family and are reported uncorrected.}
 \label{tab:contrasts}
 \small
 \begin{tabular}{lccccc}
