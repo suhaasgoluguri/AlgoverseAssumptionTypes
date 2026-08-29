@@ -1,31 +1,25 @@
 """Stage-A only: does the SEED act on the claim it was given?
 
 Adoption and propagation are separate questions, and adoption needs no
-conversations — only the seed's round-0 answer. Running the full pilot to
-measure it wastes roughly 95% of the calls, so this generates seeds and stops.
+conversations -- only the seed's round-0 answer -- so this generates seeds and
+stops, rather than spending roughly 20x the calls on a full pilot.
 
-The comparison this exists for: framing was adopted 0/50 in the main corpus,
-but the framing seed is the only one that ALSO holds the true fact its claim
-contradicts. That leaves two explanations — framing does not persuade, or
-first-hand knowledge beats assertion — and the main corpus cannot separate
-them. Run this against a corpus built with --additive-all, where every type
-carries the honest finding alongside the injected claim, and the seed's
-knowledge state is held constant across types:
+It exists to separate two explanations of a zero adoption rate: that a claim
+type does not persuade, or that the seed's own first-hand knowledge beats it.
+The main corpus cannot tell them apart, because there the seed is the only
+agent holding a fact contradicting its own injection. Run it against a corpus
+built with --additive-all, where every type carries the honest finding
+alongside the injected claim and the seed's knowledge state is constant:
 
-  factual/causal adopted, framing not  -> a genuine semantic-type effect
-  none adopted                         -> first-hand knowledge beats assertion,
-                                          and the type finding dissolves
+  some types adopted, others not -> a genuine semantic-type effect
+  none adopted                   -> first-hand knowledge beats assertion
 
 Usage:
-  This wants the knowledge-constant build, which is not distributed with the
-  repository. Regenerate it first, then point --data at it:
-
-  uv run python scripts/build_hidden_profile_scenarios.py --additive-all \\
+  uv run python scripts/build_hidden_profile_scenarios.py --additive-all \
       --out data/scenarios_additive_all.json
-  uv run python scripts/adoption_check.py --data data/scenarios_additive_all.json \\
+  uv run python scripts/adoption_check.py --data data/scenarios_additive_all.json \
       --client azure --n-seeds 5 --json outputs/adoption_check.json
 """
-
 from __future__ import annotations
 
 import argparse

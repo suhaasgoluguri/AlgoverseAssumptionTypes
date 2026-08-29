@@ -1,7 +1,6 @@
 """Inferential statistics for the confirmatory run.
 
-Every number the project has produced so far is a raw count. Counts cannot
-support a published claim here for two reasons:
+Raw counts cannot support a published claim here, for two reasons:
 
 1. CLUSTERING. Agent-rounds are not independent draws. Four agents share a
    conversation, three topologies share a frozen seed, and every conversation
@@ -10,8 +9,7 @@ support a published claim here for two reasons:
    that generalizes, so it is the cluster and the bootstrap resampling unit.
 
 2. NO INTERVAL. A point estimate with no CI cannot be compared across
-   conditions, and the run-to-run drift documented in this project means
-   overlapping intervals are the norm rather than the exception.
+   conditions, and run-to-run drift makes overlapping intervals the norm.
 
 PRIMARY OUTCOME (frozen before the confirmatory run):
   Ordinary-neutral final accuracy for three paired adjacent delivery-route

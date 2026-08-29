@@ -6,11 +6,10 @@ WHEN. That is the calibration signal — seed uptake, neutral temptability, and
 corrector capitulation are three different numbers, and a run can look healthy
 on final accuracy while having no propagation to measure at all.
 
-Corrective evidence is scheduled at ``corrective_evidence.available_round``.
-In prompt-v1 it enters the corrector's dossier; in tool-v2 the verifier obtains
-it through the record tool. Rounds are marked accordingly, including explicit
-no-correction arms, so the report never confuses a scenario schedule with an
-evidence delivery that actually occurred.
+Corrective evidence is scheduled at ``corrective_evidence.available_round``,
+and the verifier obtains it through the record tool. Rounds are marked
+accordingly, including explicit no-correction arms, so the report never
+confuses a scenario schedule with a delivery that actually occurred.
 
 Usage:
   uv run python scripts/propagation_report.py outputs/raw/<stamp>

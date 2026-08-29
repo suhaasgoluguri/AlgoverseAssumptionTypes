@@ -13,7 +13,7 @@ Checks, independently (one failing does not block the others):
 Usage:
     uv run python scripts/probe_endpoint.py \
         --endpoint https://your-endpoint/v1 \
-        --api-key $QWEN_API_KEY \
+        --api-key $YOUR_API_KEY \
         --deployment your-deployment-or-model-name
 
     # or rely on AZURE_OPENAI_* / .env to check the current configured deployment:

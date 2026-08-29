@@ -1,28 +1,20 @@
 """Detect endpoint drift between runs by comparing round-0 behaviour.
 
-Round 0 is the experiment's natural control surface: no messages have been
-exchanged, no corrective evidence is visible to anyone, and neutral agents
-have seen nothing but the shared task. Two runs of the same scenario file
-must therefore produce statistically indistinguishable round-0 behaviour. If
-they do not, the deployment changed between them, and any cross-run
-comparison of downstream effects is confounded.
+Round 0 is the natural control surface: no messages exchanged, no corrective
+evidence visible, neutral agents have seen only the shared task. Two runs of
+the same scenario file must produce statistically indistinguishable round-0
+behaviour; if they do not, the deployment changed and any cross-run comparison
+downstream is confounded. Hosted deployments are versioned by the provider,
+not the experimenter, so the same deployment name can serve a different model
+on a different day and silently invalidate a control collected last week.
 
-This matters because hosted deployments are versioned by the provider, not by
-the experimenter: the same deployment name can serve a different model on a
-different day, silently invalidating a control collected the previous week.
-
-Two probes are reported:
-  neutral round-0 trap rate  -- neutral agents see only the shared task, so
-                                this is pure task-plus-model behaviour
-  seed round-0 uptake rate   -- the seed additionally sees the injection, so
-                                this tracks susceptibility to the treatment
+Two probes: neutral round-0 trap rate (pure task-plus-model behaviour) and
+seed round-0 uptake rate (which additionally tracks susceptibility to the
+treatment).
 
 Usage:
   uv run python scripts/check_drift.py outputs/raw/<run_a> outputs/raw/<run_b>
-  uv run python scripts/check_drift.py <a> <b> <c> \\
-      --data data/scenarios_hidden_profile_candidates.json
 """
-
 from __future__ import annotations
 
 import argparse

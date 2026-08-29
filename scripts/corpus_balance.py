@@ -1,40 +1,23 @@
 """Audit corpus-level balance of the hidden-profile specs.
 
-``check_specs`` in the builder enforces per-scenario structure: the seed owns
-the trap, only one reviewer speaks to each option, corrections name the trap,
-injections are length-matched. All of that is *within* a scenario.
+``check_specs`` in the builder enforces per-scenario structure. This checks the
+orthogonal thing: properties that are fine in every individual scenario but
+become confounds if they correlate with scenario across the corpus -- the
+option letter of the correct answer and of the trap, the trap's position in the
+public list, which hard constraint the injection contests, injection length by
+semantic type, and whether the trap is the optimum on the public metric.
 
-This script checks the orthogonal thing: properties that are individually fine
-in every scenario but become confounds if they correlate with scenario across
-the corpus. Expanding from 10 to 30 hand-authored specs is exactly when these
-drift, because the author has a house style and it shows up as a systematic
-lean.
+That last one is what makes the injection sufficient to license choosing the
+trap; if it fails, the seed rationally defers and the scenario is dead weight.
+It is parsed from the first number in each display value with hours normalised
+to minutes, and mixed-unit scenarios are reported as unparsed, not as failures.
 
-Reported, with a flag when the distribution is lopsided:
-
-1. option letter of the correct answer, and of the trap — a model with a
-   letter bias would otherwise score differently on old vs new scenarios;
-2. position of the trap in the public list — recency/primacy in the shared
-   brief;
-3. which hard constraint the injection contests (heuristic, by content-word
-   overlap with the seed's honest finding) — the first ten leaned 6/10 to
-   constraint 1;
-4. injection length by semantic type, corpus-wide;
-5. whether the trap is the optimum on the public metric. This is the property
-   that makes the injection *sufficient* to license choosing the trap; if it
-   ever fails, the seed rationally defers and the scenario is dead weight.
-   Parsed from the first number in each display value, with hours/minutes
-   normalized to minutes. Other mixed-unit scenarios are reported as unparsed
-   rather than as failures.
-
-Advisory by design — it prints and returns 0 unless --strict is passed. Use it
-to steer authoring, not to gate the build.
+Advisory: prints and returns 0 unless --strict. Use it to steer authoring, not
+to gate the build.
 
 Usage:
-  uv run python scripts/corpus_balance.py
-  uv run python scripts/corpus_balance.py --strict
+  uv run python scripts/corpus_balance.py [--strict]
 """
-
 from __future__ import annotations
 
 import argparse
