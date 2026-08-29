@@ -3236,20 +3236,6 @@
       }
     }
   },
-  "by_conversation": {
-    "anonymous": {
-      "n_conversations": 3405,
-      "conversations_with_any_disclosure": 3385,
-      "rate": 0.9941262848751835,
-      "note": "share of conversations containing AT LEAST ONE disclosing message. Quote the per-message rate for how often an agent leaks; quote this for how much of the anonymous condition remained anonymous."
-    },
-    "assigned": {
-      "n_conversations": 3405,
-      "conversations_with_any_disclosure": 3381,
-      "rate": 0.9929515418502203,
-      "note": "share of conversations containing AT LEAST ONE disclosing message. Quote the per-message rate for how often an agent leaks; quote this for how much of the anonymous condition remained anonymous."
-    }
-  },
   "per_scenario_tier2_spread": {
     "anonymous": {
       "min": 0.1524122807017544,
