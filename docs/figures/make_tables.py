@@ -22,7 +22,7 @@ ARMS = [
     ("injection_tool_none", "No correction"),
     ("injection_tool_testimony", "Testimony"),
     ("injection_tool_relay", "Exact relay"),
-    ("injection_tool_direct", "Direct tool"),
+    ("injection_tool_direct", "Tool receipt"),
     ("injection_prompt_receipt_control", "Prompt receipt"),
     ("injection_tool_placebo", "Tool placebo"),
 ]
@@ -129,36 +129,83 @@ DEFER = {k: cluster_boot(defer[k]) for k, _ in ARMS}
 # ---------------------------------------------------------------- Table 2
 C = SEC["attribution_effects_within_mesh"]["contrasts"]
 
-rows = []
-for key, label in ARMS:
-    c = C[key]
-    rows.append(
-        f"{label} & {cell(c['ordinary_neutral_accuracy'])} & "
-        f"{cell(DEFER[key])} & "
-        f"{cell(c['ordinary_neutral_final_trap_share'])} & "
-        f"{cell(c['group_accuracy'])} \\\\"
-    )
+# The table's claim is that trap adoption moves only where the record never
+# arrives, so the rows are grouped that way rather than listed in ladder
+# order. A reader can then see the pattern without cross-checking Table 1.
+BLOCKS = [
+    ("Ordinary agents never receive the record",
+     ["injection_tool_none", "injection_tool_testimony",
+      "injection_tool_placebo"]),
+    ("Ordinary agents receive the record",
+     ["injection_tool_relay", "injection_tool_direct",
+      "injection_prompt_receipt_control"]),
+]
+LABEL = dict(ARMS)
 
+def blocked_rows(ncol, columns):
+    """Two grouped blocks of arms; ``columns`` maps an arm key to its cells."""
+    out = []
+    for bi, (heading, keys) in enumerate(BLOCKS):
+        if bi:
+            out.append(r"\addlinespace")
+        out.append(f"\\multicolumn{{{ncol}}}{{l}}{{\\itshape {heading}}} \\\\")
+        for key in keys:
+            out.append(f"\\quad {LABEL[key]} & " + " & ".join(columns(key))
+                       + r" \\")
+    return "\n".join(out)
+
+
+# Columns run hesitation, harm, benefit: deferral is the mechanism, trap
+# adoption is the cost, group accuracy is the gain. Ordinary-agent accuracy
+# moves to the appendix -- it tracks group accuracy and carries no separate
+# claim, so it was the only column costing width without adding a fact.
 write("tab_attribution.tex", r"""\begin{table}[t]
 \centering
 \caption{Effect of speaker attribution within each delivery arm, fully
-connected mesh, GPT-5.4-mini. Each entry is the attributed condition minus
-the anonymous condition in percentage points, with a 95\% paired cluster
-bootstrap interval over 33 scenarios (10,000 draws). The first three columns
-are round-3 answers from the two ordinary agents ($n=396$), where deferral is
-the share declining to choose a candidate; group accuracy is the plurality
-answer of all four agents ($n=198$). Deferral falls in every arm; trap
-adoption rises only in the three arms where ordinary agents never receive the
-record.}
+connected mesh, GPT-5.4-mini. Each entry is attributed minus anonymous in
+percentage points, with a 95\% paired cluster bootstrap interval over 33
+scenarios. Arms are grouped by whether the corrective record itself reaches
+the two ordinary agents. Deferral falls in every arm, but the decisions it
+frees go to the injected claim in the top block and to the correct option in
+the bottom one. Deferral and trap adoption are the two ordinary agents'
+round-3 answers ($n=396$); group accuracy is the plurality answer of all four
+agents ($n=198$). Table~\ref{tab:attributionfull} adds ordinary-agent
+accuracy.}
 \label{tab:attribution}
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-& \multicolumn{3}{c}{Ordinary agents} & Group \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-5}
-Arm & $\Delta$ Accuracy & $\Delta$ Deferral & $\Delta$ Trap & $\Delta$ Accuracy \\
+Arm & $\Delta$ Deferral & $\Delta$ Trap adoption & $\Delta$ Group accuracy \\
 \midrule
-""" + "\n".join(rows) + r"""
+""" + blocked_rows(4, lambda k: [
+    cell(DEFER[k]),
+    cell(C[k]["ordinary_neutral_final_trap_share"]),
+    cell(C[k]["group_accuracy"]),
+]) + r"""
+\bottomrule
+\end{tabular}
+\end{table}
+""")
+
+
+# ------------------------------- Table A.x: the two columns cut from Table 2
+write("tab_attribution_full.tex", r"""\begin{table}[t]
+\centering
+\caption{The attribution effect on ordinary-agent accuracy, the column omitted
+from Table~\ref{tab:attribution}, fully connected mesh, GPT-5.4-mini, in
+percentage points with 95\% paired cluster bootstrap intervals over 33
+scenarios. Round-3 answers from the two ordinary agents ($n=396$), with arms
+grouped as in Table~\ref{tab:attribution}. Accuracy rises in every arm except
+no correction, where the freed decisions go to the injected claim instead.}
+\label{tab:attributionfull}
+\small
+\begin{tabular}{lc}
+\toprule
+Arm & $\Delta$ Ordinary accuracy \\
+\midrule
+""" + blocked_rows(2, lambda k: [
+    cell(C[k]["ordinary_neutral_accuracy"]),
+]) + r"""
 \bottomrule
 \end{tabular}
 \end{table}
@@ -182,14 +229,13 @@ for key, label in ARMS:
 
 write("tab_outcomes.tex", r"""\begin{table}[t]
 \centering
-\caption{All measured outcomes by delivery arm in the preregistered primary
+\caption{All measured outcomes by delivery arm in the primary
 cell (fully connected mesh, assigned attribution, GPT-5.4-mini), in percent.
 Ordinary accuracy and trap adoption pool the two ordinary agents' round-3
 answers; group accuracy, deferral and tie describe the group's plurality
 answer. Recovery is the share of conversations in which the ordinary agents
 held the trap answer before the correction and reached the correct answer by
-round 3. Accuracy tracks whether the record's content arrived, not whether the
-agent fetched it.}
+round 3. Accuracy is associated more strongly with receiving the record than with the tool interaction alone.}
 \label{tab:outcomes}
 \small
 \begin{tabular}{lcccccc}
@@ -210,10 +256,10 @@ HOLM = SEC["scope_ladder"]["primary_inference"]["holm_adjusted_p_values"]
 CONTRASTS = [
     ("testimony_minus_none", "C1", "Testimony $-$ no correction", True),
     ("relay_minus_testimony", "C2", "Exact relay $-$ testimony", True),
-    ("direct_tool_minus_relay", "C3", "Direct tool $-$ exact relay", True),
-    ("direct_tool_minus_prompt_receipt", "", "Direct tool $-$ prompt receipt", False),
+    ("direct_tool_minus_relay", "C3", "Tool receipt $-$ exact relay", True),
+    ("direct_tool_minus_prompt_receipt", "", "Tool receipt $-$ prompt receipt", False),
     ("placebo_minus_testimony", "", "Tool placebo $-$ testimony", False),
-    ("direct_tool_minus_placebo", "", "Direct tool $-$ tool placebo", False),
+    ("direct_tool_minus_placebo", "", "Tool receipt $-$ tool placebo", False),
 ]
 
 
@@ -235,10 +281,10 @@ for key, tag, label, preregd in CONTRASTS:
 
 write("tab_contrasts.tex", r"""\begin{table}[t]
 \centering
-\caption{Preregistered contrasts and mechanism controls on ordinary-agent
+\caption{Contrasts and mechanism controls on ordinary-agent
 accuracy, primary cell, in percentage points with 95\% paired cluster
 bootstrap intervals over 33 scenarios. Holm correction is applied across the
-three preregistered contrasts C1--C3 only; the mechanism controls were not
+three contrasts C1--C3 only; the mechanism controls were not
 part of that family and are reported uncorrected.}
 \label{tab:contrasts}
 \small
@@ -500,7 +546,7 @@ groups fail by deadlocking or declining, never by erring.}
 \small
 \begin{tabular}{llcccc}
 \toprule
-Topology & Header & Correct & Tie & Declined & Wrong \\
+Topology & Header & Correct & Tie & Deferred & Wrong \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule
@@ -516,7 +562,10 @@ Topology & Header & Correct & Tie & Declined & Wrong \\
 ds_boot = {k: cluster_boot(group_acc_by_scenario(DS_RUN, k)) for k, _ in ARMS}
 # The trap column is what makes the cross-model comparison honest: only the
 # benefit of attribution is GPT-specific, the cost shows up in both models.
-gt_trap = {k: cluster_boot(trap_by_scenario(RUN, k)) for k, _ in ARMS}
+# GPT reads the frozen statistics rather than re-bootstrapping here, so this
+# column matches Table 2 and Section 4.3 exactly. Bootstrapping it twice gave
+# the same estimates with intervals drifting by 0.2-0.3 points.
+gt_trap = {k: MAIN_C[k]["ordinary_neutral_final_trap_share"] for k, _ in ARMS}
 ds_trap = {k: cluster_boot(trap_by_scenario(DS_RUN, k)) for k, _ in ARMS}
 
 rows = []
@@ -609,6 +658,66 @@ group column while barely moving the individual one.}
 \begin{tabular}{llcccc}
 \toprule
 Model & Arm & Ordinary acc. & Group acc. & No plurality & Trap \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}
+\end{table}
+""")
+
+
+# ================================= Table A.8: group outcome decomposition
+# Section 4.2 claims attribution buys accuracy by resolving ties and deferrals
+# rather than by correcting wrong pluralities, so the four outcomes have to
+# add up per arm. Everything here comes from results.jsonl, which is small
+# enough to ship, unlike the per-agent records the other tables read.
+def group_outcomes(run_dir, topology="fully_connected_mesh"):
+    """Correct / tie / deferred / wrong shares by arm and header.
+
+    The four categories are exclusive and exhaustive. A tie is scored as
+    incorrect upstream, so it has to be tested before the plurality answer.
+    """
+    agg = collections.defaultdict(lambda: [0, 0, 0, 0, 0])
+    for line in open(f"{run_dir}/results.jsonl", encoding="utf-8"):
+        r = json.loads(line)
+        if r["topology"] != topology:
+            continue
+        s = agg[(r["condition"], r["attribution"])]
+        s[4] += 1
+        if r["final_answer_correct"]:
+            s[0] += 1
+        elif r["no_consensus"]:
+            s[1] += 1
+        elif r["plurality_answer"] == "E":
+            s[2] += 1
+        else:
+            s[3] += 1
+    return agg
+
+
+def signed(x):
+    """Overleaf prints an unsigned zero, so a bare +0.0 would not match."""
+    return f"${0.0 if x == 0 else x:+.1f}$".replace("+0.0", "0.0")
+
+
+go = group_outcomes(RUN)
+rows = []
+for key, label in ARMS:
+    a, b = go[(key, "anonymous")], go[(key, "assigned")]
+    d = [100 * (b[i] / b[4] - a[i] / a[4]) for i in range(4)]
+    rows.append(f"{label:<14} & " + " & ".join(signed(x) for x in d) + r" \\")
+
+write("tab_groupoutcomes.tex", r"""\begin{table}[ht]
+\centering
+\caption{Change in group outcomes from anonymous to assigned speaker headers
+in the fully connected mesh with GPT-5.4-mini. Entries are percentage-point
+differences. Wrong denotes a unique plurality for an incorrect substantive
+option and excludes deferral.}
+\label{tab:groupoutcomes}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Arm & $\Delta$ Correct & $\Delta$ Tie & $\Delta$ Defer & $\Delta$ Wrong \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule

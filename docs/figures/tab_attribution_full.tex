@@ -1,0 +1,26 @@
+\begin{table}[!ht]
+\centering
+\caption{The attribution effect on ordinary-agent accuracy, the column omitted
+from Table~\ref{tab:attribution}, fully connected mesh, GPT-5.4-mini, in
+percentage points with 95\% paired cluster bootstrap intervals over 33
+scenarios. Round-3 answers from the two ordinary agents ($n=396$), with arms
+grouped as in Table~\ref{tab:attribution}. Accuracy rises in every arm except
+no correction, where the freed decisions go to the injected claim instead.}
+\label{tab:attributionfull}
+\small
+\begin{tabular}{lc}
+\toprule
+Arm & $\Delta$ Ordinary accuracy \\
+\midrule
+\multicolumn{2}{l}{\itshape Ordinary agents never receive the record} \\
+\quad No correction & $-$16.4 {\scriptsize [$-$24.2, $-$8.8]} \\
+\quad Testimony & +3.8 {\scriptsize [$-$3.0, +10.4]} \\
+\quad Tool placebo & +7.6 {\scriptsize [+1.5, +13.1]} \\
+\addlinespace
+\multicolumn{2}{l}{\itshape Ordinary agents receive the record} \\
+\quad Exact relay & +3.0 {\scriptsize [$-$0.5, +6.8]} \\
+\quad Tool receipt & +6.8 {\scriptsize [+3.5, +10.4]} \\
+\quad Prompt receipt & +13.1 {\scriptsize [+9.6, +17.2]} \\
+\bottomrule
+\end{tabular}
+\end{table}
