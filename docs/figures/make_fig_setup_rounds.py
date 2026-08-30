@@ -6,6 +6,12 @@ NeurIPS single-column layout. Regenerate with:
     python docs/figures/make_fig_setup_rounds.py
 """
 
+import os
+
+# Matplotlib writes a local CreationDate into the PDF, whose UTC offset
+# discloses the author's timezone. Pin it so the output carries none.
+os.environ.setdefault("SOURCE_DATE_EPOCH", "0")
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

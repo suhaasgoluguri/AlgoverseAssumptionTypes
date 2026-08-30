@@ -8,6 +8,12 @@ with both ordinary agents pooled, as reported in Section 4. Regenerate with:
     python docs/figures/make_fig_results.py
 """
 
+import os
+
+# Matplotlib writes a local CreationDate into the PDF, whose UTC offset
+# discloses the author's timezone. Pin it so the output carries none.
+os.environ.setdefault("SOURCE_DATE_EPOCH", "0")
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
