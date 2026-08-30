@@ -33,6 +33,16 @@ def pp(x):
     return f"{100 * x:+.1f}".replace("-", "$-$")
 
 
+def pp0(x):
+    """As pp(), but a value rounding to zero prints unsigned.
+
+    Only used for Table 11's point estimates, where "+0.0" and "$-$0.0" are
+    both noise and which appears depends on floating-point residue. The other
+    tables keep signed zeros, which the paper prints inside CI bounds.
+    """
+    return "0.0" if f"{100 * x:.1f}" in ("0.0", "-0.0") else pp(x)
+
+
 def pct(x):
     return f"{100 * x:.1f}"
 
@@ -609,6 +619,90 @@ group column while barely moving the individual one.}
 \begin{tabular}{llcccc}
 \toprule
 Model & Arm & Ordinary acc. & Group acc. & No plurality & Trap \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}
+\end{table}
+""")
+
+# ------------------------------------------- Table 7: attribution, full column
+# The delta column omitted from Table 2, same arm grouping. Read straight from
+# the secondary analysis, which computes it in the mesh over 33 clusters.
+AF = SEC["attribution_effects_within_mesh"]["contrasts"]
+GROUPS = [
+    ("Ordinary agents never receive the record",
+     ["injection_tool_none", "injection_tool_testimony", "injection_tool_placebo"]),
+    ("Ordinary agents receive the record",
+     ["injection_tool_relay", "injection_tool_direct",
+      "injection_prompt_receipt_control"]),
+]
+LABEL = dict(ARMS)
+
+rows = []
+for i, (heading, arms) in enumerate(GROUPS):
+    if i:
+        rows.append(r"\addlinespace")
+    rows.append(rf"\multicolumn{{2}}{{l}}{{\itshape {heading}}} \\")
+    for arm in arms:
+        acc = AF[arm]["ordinary_neutral_accuracy"]
+        rows.append(rf"\quad {LABEL[arm]} & {cell(acc)} \\")
+
+write("tab_attribution_full.tex", r"""\begin{table}[t]
+\centering
+\caption{The attribution effect on ordinary-agent accuracy, the column omitted
+from Table~\ref{tab:attribution}, fully connected mesh, GPT-5.4-mini, in
+percentage points with 95\% paired cluster bootstrap intervals over 33
+scenarios. Round-3 answers from the two ordinary agents ($n=396$), with arms
+grouped as in Table~\ref{tab:attribution}. Accuracy rises in every arm except
+no correction, where the freed decisions go to the injected claim instead.}
+\label{tab:attributionfull}
+\small
+\begin{tabular}{lc}
+\toprule
+Arm & $\Delta$ Ordinary accuracy \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}
+\end{table}
+""")
+
+# ------------------------------------------------ Table 11: group outcomes
+# Assigned minus anonymous on the group's plurality answer. "Wrong" is not
+# stored: the four outcomes partition every conversation, so it is the
+# residual once correct, tie and deferral are removed.
+BY_ATT = {m: SEC["by_attribution"][m]["levels"] for m in ("anonymous", "assigned")}
+
+
+def group_delta(arm, field):
+    def rate(mode):
+        lvl = BY_ATT[mode][arm]
+        if field == "wrong":
+            return 1 - lvl["group_accuracy"] - lvl["tie_rate"] - lvl["deferral"]
+        return lvl[field]
+    return rate("assigned") - rate("anonymous")
+
+
+rows = [
+    " & ".join([LABEL[arm]] + [
+        pp0(group_delta(arm, f))
+        for f in ("group_accuracy", "tie_rate", "deferral", "wrong")
+    ]) + r" \\"
+    for arm, _ in ARMS
+]
+
+write("tab_groupoutcomes.tex", r"""\begin{table}[t]
+\centering
+\caption{Change in group outcomes from anonymous to assigned speaker headers
+in the fully connected mesh with GPT-5.4-mini. Entries are percentage-point
+differences. Wrong denotes a unique plurality for an incorrect substantive
+option and excludes deferral.}
+\label{tab:groupoutcomes}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Arm & $\Delta$ Correct & $\Delta$ Tie & $\Delta$ Defer & $\Delta$ Wrong \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule

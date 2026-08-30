@@ -103,7 +103,7 @@ The analysis artifacts behind every number in Section 4 are committed under
 
 ```bash
 uv sync
-uv run python docs/figures/make_tables.py          # all nine tab_*.tex
+uv run python docs/figures/make_tables.py          # all eleven tab_*.tex
 uv run python docs/figures/make_fig_results.py     # fig_results.{pdf,png}
 uv run python docs/figures/make_fig_attribution.py # fig_attribution.{pdf,png}
 uv run python docs/figures/make_fig_setup_rounds.py
@@ -112,7 +112,7 @@ uv run python docs/figures/make_fig_setup_rounds.py
 `make_tables.py` reads `records.jsonl` from the model runs, which are both around 300 megabytes and cannot be included in an anonymized version of the repository. Request them if you need to rerun the table
 generator. Everything else the generators read is committed.
 
-With `records.jsonl` present, all nine `.tex` tables regenerate identically to the committed copies. Outputs are written next to the
+With `records.jsonl` present, all eleven `.tex` tables regenerate identically to the committed copies. Table 1 is a design table with no numbers and is written by hand in the paper. Outputs are written next to the
 generators in `docs/figures/`, overwriting them.
 
 A further audit covers response dynamics which are not included in the statistics.
