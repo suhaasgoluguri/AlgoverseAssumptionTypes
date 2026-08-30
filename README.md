@@ -73,7 +73,7 @@ The `condition` field in the run data uses these names:
 | `injection_tool_none`              | no correction                   |
 | `injection_tool_testimony`         | testimony                       |
 | `injection_tool_relay`             | exact relay                     |
-| `injection_tool_direct`            | direct tool receipt             |
+| `injection_tool_direct`            | tool receipt                    |
 | `injection_prompt_receipt_control` | prompt receipt                  |
 | `injection_tool_placebo`           | tool placebo                    |
 | `no_injection_baseline`            | honest baseline, no false claim |

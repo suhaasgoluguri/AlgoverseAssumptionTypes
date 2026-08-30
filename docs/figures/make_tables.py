@@ -22,7 +22,7 @@ ARMS = [
     ("injection_tool_none", "No correction"),
     ("injection_tool_testimony", "Testimony"),
     ("injection_tool_relay", "Exact relay"),
-    ("injection_tool_direct", "Direct tool"),
+    ("injection_tool_direct", "Tool receipt"),
     ("injection_prompt_receipt_control", "Prompt receipt"),
     ("injection_tool_placebo", "Tool placebo"),
 ]
@@ -188,8 +188,8 @@ Ordinary accuracy and trap adoption pool the two ordinary agents' round-3
 answers; group accuracy, deferral and tie describe the group's plurality
 answer. Recovery is the share of conversations in which the ordinary agents
 held the trap answer before the correction and reached the correct answer by
-round 3. Accuracy tracks whether the record's content arrived, not whether the
-agent fetched it.}
+round 3. Accuracy is associated more strongly with receiving the record than
+with the tool interaction alone.}
 \label{tab:outcomes}
 \small
 \begin{tabular}{lcccccc}
@@ -210,10 +210,10 @@ HOLM = SEC["scope_ladder"]["primary_inference"]["holm_adjusted_p_values"]
 CONTRASTS = [
     ("testimony_minus_none", "C1", "Testimony $-$ no correction"),
     ("relay_minus_testimony", "C2", "Exact relay $-$ testimony"),
-    ("direct_tool_minus_relay", "C3", "Direct tool $-$ exact relay"),
-    ("direct_tool_minus_prompt_receipt", "", "Direct tool $-$ prompt receipt"),
+    ("direct_tool_minus_relay", "C3", "Tool receipt $-$ exact relay"),
+    ("direct_tool_minus_prompt_receipt", "", "Tool receipt $-$ prompt receipt"),
     ("placebo_minus_testimony", "", "Tool placebo $-$ testimony"),
-    ("direct_tool_minus_placebo", "", "Direct tool $-$ tool placebo"),
+    ("direct_tool_minus_placebo", "", "Tool receipt $-$ tool placebo"),
 ]
 
 
@@ -235,11 +235,11 @@ for key, tag, label in CONTRASTS:
 
 write("tab_contrasts.tex", r"""\begin{table}[t]
 \centering
-\caption{Primary contrasts and mechanism controls on ordinary-agent
-accuracy, primary cell, in percentage points with 95\% paired cluster
-bootstrap intervals over 33 scenarios. Holm correction is applied across the
-three primary contrasts C1--C3 only, which were fixed before collection; the
-mechanism controls were not part of that family and are reported uncorrected.}
+\caption{Contrasts and mechanism controls on ordinary-agent accuracy,
+primary cell, in percentage points with 95\% paired cluster bootstrap
+intervals over 33 scenarios. Holm correction is applied across the three
+contrasts C1--C3 only; the mechanism controls were not part of that family
+and are reported uncorrected.}
 \label{tab:contrasts}
 \small
 \begin{tabular}{lccccc}
