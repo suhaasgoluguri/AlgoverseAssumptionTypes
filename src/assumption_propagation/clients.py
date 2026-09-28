@@ -449,16 +449,19 @@ class AzureChatClient:
     REQUEST_TIMEOUT_SECONDS = 120.0
     SDK_MAX_RETRIES = 0
     TENACITY_MAX_ATTEMPTS = 6
+    reasoning_effort: Optional[str] = None
 
     def __init__(
         self,
         deployment: Optional[str] = None,
         temperature: Optional[float] = 0.2,
         max_tokens: int = 1000,
+        reasoning_effort: Optional[str] = None,
     ) -> None:
         self.deployment = deployment or os.environ["AZURE_OPENAI_DEPLOYMENT"]
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.reasoning_effort = reasoning_effort
         self.request_timeout_seconds = self.REQUEST_TIMEOUT_SECONDS
         self.sdk_max_retries = self.SDK_MAX_RETRIES
         self._client = AsyncOpenAI(
@@ -501,6 +504,9 @@ class AzureChatClient:
         # pass None to omit and record the deployment default in logs.
         if self.temperature is not None:
             kwargs["temperature"] = self.temperature
+        # None omits the parameter, leaving the deployment's default effort.
+        if self.reasoning_effort is not None:
+            kwargs["reasoning_effort"] = self.reasoning_effort
         return kwargs
 
     async def generate(self, system_prompt: str, user_prompt: str) -> str:

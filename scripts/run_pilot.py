@@ -1017,6 +1017,12 @@ async def main() -> None:
         help="maximum completion-token budget for Azure responses (default: 1000). "
              "Reasoning models may return empty content when this is too small.",
     )
+    parser.add_argument(
+        "--reasoning-effort",
+        default=None,
+        help="reasoning effort for the azure client (e.g. low/medium/high/max); "
+             "omitted uses the deployment default. Ignored by the mock client.",
+    )
     args = parser.parse_args()
     if args.scope_ladder:
         args.scope_protocol = args.scope_protocol or "tool_v2"
@@ -1146,6 +1152,7 @@ async def main() -> None:
         else AzureChatClient(
             temperature=temperature,
             max_tokens=args.max_completion_tokens,
+            reasoning_effort=args.reasoning_effort,
         )
     )
 
@@ -1206,6 +1213,7 @@ async def main() -> None:
             "deployment": getattr(client, "deployment", None),
             "temperature": getattr(client, "temperature", None),
             "max_tokens": getattr(client, "max_tokens", None),
+            "reasoning_effort": getattr(client, "reasoning_effort", None),
             "request_timeout_seconds": getattr(
                 client, "request_timeout_seconds", None
             ),
