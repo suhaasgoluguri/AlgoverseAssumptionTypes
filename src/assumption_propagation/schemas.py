@@ -478,6 +478,14 @@ class SeedInstance(BaseModel):
     answer_rationale_inconsistent: Optional[bool] = None
     answer_rationale_audit_version: Optional[str] = None
     rationale_conclusion_letters: list[str] = Field(default_factory=list)
+    # Provider-reported usage of the API request(s) this cell issued, summed
+    # over both calls of a tool exchange. None when no request was issued
+    # here (frozen seed, matched replay, failed generation), when the provider
+    # reported none, or in logs written before 2026-09-28.
+    api_input_tokens: Optional[int] = Field(default=None, ge=0)
+    api_output_tokens: Optional[int] = Field(default=None, ge=0)
+    api_reasoning_tokens: Optional[int] = Field(default=None, ge=0)
+    api_finish_reasons: Optional[list[str]] = None
     # Labels below are filled by a later human labelling pass, not at
     # generation time.
     seed_assumption_state: Optional[AssumptionState] = None
@@ -620,6 +628,14 @@ class AgentRoundRecord(BaseModel):
     tool_trace: Optional[ToolCallTrace] = None
     tool_call_executed: Optional[bool] = None
     tool_trace_replayed: Optional[bool] = None
+    # Provider-reported usage of the API request(s) this cell issued, summed
+    # over both calls of a tool exchange. None when no request was issued
+    # here (frozen seed, matched replay, failed generation), when the provider
+    # reported none, or in logs written before 2026-09-28.
+    api_input_tokens: Optional[int] = Field(default=None, ge=0)
+    api_output_tokens: Optional[int] = Field(default=None, ge=0)
+    api_reasoning_tokens: Optional[int] = Field(default=None, ge=0)
+    api_finish_reasons: Optional[list[str]] = None
     received_from: list[int] = Field(default_factory=list)
     messages_received: int = 0
     peer_input_tokens: int = 0

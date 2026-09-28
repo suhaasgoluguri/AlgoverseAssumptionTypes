@@ -35,6 +35,12 @@ load_dotenv()
 
 RETRYABLE = (RateLimitError, APITimeoutError, APIConnectionError)
 
+# Which OpenAI-compatible endpoint AzureChatClient calls. Chat Completions is
+# the frozen protocol for every earlier run. Responses exists because some
+# deployments (observed: gpt-6-luna) reject function tools combined with
+# reasoning_effort on Chat Completions.
+API_CHOICES = ("chat_completions", "responses")
+
 
 @dataclass(frozen=True)
 class CompletionCallTrace:
@@ -52,6 +58,14 @@ class CompletionCallTrace:
     completion_tokens: Optional[int]
     reasoning_tokens: Optional[int]
     total_tokens: Optional[int]
+
+
+@dataclass(frozen=True)
+class TracedText:
+    """Model text plus the usage trace of the one request that produced it."""
+
+    text: str
+    trace: Optional[CompletionCallTrace]
 
 
 @dataclass(frozen=True)
@@ -389,6 +403,81 @@ def _completion_call_trace(result: _CompletionResult) -> CompletionCallTrace:
     )
 
 
+def _response_call_trace(result: _CompletionResult) -> CompletionCallTrace:
+    """Map a Responses API result onto the Chat Completions trace fields.
+
+    Finish reasons are translated to their Chat Completions names so analysis
+    reads one vocabulary: a function call is 'tool_calls', a response cut off
+    by the output budget is 'length', and a completed message is 'stop'.
+    """
+    response = result.response
+    usage = getattr(response, "usage", None)
+    details = getattr(usage, "output_tokens_details", None) if usage else None
+    status = getattr(response, "status", None)
+    if status == "completed":
+        output_types = [getattr(item, "type", None) for item in response.output or []]
+        finish_reason = "tool_calls" if "function_call" in output_types else "stop"
+    elif status == "incomplete":
+        reason = getattr(getattr(response, "incomplete_details", None), "reason", None)
+        finish_reason = "length" if reason == "max_output_tokens" else (reason or status)
+    else:
+        finish_reason = status
+    return CompletionCallTrace(
+        response_id=getattr(response, "id", None),
+        model=getattr(response, "model", None),
+        finish_reason=finish_reason,
+        attempts=result.attempts,
+        prompt_tokens=getattr(usage, "input_tokens", None) if usage else None,
+        completion_tokens=getattr(usage, "output_tokens", None) if usage else None,
+        reasoning_tokens=(
+            getattr(details, "reasoning_tokens", None) if details else None
+        ),
+        total_tokens=getattr(usage, "total_tokens", None) if usage else None,
+    )
+
+
+def _responses_function_tool(tool_definition: Mapping[str, Any]) -> dict[str, Any]:
+    """Chat Completions tool definition -> the flat Responses API shape."""
+    function = tool_definition["function"]
+    return {"type": "function", **function}
+
+
+def _decode_forced_arguments(
+    arguments_json: Any, tool_definition: Mapping[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    """Validate a forced call's argument payload; return (normalised JSON, object)."""
+    if not isinstance(arguments_json, str):
+        raise ForcedToolProtocolError("forced tool arguments must be a JSON string")
+    # A zero-parameter tool has exactly one valid argument object. Some
+    # deployments express "no arguments" as an empty payload rather than
+    # "{}" (observed: DeepSeek-V4-Pro sends ""). Normalising it is a
+    # serialisation fix, not an inference about content: the schema
+    # declares no properties, so {} is the only object it could mean.
+    _params = tool_definition.get("function", {}).get("parameters") or {}
+    if not arguments_json.strip() and not _params.get("properties"):
+        arguments_json = "{}"
+    try:
+        arguments, end = json.JSONDecoder().raw_decode(arguments_json.strip())
+    except json.JSONDecodeError as exc:
+        raise ForcedToolProtocolError(
+            f"forced tool arguments are not valid JSON: {arguments_json[:200]!r}"
+        ) from exc
+    trailing = arguments_json.strip()[end:].strip()
+    if trailing:
+        # Some deployments append stray bytes after an otherwise well-formed
+        # argument object (observed: DeepSeek-V4-Pro emitting '{}""').
+        # The tool takes no arguments, so a well-formed leading object is
+        # the entire payload; anything after it is a serialiser artifact
+        # rather than content, and is recorded but not treated as fatal.
+        if arguments != {}:
+            raise ForcedToolProtocolError(
+                f"forced tool arguments have trailing content: {arguments_json[:200]!r}"
+            )
+    if not isinstance(arguments, dict):
+        raise ForcedToolProtocolError("forced tool arguments must decode to an object")
+    return arguments_json, arguments
+
+
 def _normalise_function_tool(tool: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
     """Validate and detach one OpenAI-format function-tool definition."""
     if tool.get("type") != "function":
@@ -450,6 +539,7 @@ class AzureChatClient:
     SDK_MAX_RETRIES = 0
     TENACITY_MAX_ATTEMPTS = 6
     reasoning_effort: Optional[str] = None
+    api: str = "chat_completions"
 
     def __init__(
         self,
@@ -457,7 +547,11 @@ class AzureChatClient:
         temperature: Optional[float] = 0.2,
         max_tokens: int = 1000,
         reasoning_effort: Optional[str] = None,
+        api: str = "chat_completions",
     ) -> None:
+        if api not in API_CHOICES:
+            raise ValueError(f"api must be one of {API_CHOICES}, got {api!r}")
+        self.api = api
         self.deployment = deployment or os.environ["AZURE_OPENAI_DEPLOYMENT"]
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -479,6 +573,16 @@ class AzureChatClient:
         return f"azure:{self.deployment}"
 
     async def _create_completion(self, **kwargs: Any) -> _CompletionResult:
+        """Run one Chat Completions request with isolated retries."""
+        return await self._call_with_retries(self._client.chat.completions.create, **kwargs)
+
+    async def _create_response(self, **kwargs: Any) -> _CompletionResult:
+        """Run one Responses API request with isolated retries."""
+        return await self._call_with_retries(self._client.responses.create, **kwargs)
+
+    async def _call_with_retries(
+        self, create: Callable[..., Any], **kwargs: Any
+    ) -> _CompletionResult:
         """Run one API request with isolated retries and report attempt count."""
         response = None
         attempts = 0
@@ -490,7 +594,7 @@ class AzureChatClient:
         ):
             with attempt:
                 attempts = attempt.retry_state.attempt_number
-                response = await self._client.chat.completions.create(**kwargs)
+                response = await create(**kwargs)
         if response is None:  # pragma: no cover - AsyncRetrying either returns or raises
             raise RuntimeError("completion retry loop ended without a response")
         return _CompletionResult(response=response, attempts=attempts)
@@ -509,8 +613,41 @@ class AzureChatClient:
             kwargs["reasoning_effort"] = self.reasoning_effort
         return kwargs
 
+    def _base_response_kwargs(self) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
+            "model": self.deployment,
+            "max_output_tokens": self.max_tokens,
+            # Nothing is kept server-side. Reasoning items therefore travel
+            # back encrypted when a tool exchange continues a response.
+            "store": False,
+            "include": ["reasoning.encrypted_content"],
+        }
+        if self.temperature is not None:
+            kwargs["temperature"] = self.temperature
+        if self.reasoning_effort is not None:
+            kwargs["reasoning"] = {"effort": self.reasoning_effort}
+        return kwargs
+
     async def generate(self, system_prompt: str, user_prompt: str) -> str:
         """One completion. Retries transient errors with exponential backoff."""
+        return (await self.generate_traced(system_prompt, user_prompt)).text
+
+    async def generate_traced(self, system_prompt: str, user_prompt: str) -> TracedText:
+        """One completion, returned with its usage trace."""
+        if self.api == "responses":
+            kwargs = self._base_response_kwargs()
+            kwargs.update({
+                "input": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "text": {"format": {"type": "json_object"}},
+            })
+            result = await self._create_response(**kwargs)
+            return TracedText(
+                text=result.response.output_text or "",
+                trace=_response_call_trace(result),
+            )
         kwargs = self._base_completion_kwargs()
         kwargs.update({
             "messages": [
@@ -520,7 +657,10 @@ class AzureChatClient:
             "response_format": {"type": "json_object"},
         })
         result = await self._create_completion(**kwargs)
-        return result.response.choices[0].message.content or ""
+        return TracedText(
+            text=result.response.choices[0].message.content or "",
+            trace=_completion_call_trace(result),
+        )
 
     async def generate_with_forced_tool(
         self,
@@ -538,6 +678,14 @@ class AzureChatClient:
         again.
         """
         tool_definition, expected_name = _normalise_function_tool(tool)
+        if self.api == "responses":
+            return await self._responses_forced_tool(
+                system_prompt,
+                user_prompt,
+                tool_definition=tool_definition,
+                expected_name=expected_name,
+                execute=execute,
+            )
         initial_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -578,36 +726,9 @@ class AzureChatClient:
             raise ForcedToolProtocolError(
                 f"forced tool called {actual_name!r}; expected {expected_name!r}"
             )
-        arguments_json = getattr(function_call, "arguments", None)
-        if not isinstance(arguments_json, str):
-            raise ForcedToolProtocolError("forced tool arguments must be a JSON string")
-        # A zero-parameter tool has exactly one valid argument object. Some
-        # deployments express "no arguments" as an empty payload rather than
-        # "{}" (observed: DeepSeek-V4-Pro sends ""). Normalising it is a
-        # serialisation fix, not an inference about content: the schema
-        # declares no properties, so {} is the only object it could mean.
-        _params = tool_definition.get("function", {}).get("parameters") or {}
-        if not arguments_json.strip() and not _params.get("properties"):
-            arguments_json = "{}"
-        try:
-            arguments, end = json.JSONDecoder().raw_decode(arguments_json.strip())
-        except json.JSONDecodeError as exc:
-            raise ForcedToolProtocolError(
-                f"forced tool arguments are not valid JSON: {arguments_json[:200]!r}"
-            ) from exc
-        trailing = arguments_json.strip()[end:].strip()
-        if trailing:
-            # Some deployments append stray bytes after an otherwise well-formed
-            # argument object (observed: DeepSeek-V4-Pro emitting '{}""').
-            # The tool takes no arguments, so a well-formed leading object is
-            # the entire payload; anything after it is a serialiser artifact
-            # rather than content, and is recorded but not treated as fatal.
-            if arguments != {}:
-                raise ForcedToolProtocolError(
-                    f"forced tool arguments have trailing content: {arguments_json[:200]!r}"
-                )
-        if not isinstance(arguments, dict):
-            raise ForcedToolProtocolError("forced tool arguments must decode to an object")
+        arguments_json, arguments = _decode_forced_arguments(
+            getattr(function_call, "arguments", None), tool_definition
+        )
 
         # The callback is deliberately outside either retry loop.
         tool_result, execution_metadata = _normalise_tool_execution(
@@ -663,6 +784,104 @@ class AzureChatClient:
         )
         return ToolTurnResult(final_text=final_text, trace=trace)
 
+    async def _responses_forced_tool(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        tool_definition: dict[str, Any],
+        expected_name: str,
+        execute: Callable[[dict[str, Any]], str | ToolExecutionResult],
+    ) -> ToolTurnResult:
+        """The same one-call, one-result protocol over the Responses API.
+
+        The tool definition hash is taken from the Chat Completions form, so
+        traces compare across APIs.
+        """
+        initial_input = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        response_tool = _responses_function_tool(tool_definition)
+        request_kwargs = self._base_response_kwargs()
+        request_kwargs.update(
+            {
+                "input": initial_input,
+                "tools": [response_tool],
+                "tool_choice": {"type": "function", "name": expected_name},
+                "parallel_tool_calls": False,
+            }
+        )
+        request_result = await self._create_response(**request_kwargs)
+        request_trace = _response_call_trace(request_result)
+        if request_trace.finish_reason != "tool_calls":
+            raise ForcedToolProtocolError(
+                "forced-tool response must finish with a function call; "
+                f"got finish_reason={request_trace.finish_reason!r}"
+            )
+        output_items = list(request_result.response.output or [])
+        tool_calls = [
+            item for item in output_items if getattr(item, "type", None) == "function_call"
+        ]
+        if len(tool_calls) != 1:
+            raise ForcedToolProtocolError(
+                f"forced-tool response must return exactly one call; got {len(tool_calls)}"
+            )
+        tool_call = tool_calls[0]
+        call_id = getattr(tool_call, "call_id", None)
+        if not isinstance(call_id, str) or not call_id:
+            raise ForcedToolProtocolError("forced tool call requires a non-empty id")
+        actual_name = getattr(tool_call, "name", None)
+        if actual_name != expected_name:
+            raise ForcedToolProtocolError(
+                f"forced tool called {actual_name!r}; expected {expected_name!r}"
+            )
+        arguments_json, arguments = _decode_forced_arguments(
+            getattr(tool_call, "arguments", None), tool_definition
+        )
+
+        # The callback is deliberately outside either retry loop.
+        tool_result, execution_metadata = _normalise_tool_execution(
+            execute(arguments)
+        )
+
+        final_kwargs = self._base_response_kwargs()
+        final_kwargs.update(
+            {
+                "input": [
+                    *initial_input,
+                    # Every output item goes back, including encrypted
+                    # reasoning, so the final turn continues the same exchange.
+                    *(item.model_dump(exclude_none=True) for item in output_items),
+                    {
+                        "type": "function_call_output",
+                        "call_id": call_id,
+                        "output": tool_result,
+                    },
+                ],
+                "tools": [response_tool],
+                "tool_choice": "none",
+                "parallel_tool_calls": False,
+                "text": {"format": {"type": "json_object"}},
+            }
+        )
+        final_result = await self._create_response(**final_kwargs)
+        trace = ForcedToolTrace(
+            tool_name=expected_name,
+            tool_call_id=call_id,
+            tool_definition_sha256=_sha256_text(_canonical_json(tool_definition)),
+            arguments_json=arguments_json,
+            arguments_sha256=_sha256_text(arguments_json),
+            tool_result=tool_result,
+            tool_result_sha256=_sha256_text(tool_result),
+            execution_metadata=execution_metadata,
+            request=request_trace,
+            final=_response_call_trace(final_result),
+        )
+        return ToolTurnResult(
+            final_text=final_result.response.output_text or "", trace=trace
+        )
+
 
 # ---------------------------------------------------------------------------
 # Mock client (tests / free development)
@@ -682,6 +901,9 @@ class MockClient:
     forced_tool_calls: list[dict[str, Any]] = field(default_factory=list)
     model_identifier: str = "mock:test"
     temperature: Optional[float] = None  # mock samples nothing; log honestly
+
+    async def generate_traced(self, system_prompt: str, user_prompt: str) -> TracedText:
+        return TracedText(text=await self.generate(system_prompt, user_prompt), trace=None)
 
     async def generate(self, system_prompt: str, user_prompt: str) -> str:
         self.calls.append((system_prompt, user_prompt))

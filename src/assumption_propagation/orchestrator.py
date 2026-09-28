@@ -21,11 +21,13 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .clients import (
+    CompletionCallTrace,
     ForcedToolTrace,
     RATIONALE_AUDIT_VERSION,
     ParsedResponse,
     ToolExecutionResult,
     ToolTurnResult,
+    TracedText,
     audit_answer_rationale,
     parse_or_repair,
 )
@@ -119,9 +121,11 @@ async def generate_seed_instances(
     instances: list[SeedInstance] = []
     for trial in range(n_instances):
         try:
-            raw = await client.generate(system_prompt, user_prompt)
-            parsed = parse_or_repair(raw)
+            traced = await _generate_traced(client, system_prompt, user_prompt)
+            usage = _usage_fields(traced.trace)
+            parsed = parse_or_repair(traced.text)
         except Exception as exc:
+            usage = {}
             parsed = ParsedResponse(
                 raw_response="",
                 parse_failed=True,
@@ -153,6 +157,7 @@ async def generate_seed_instances(
                 answer_rationale_audit_version=None,
                 rationale_conclusion_letters=[],
                 included_in_core=False,
+                **usage,
             )
         else:
             instance = SeedInstance(
@@ -170,6 +175,7 @@ async def generate_seed_instances(
                 answer_rationale_inconsistent=rationale_audit.inconsistent,
                 answer_rationale_audit_version=RATIONALE_AUDIT_VERSION,
                 rationale_conclusion_letters=rationale_audit.conclusion_letters,
+                **usage,
             )
         instances.append(instance)
         if log_path:
@@ -215,6 +221,27 @@ class ConversationOutputs:
 def _optional_sum(*values: Optional[int]) -> Optional[int]:
     """Sum usage fields only when the provider supplied every component."""
     return sum(values) if all(value is not None for value in values) else None
+
+
+def _usage_fields(*traces: Optional[CompletionCallTrace]) -> dict[str, Any]:
+    """Per-cell API usage for the record; empty when no request was traced."""
+    present = [trace for trace in traces if trace is not None]
+    if not present:
+        return {}
+    return {
+        "api_input_tokens": _optional_sum(*(t.prompt_tokens for t in present)),
+        "api_output_tokens": _optional_sum(*(t.completion_tokens for t in present)),
+        "api_reasoning_tokens": _optional_sum(*(t.reasoning_tokens for t in present)),
+        "api_finish_reasons": [t.finish_reason for t in present if t.finish_reason],
+    }
+
+
+async def _generate_traced(client, system_prompt: str, user_prompt: str) -> TracedText:
+    """Plain generation with its usage trace, for clients that expose one."""
+    generate_traced = getattr(client, "generate_traced", None)
+    if generate_traced is None:
+        return TracedText(text=await client.generate(system_prompt, user_prompt), trace=None)
+    return await generate_traced(system_prompt, user_prompt)
 
 
 def _tool_trace_model(
@@ -487,6 +514,7 @@ async def run_conversation(
         tool_trace: Optional[ToolCallTrace],
         tool_call_executed: Optional[bool],
         tool_trace_replayed: Optional[bool],
+        usage: dict[str, Any],
     ) -> AgentRoundRecord:
         rationale_audit = (
             audit_answer_rationale(parsed.answer, parsed.rationale, scenario.options)
@@ -549,6 +577,7 @@ async def run_conversation(
             tool_trace=tool_trace,
             tool_call_executed=tool_call_executed,
             tool_trace_replayed=tool_trace_replayed,
+            **usage,
             received_from=received_from,
             messages_received=len(received_from),
             answer=parsed.answer,
@@ -783,6 +812,7 @@ async def run_conversation(
                 "tool_trace": None,
                 "tool_call_executed": None,
                 "tool_trace_replayed": None,
+                "usage": {},
             }
             replay_key = (agent_id, round_index)
             if round_index == 0 and is_injection and agent_id == seed_agent_id:
@@ -838,7 +868,7 @@ async def run_conversation(
                         )
                     )
                 else:
-                    tasks.append(client.generate(system_prompt, prompt))
+                    tasks.append(_generate_traced(client, system_prompt, prompt))
                 generating_agents.append(agent_id)
             plans[agent_id] = plan
 
@@ -882,9 +912,13 @@ async def run_conversation(
                     plans[agent_id]["tool_call_executed"] = True
                     plans[agent_id]["tool_trace_replayed"] = False
                     tool_traces[(agent_id, round_index)] = trace
+                    plans[agent_id]["usage"] = _usage_fields(
+                        raw.trace.request, raw.trace.final
+                    )
                     raw_text = raw.final_text
                 else:
-                    raw_text = raw
+                    plans[agent_id]["usage"] = _usage_fields(raw.trace)
+                    raw_text = raw.text
                 parsed = parse_or_repair(raw_text)
             plans[agent_id]["parsed"] = parsed
 
@@ -929,6 +963,7 @@ async def run_conversation(
                     tool_trace=plan["tool_trace"],
                     tool_call_executed=plan["tool_call_executed"],
                     tool_trace_replayed=plan["tool_trace_replayed"],
+                    usage=plan["usage"],
                 )
             )
 

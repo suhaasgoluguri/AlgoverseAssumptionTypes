@@ -33,7 +33,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from assumption_propagation.aggregation import summarize_final_round
-from assumption_propagation.clients import AzureChatClient, MockClient
+from assumption_propagation.clients import API_CHOICES, AzureChatClient, MockClient
 from assumption_propagation.evidence import sha256_text
 from assumption_propagation.orchestrator import (
     N_ROUNDS,
@@ -1023,6 +1023,14 @@ async def main() -> None:
         help="reasoning effort for the azure client (e.g. low/medium/high/max); "
              "omitted uses the deployment default. Ignored by the mock client.",
     )
+    parser.add_argument(
+        "--api",
+        choices=API_CHOICES,
+        default="chat_completions",
+        help="endpoint for the azure client (default: chat_completions). Use "
+             "responses for deployments that reject function tools with "
+             "reasoning on Chat Completions (gpt-6-luna). Ignored by the mock client.",
+    )
     args = parser.parse_args()
     if args.scope_ladder:
         args.scope_protocol = args.scope_protocol or "tool_v2"
@@ -1153,6 +1161,7 @@ async def main() -> None:
             temperature=temperature,
             max_tokens=args.max_completion_tokens,
             reasoning_effort=args.reasoning_effort,
+            api=args.api,
         )
     )
 
@@ -1214,6 +1223,7 @@ async def main() -> None:
             "temperature": getattr(client, "temperature", None),
             "max_tokens": getattr(client, "max_tokens", None),
             "reasoning_effort": getattr(client, "reasoning_effort", None),
+            "api": getattr(client, "api", None),
             "request_timeout_seconds": getattr(
                 client, "request_timeout_seconds", None
             ),

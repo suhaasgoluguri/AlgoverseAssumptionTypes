@@ -476,3 +476,46 @@ async def test_seed_generation_exception_is_retained_not_resampled():
     assert len(seeds) == 1
     assert seeds[0].generation_failed is True
     assert seeds[0].included_in_core is False
+
+
+class _TracedMock(MockClient):
+    """MockClient that reports provider usage, as AzureChatClient does."""
+
+    async def generate_traced(self, system_prompt, user_prompt):
+        from assumption_propagation.clients import CompletionCallTrace, TracedText
+
+        return TracedText(
+            text=await self.generate(system_prompt, user_prompt),
+            trace=CompletionCallTrace(
+                response_id="r", model="m", finish_reason="stop", attempts=1,
+                prompt_tokens=120, completion_tokens=45, reasoning_tokens=30,
+                total_tokens=165,
+            ),
+        )
+
+
+async def test_api_usage_is_recorded_only_for_cells_that_called_the_api():
+    seeds = await generate_seed_instances(mk_scenario(), mk_variant(), _TracedMock(), n_instances=1)
+    assert (seeds[0].api_input_tokens, seeds[0].api_output_tokens,
+            seeds[0].api_reasoning_tokens, seeds[0].api_finish_reasons) == (120, 45, 30, ["stop"])
+
+    result = await run_conversation(
+        mk_scenario(), client=_TracedMock(), topology_name="looped_chain",
+        condition="injection", variant=mk_variant(), frozen_seed=seeds[0],
+    )
+    seed_record = next(r for r in result.records if r.agent_id == 0 and r.round == 0)
+    # The frozen seed was replayed, so this cell issued no request.
+    assert seed_record.api_output_tokens is None
+    generated = [r for r in result.records if r is not seed_record]
+    assert len(generated) == 15
+    assert all(r.api_reasoning_tokens == 30 and r.api_finish_reasons == ["stop"]
+               for r in generated)
+
+
+async def test_plain_mock_leaves_usage_unknown_rather_than_zero():
+    frozen = await make_frozen_seed()
+    result = await run_conversation(
+        mk_scenario(), client=MockClient(), topology_name="looped_chain",
+        condition="injection", variant=mk_variant(), frozen_seed=frozen,
+    )
+    assert all(r.api_output_tokens is None for r in result.records)

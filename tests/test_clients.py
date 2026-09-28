@@ -477,3 +477,185 @@ async def test_mock_client_exposes_matching_forced_tool_interface():
     assert result.trace.tool_result == "mock-result"
     assert result.trace.api_call_attempts == 2
     assert mock.forced_tool_calls[0]["tool_name"] == "read_case_record"
+
+
+# ---------------------------------------------------------------------------
+# Responses API path (gpt-6-luna rejects tools + reasoning on Chat Completions)
+# ---------------------------------------------------------------------------
+
+
+class _Item(SimpleNamespace):
+    def model_dump(self, exclude_none=False):
+        return {k: v for k, v in vars(self).items() if not (exclude_none and v is None)}
+
+
+def _response(
+    *,
+    output,
+    output_text: str = "",
+    status: str = "completed",
+    incomplete_reason: str | None = None,
+    response_id: str = "response_1",
+    reasoning_tokens: int = 40,
+):
+    return SimpleNamespace(
+        id=response_id,
+        model="gpt-6-luna",
+        status=status,
+        incomplete_details=(
+            SimpleNamespace(reason=incomplete_reason) if incomplete_reason else None
+        ),
+        output=output,
+        output_text=output_text,
+        usage=SimpleNamespace(
+            input_tokens=100,
+            output_tokens=60,
+            total_tokens=160,
+            output_tokens_details=SimpleNamespace(reasoning_tokens=reasoning_tokens),
+        ),
+    )
+
+
+def _function_call_item(*, call_id="call_abc", name="read_case_record", arguments="{}"):
+    return _Item(type="function_call", call_id=call_id, name=name, arguments=arguments)
+
+
+def _responses_client(outcomes, *, effort="high"):
+    responses = _FakeCompletions(outcomes)
+    client = AzureChatClient.__new__(AzureChatClient)
+    client.deployment = "gpt-6-luna"
+    client.temperature = None
+    client.max_tokens = 1000
+    client.reasoning_effort = effort
+    client.api = "responses"
+    client._retry_wait = wait_none()
+    client._client = SimpleNamespace(responses=responses)
+    return client, responses
+
+
+def test_unknown_api_is_rejected(monkeypatch):
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://example.test/openai/v1")
+    with patch("assumption_propagation.clients.AsyncOpenAI"):
+        with pytest.raises(ValueError, match="api must be one of"):
+            AzureChatClient(deployment="x", api="assistants")
+
+
+async def test_responses_generate_sends_effort_json_mode_and_no_storage():
+    text = '{"answer":"B","rationale":"Gadby is certified."}'
+    message = _Item(type="message", content=[])
+    client, responses = _responses_client(
+        [_response(output=[_Item(type="reasoning"), message], output_text=text)]
+    )
+
+    traced = await client.generate_traced("system prompt", "user prompt")
+
+    assert traced.text == text
+    request = responses.calls[0]
+    assert request["reasoning"] == {"effort": "high"}
+    assert request["store"] is False
+    assert request["include"] == ["reasoning.encrypted_content"]
+    assert request["max_output_tokens"] == 1000
+    assert request["text"] == {"format": {"type": "json_object"}}
+    assert "temperature" not in request
+    assert [m["role"] for m in request["input"]] == ["system", "user"]
+    assert traced.trace.finish_reason == "stop"
+    assert traced.trace.prompt_tokens == 100
+    assert traced.trace.completion_tokens == 60
+    assert traced.trace.reasoning_tokens == 40
+
+
+async def test_responses_budget_exhaustion_reports_length():
+    client, _ = _responses_client(
+        [_response(output=[_Item(type="reasoning")], status="incomplete",
+                   incomplete_reason="max_output_tokens")]
+    )
+    traced = await client.generate_traced("s", "u")
+    assert traced.text == ""
+    assert traced.trace.finish_reason == "length"
+
+
+async def test_responses_forced_tool_runs_two_call_protocol():
+    reasoning = _Item(type="reasoning", id="rs_1", encrypted_content="opaque")
+    request = _response(
+        output=[reasoning, _function_call_item()], response_id="request_response"
+    )
+    final_text = '{"answer":"B","rationale":"The record disqualifies A."}'
+    final = _response(
+        output=[_Item(type="message")], output_text=final_text,
+        response_id="final_response",
+    )
+    client, responses = _responses_client([request, final])
+    executed = []
+
+    def execute(arguments):
+        executed.append(arguments)
+        return "A is disqualified."
+
+    result = await client.generate_with_forced_tool(
+        "system prompt", "user prompt", tool=CASE_RECORD_TOOL, execute=execute
+    )
+
+    assert result.final_text == final_text
+    assert executed == [{}]
+    first, second = responses.calls
+    assert first["tools"] == [{
+        "type": "function",
+        "name": "read_case_record",
+        "description": "Read the case record available to this agent.",
+        "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
+        "strict": True,
+    }]
+    assert first["tool_choice"] == {"type": "function", "name": "read_case_record"}
+    assert first["reasoning"] == {"effort": "high"}
+    assert "text" not in first
+    assert second["tool_choice"] == "none"
+    assert second["text"] == {"format": {"type": "json_object"}}
+    # The encrypted reasoning and the call itself travel back with the result.
+    assert second["input"][2] == {"type": "reasoning", "id": "rs_1", "encrypted_content": "opaque"}
+    assert second["input"][3]["type"] == "function_call"
+    assert second["input"][4] == {
+        "type": "function_call_output", "call_id": "call_abc", "output": "A is disqualified.",
+    }
+    assert result.trace.tool_call_id == "call_abc"
+    assert result.trace.request.finish_reason == "tool_calls"
+    assert result.trace.final.finish_reason == "stop"
+    assert result.trace.api_call_attempts == 2
+
+
+async def test_responses_tool_definition_hash_matches_chat_completions():
+    chat_client, _ = _azure_client([
+        _completion(content=None, finish_reason="tool_calls", tool_calls=[_tool_call()]),
+        _completion(content='{"answer":"A","rationale":"r"}', finish_reason="stop"),
+    ])
+    responses_client, _ = _responses_client([
+        _response(output=[_function_call_item()]),
+        _response(output=[_Item(type="message")], output_text='{"answer":"A","rationale":"r"}'),
+    ])
+    chat = await chat_client.generate_with_forced_tool(
+        "s", "u", tool=CASE_RECORD_TOOL, execute=lambda a: "x"
+    )
+    resp = await responses_client.generate_with_forced_tool(
+        "s", "u", tool=CASE_RECORD_TOOL, execute=lambda a: "x"
+    )
+    assert chat.trace.tool_definition_sha256 == resp.trace.tool_definition_sha256
+
+
+@pytest.mark.parametrize(
+    ("output", "match"),
+    [
+        ([_Item(type="message")], "must finish with a function call"),
+        ([_function_call_item(call_id="one"), _function_call_item(call_id="two")], "got 2"),
+        ([_function_call_item(name="wrong_tool")], "expected 'read_case_record'"),
+        ([_function_call_item(arguments="not-json")], "not valid JSON"),
+    ],
+)
+async def test_responses_forced_tool_rejects_bad_calls_before_execution(output, match):
+    client, responses = _responses_client([_response(output=output)])
+    executed = []
+    with pytest.raises(ForcedToolProtocolError, match=match):
+        await client.generate_with_forced_tool(
+            "s", "u", tool=CASE_RECORD_TOOL, execute=lambda a: executed.append(a) or "x"
+        )
+    assert executed == []
+    assert len(responses.calls) == 1

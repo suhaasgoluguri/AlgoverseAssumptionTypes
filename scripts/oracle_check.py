@@ -26,6 +26,7 @@ from collections import Counter
 from pathlib import Path
 
 from assumption_propagation.clients import (
+    API_CHOICES,
     AzureChatClient,
     MockClient,
     audit_answer_rationale,
@@ -96,8 +97,9 @@ async def run_oracle(scenario: Scenario, client, n_samples: int) -> dict:
     samples: list[dict] = []
     for sample_index in range(n_samples):
         try:
-            raw = await client.generate(system, prompt)
-            parsed = parse_or_repair(raw)
+            traced = await client.generate_traced(system, prompt)
+            parsed = parse_or_repair(traced.text)
+            usage = traced.trace
             answers.append(parsed.answer)
             audit = audit_answer_rationale(
                 parsed.answer, parsed.rationale, scenario.options
@@ -114,6 +116,10 @@ async def run_oracle(scenario: Scenario, client, n_samples: int) -> dict:
                 "rationale_conclusion_letters": audit.conclusion_letters,
                 "rationale_conclusion_sources": audit.conclusion_sources,
                 "inconsistent": audit.inconsistent,
+                "input_tokens": usage.prompt_tokens if usage else None,
+                "output_tokens": usage.completion_tokens if usage else None,
+                "reasoning_tokens": usage.reasoning_tokens if usage else None,
+                "finish_reason": usage.finish_reason if usage else None,
             })
             if audit.inconsistent:
                 inconsistent_count += 1
@@ -174,6 +180,8 @@ async def main() -> None:
                         help="e.g. low/medium/high/max; omitted uses the deployment default")
     parser.add_argument("--max-completion-tokens", type=int, default=1000,
                         help="reasoning tokens count against this budget")
+    parser.add_argument("--api", choices=API_CHOICES, default="chat_completions",
+                        help="endpoint for the azure client; responses for gpt-6-luna tool runs")
     parser.add_argument("--scenario", default=None, help="single scenario_id")
     parser.add_argument("--json", type=Path, default=None)
     args = parser.parse_args()
@@ -193,12 +201,14 @@ async def main() -> None:
         temperature=temperature,
         max_tokens=args.max_completion_tokens,
         reasoning_effort=args.reasoning_effort,
+        api=args.api,
     )
 
     print(f"data={args.data} (sha256={sha256_file(args.data)[:16]})")
     print(f"client={client.model_identifier}  scenarios={len(scenarios)}  "
           f"samples each={args.n_samples}  "
-          f"reasoning_effort={getattr(client, 'reasoning_effort', None) or 'default'}")
+          f"reasoning_effort={getattr(client, 'reasoning_effort', None) or 'default'}  "
+          f"api={getattr(client, 'api', 'n/a')}")
     print(f"pass >= {PASS_THRESHOLD:.0%}, weak >= {WEAK_THRESHOLD:.0%}, else fail\n")
 
     rows = []
@@ -259,6 +269,8 @@ async def main() -> None:
             "model": client.model_identifier,
             "n_samples": args.n_samples,
             "reasoning_effort": getattr(client, "reasoning_effort", None),
+            "api": getattr(client, "api", None),
+            "max_tokens": getattr(client, "max_tokens", None),
             "pass_threshold": PASS_THRESHOLD,
             "weak_threshold": WEAK_THRESHOLD,
             "results": rows,
