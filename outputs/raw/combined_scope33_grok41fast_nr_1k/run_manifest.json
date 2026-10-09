@@ -22,7 +22,7 @@
     "bytes": 0
   },
   "scenario_data": {
-    "source_path": "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/data/scenarios_hidden_profile_candidates.json",
+    "source_path": "data/scenarios_hidden_profile_candidates.json",
     "snapshot_path": "scenario_snapshot.json",
     "sha256": "880cf414d5d67a9347d5ffb8af6537920ef3b18e775ec1a7e8141e6ce85b1917",
     "canonical_sha256": "653fe93f821846aca67748f0004dda3bb2c02ae9280382ed1c990d41ba15bea1",
@@ -386,7 +386,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -437,7 +437,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -488,7 +488,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -539,7 +539,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -590,7 +590,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -641,7 +641,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -692,7 +692,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -743,7 +743,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -794,7 +794,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -845,7 +845,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -896,7 +896,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -947,7 +947,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -998,7 +998,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1049,7 +1049,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1100,7 +1100,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1151,7 +1151,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1202,7 +1202,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1253,7 +1253,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1304,7 +1304,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1355,7 +1355,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1406,7 +1406,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1457,7 +1457,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1508,7 +1508,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1559,7 +1559,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1610,7 +1610,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1661,7 +1661,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1712,7 +1712,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1763,7 +1763,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1814,7 +1814,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1865,7 +1865,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1916,7 +1916,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -1967,7 +1967,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",
@@ -2018,7 +2018,7 @@
         "git_commit": "e7021c32ede4c58be867a01f17d378023c98e30c",
         "git_dirty": false,
         "command_argv": [
-          "/Users/suhaasgoluguri/AlgoverseProject/AlgoverseAssumptionTypes/scripts/run_pilot.py",
+          "scripts/run_pilot.py",
           "--client",
           "azure",
           "--data",

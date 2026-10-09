@@ -143,6 +143,16 @@ def planned_injection_conditions(args) -> tuple[str, ...]:
     return ("injection",)
 
 
+def _repo_relative(path: Path, repo_root: Path) -> str:
+    # Manifests are committed; an absolute path would carry the local home
+    # directory. Paths outside the repository stay absolute.
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(repo_root).as_posix()
+    except ValueError:
+        return str(resolved)
+
+
 def _load_jsonl_objects(path: Path) -> list[dict]:
     rows: list[dict] = []
     for line_number, line in enumerate(
@@ -1207,7 +1217,7 @@ async def main() -> None:
         "git": git_state,
         "git_tracked_changes": tracked_changes,
         "scenario_data": {
-            "source_path": str(data_path.resolve()),
+            "source_path": _repo_relative(data_path, repo_root),
             "snapshot_path": snapshot_path.name,
             "sha256": scenario_sha256,
             "canonical_sha256": scenario_canonical_sha256,

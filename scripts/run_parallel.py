@@ -46,6 +46,17 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _repo_relative(path: str | Path) -> str:
+    # run_pilot records its argv in the committed manifest; an absolute script
+    # path would carry the local home directory. Children run with
+    # cwd=REPO_ROOT, so the relative form resolves the same.
+    path = Path(path)
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def _option_value(argv: list[str], name: str) -> str | None:
     for index, arg in enumerate(argv):
         if arg == name and index + 1 < len(argv):
@@ -106,7 +117,7 @@ class Launcher:
         tag = f"{self.args.tag}_{scenario_id}"
         log_path = self.group_dir / f"{scenario_id}.log"
         command = [
-            sys.executable, str(RUN_PILOT), *self.pilot_args,
+            sys.executable, _repo_relative(RUN_PILOT), *self.pilot_args,
             "--scenario", scenario_id, "--tag", tag,
         ]
         entry = self.entries[scenario_id]
